@@ -1,0 +1,52 @@
+{
+    "name": "glassadmin/glassadmin",
+    "description": "GlassAdmin - 基于 Vue 3 + ThinkPHP 8 + Element Plus 的透明可视后台框架。代码如玻璃般清晰，逻辑如镜面般可鉴。专为追求代码透明度与控制权的开发者设计，摒弃黑盒魔法，提供原生开发体验。",
+    "type": "project",
+    "keywords": [
+        "GlassAdmin",
+        "thinkphp",
+        "vue3",
+        "element-plus",
+        "typescript",
+        "admin-framework",
+        "transparent-framework",
+        "backend-framework",
+        "modern-admin",
+        "php-framework"
+    ],
+    "homepage": "https://github.com/lascyb/GlassAdmin",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "lascyb",
+            "email": "lascyb@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0.0",
+        "topthink/framework": "^8.0",
+        "topthink/think-orm": "^3.0|^4.0",
+        "topthink/think-filesystem": "^2.0|^3.0"
+    },
+    "require-dev": {
+        "topthink/think-dumper": "^1.0",
+        "topthink/think-trace": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": "app"
+        },
+        "psr-0": {
+            "": "extend/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist"
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php think service:discover",
+            "@php think vendor:publish"
+        ]
+    }
+}
