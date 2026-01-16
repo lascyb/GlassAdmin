@@ -22,7 +22,7 @@ const click = (index: string, indexPath: string[], active: boolean) => {
 
 <template>
   <template v-for="menu in props.menus">
-    <template v-if="menu.children && menu.children.length > 0">
+    <template v-if="menu.type == 'menu'&& menu.children && menu.children.length > 0">
       <el-sub-menu :index="menu.path" :key="menu.id">
         <template #title>
           <span>{{ menu.name }}</span>
@@ -30,7 +30,7 @@ const click = (index: string, indexPath: string[], active: boolean) => {
         <MenuTree :extend="{ ...props.extend, level: props.extend.level + 1 }" :menus="menu.children"/>
       </el-sub-menu>
     </template>
-    <template v-else>
+    <template v-else-if="menu.type=='page'">
       <el-menu-item :index="menu.path" :key="menu.id" @click="click">
         <span>{{ menu.name }}</span>
       </el-menu-item>

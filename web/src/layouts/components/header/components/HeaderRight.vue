@@ -15,13 +15,12 @@ const activeName = ref("system")
         content="Left Top prompts info"
         placement="bottom-end"
         width="300"
-        offset="0"
     >
       <template #reference>
         <div class="flex items-center">
-          <el-badge :value="12" :offset="[-10, 5]">
+<!--          <el-badge :value="12" :offset="[-10, 5]">-->
             <el-avatar class="mr-1"/>
-          </el-badge>
+<!--          </el-badge>-->
         </div>
       </template>
       <template #default>

@@ -1,9 +1,9 @@
-import type {Menu} from "../layouts/components/menus/types.ts";
+import type {Menu} from "@/layouts/components/menus/types.ts";
 
 
 type MenuSearchResult = {
     menu: Menu;
-    path: Menu[]; // 从根节点到目标节点的路径数组
+    paths: Menu[]; // 从根节点到目标节点的路径数组
     breadcrumb: string[]; // 路径名称数组
 };
 
@@ -19,7 +19,7 @@ export function findMenuByPath(menus: Menu[], targetPath: string): MenuSearchRes
             if (node.path === targetPath) {
                 return {
                     menu: node,
-                    path: newPath,
+                    paths: newPath,
                     breadcrumb: newBreadcrumb
                 };
             }
