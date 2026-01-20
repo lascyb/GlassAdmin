@@ -3,7 +3,7 @@
 </script>
 
 <template>
-<iframe src="https://baidu.com"></iframe>
+  <iframe src="https://baidu.com"></iframe>
 </template>
 
 <style scoped>

@@ -5,4 +5,9 @@ export const router = createRouter({
     history: createWebHistory(),
     routes,
 })
-export const views = import.meta.glob('../views/**/*.vue')
+export const views = import.meta.glob('@/views/**/*.vue')
+
+router.beforeEach((to, from, next) => {
+    console.log(to, from)
+    next()
+})

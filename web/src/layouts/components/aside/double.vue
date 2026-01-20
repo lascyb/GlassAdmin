@@ -4,9 +4,8 @@ import {User} from "@element-plus/icons-vue"
 import GaLogo from "../logo.vue";
 import GaMenus from "../menus/index.vue";
 import type {Menu} from "../menus/types.ts";
-import {useLayoutMenus} from "../../../pinia/layout/menus.ts";
+import {useLayoutMenus} from "@/pinia/layout/menus.ts";
 import {useRoute, useRouter} from "vue-router";
-import {findMenuByPath} from "../../../utils/menu/findMenuByPath.ts";
 
 const router = useRouter()
 const route = useRoute()
@@ -16,20 +15,23 @@ const layoutMenus = useLayoutMenus()
 const menu = ref<Menu>();
 
 const changeModule = (val: number = 0) => {
-  menu.value = layoutMenus.menus.find((item) => item.id == val)
+  menu.value = layoutMenus.menus.find((item) => item.id == layoutMenus.module)
   if (menu.value && val != 0) {
     if (!(menu.value?.children && menu.value.children.length > 0)) {
-      router.push(menu.value.path)
+      router.push(menu.value.path_full)
     }
   }
 }
 
 onMounted(() => {
-
-  const find = findMenuByPath(layoutMenus.menus, route.path) //模块自动选择
+  // 此时 menus 已经初始化完成（因为父组件使用 v-if 控制了渲染时机）
+  console.log("route.path", route.path)
+  const find = layoutMenus.find(route.path) //模块自动选择
+  console.log("find", find?.menus)
   if (find) {
-    let path = find.breadcrumb.shift()
-    layoutMenus.module = layoutMenus.menus.find((item) => item.path == path)?.id
+    console.log(find.menus[0])
+    layoutMenus.module = find.menus[0]?.id
+
     if (layoutMenus.module) {
       changeModule(0)
     }

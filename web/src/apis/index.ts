@@ -1,6 +1,7 @@
 export const index = async () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
         setTimeout(() => {
+
             resolve({
                 menus: [
                     {
@@ -89,7 +90,13 @@ export const index = async () => {
                                 component: "organization/personnel",
                             }
                         ]
-                    }
+                    },
+                    // {
+                    //     id: 12,
+                    //     name: "百度",
+                    //     path: "http://baidu.com",
+                    //     type: "link",
+                    // },
                 ]
             })
         }, 1000);

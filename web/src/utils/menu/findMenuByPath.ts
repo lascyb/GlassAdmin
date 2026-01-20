@@ -1,39 +1,32 @@
 import type {Menu} from "@/layouts/components/menus/types.ts";
 
 
-type MenuSearchResult = {
-    menu: Menu;
-    paths: Menu[]; // 从根节点到目标节点的路径数组
-    breadcrumb: string[]; // 路径名称数组
-};
-
-export function findMenuByPath(menus: Menu[], targetPath: string): MenuSearchResult | null {
-
-    function search(nodes: Menu[], currentPath: Menu[] = [], breadcrumb: string[] = []): MenuSearchResult | null {
-        for (const node of nodes) {
-            // 创建新的路径副本，避免引用问题
-            const newPath = [...currentPath, node];
-            const newBreadcrumb = [...breadcrumb, node.path];
-
-            // 如果找到目标节点
-            if (node.path === targetPath) {
-                return {
-                    menu: node,
-                    paths: newPath,
-                    breadcrumb: newBreadcrumb
-                };
+export const findMenuByPath = (ms: Menu[], path: string, prefix: string = "/"): Menu[] | undefined => {
+    for (const m of ms) {
+        if (m.type == "btn") {
+            continue
+        }
+        if (m.path.startsWith("/")) {
+            if (m.path == path) {
+                return [m]
+            } else if (m.children && m.children.length > 0) {
+                let res = findMenuByPath(m.children, path, m.path)
+                if (res) {
+                    return [m, ...res]
+                }
             }
-
-            // 递归搜索子节点
-            if (node.children && node.children.length > 0) {
-                const result = search(node.children, newPath, newBreadcrumb);
-                if (result) {
-                    return result;
+        } else {
+            let currentPath = prefix == "/" ? prefix + m.path : prefix + "/" + m.path
+            console.log("currentPath", currentPath)
+            if (currentPath == path) {
+                return [m]
+            } else if (m.children && m.children.length > 0) {
+                let res = findMenuByPath(m.children, path, currentPath)
+                if (res) {
+                    return [m, ...res]
                 }
             }
         }
-        return null;
     }
-
-    return search(menus);
+    return undefined
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {views} from "@/utils/menu/menusToRoutes.ts";
+import {views} from "@/router";
 import {ref} from "vue";
 
 // 将文件路径转换为相对路径格式（去掉 /src/views/ 前缀和 .vue 后缀）
