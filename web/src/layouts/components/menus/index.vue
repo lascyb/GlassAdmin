@@ -4,6 +4,9 @@ import {type PropType} from "vue";
 import type {Menu} from "./types.ts";
 import type {MenuItemClicked} from "element-plus";
 import {type NavigationFailure, useRoute} from "vue-router";
+import {useLayoutMenus} from "@/pinia/layout/menus.ts";
+
+const layoutMenus = useLayoutMenus()
 
 const props = defineProps({
   menus: {
@@ -20,7 +23,7 @@ const route = useRoute()
 </script>
 
 <template>
-  <el-menu @select="select" :default-active="route.path" router>
+  <el-menu @select="select" :default-active="route.path" router :collapse="layoutMenus.collapse">
     <MenuTree :menus="props.menus"></MenuTree>
   </el-menu>
 </template>

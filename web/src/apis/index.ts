@@ -51,20 +51,20 @@ export const index = async () => {
                                 type: "page",
                                 component: "auth/rule/index.vue",
                                 children: [
-                                    {
-                                        id: 7,
-                                        name: "页面管理",
-                                        type: "route",
-                                        path: "page",
-                                        component: "auth/rule/page",
-                                    },
-                                    {
-                                        id: 8,
-                                        name: "接口管理",
-                                        type: "route",
-                                        path: "api",
-                                        component: "auth/rule/api",
-                                    }
+                                    // {
+                                    //     id: 7,
+                                    //     name: "页面管理",
+                                    //     type: "page",
+                                    //     path: "page",
+                                    //     component: "auth/rule/page",
+                                    // },
+                                    // {
+                                    //     id: 8,
+                                    //     name: "接口管理",
+                                    //     type: "route",
+                                    //     path: "api",
+                                    //     component: "auth/rule/api",
+                                    // }
                                 ]
                             }
                         ]
@@ -99,7 +99,7 @@ export const index = async () => {
                     // },
                 ]
             })
-        }, 1000);
+        }, 100);
     })
     // reject()
 }

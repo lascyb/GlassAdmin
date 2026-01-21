@@ -3,7 +3,9 @@
 </script>
 
 <template>
-<div>rule-index</div>
+<div>
+  rule-index
+</div>
 </template>
 
 <style scoped>

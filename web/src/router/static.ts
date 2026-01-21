@@ -1,18 +1,17 @@
 import {type RouteRecordRaw} from "vue-router";
 
+
+//视图路由
 export const routes: RouteRecordRaw[] = [
-    // {
-    //     path: "/login", component: () => import("../views/login.vue")
-    // },
     {
-        name: "root", path: '/', component: () => import("@/layouts/index.vue"),
+        name: "root", path: '/', component: () => import("@/layouts/index.vue"), //全部走layout布局模板
         children: [
-            {name: "root-default", path: '', component: () => import("@/views/index.vue"),},
+            {name: "root-default", path: '', component: () => import("@/views/index.vue"),}, //默认首页快捷入口
             {
-                path: ":404*", component: () => import("@/layouts/components/error/404.vue")
+                path: ":404*", component: () => import("@/layouts/components/error/404.vue") // 默认 404 页面
             },
+            //动态路由插入点
         ],
     },
-
     {name: "login", path: '/login', component: () => import("@/views/login.vue"),},
 ]

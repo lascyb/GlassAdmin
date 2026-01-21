@@ -2,7 +2,7 @@
 import type {PropType} from "vue";
 import type {Menu, Extend} from "./types.ts";
 import {router} from "@/router";
-
+import {Grid} from "@element-plus/icons-vue";
 
 const props = defineProps({
   menus: {
@@ -27,6 +27,7 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
     <template v-if="menu.type == 'menu' && menu.children && menu.children.length > 0">
       <el-sub-menu :index="menu.path_full" :key="menu.id">
         <template #title>
+          <el-icon><Grid /></el-icon>
           <span>{{ menu.name }}</span>
         </template>
         <MenuTree :extend="{ ...props.extend, level: props.extend.level + 1 }" :menus="menu.children"/>
@@ -35,6 +36,7 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
     <template v-else-if="menu.type=='page' || menu.type=='link' || menu.type == 'iframe'">
       <el-menu-item :index="menu.path_full" :key="menu.id"
                     @click="(index: string, indexPath: string[], active: boolean)=>click(index, indexPath, active,menu)">
+        <el-icon><Grid /></el-icon>
         <span>{{ menu.name }}</span>
       </el-menu-item>
     </template>
