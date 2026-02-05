@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useLayoutSetting} from "@/pinia/layout/setting.ts";
-import GaSetting from "./setting.vue";
+import GaSetting from "../../../setting.vue";
 import {Tools} from "@element-plus/icons-vue";
 import {ref} from "vue";
 

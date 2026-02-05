@@ -15,7 +15,7 @@ const props = defineProps({
   },
 })
 const select = (index: string, indexPath: string[], item: MenuItemClicked, routerResult?: Promise<void | NavigationFailure>) => {
-  // console.log(index, indexPath, item, routerResult)
+  console.log(index, indexPath, item, routerResult)
 }
 
 const route = useRoute()

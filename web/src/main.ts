@@ -8,7 +8,7 @@ import 'element-plus/dist/index.css'
 
 const pinia = createPinia()
 pinia.use(createPersistedState({
-    key: id => `__GlassAdmin__${id}`,
+    key: id => `__GA__${id}`,
 }))
 const app = createApp(App)
 

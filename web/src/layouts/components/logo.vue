@@ -21,7 +21,7 @@ const collapse = () => {
     <div v-if="!layoutMenus.collapse" @click="toHome" class="flex items-center justify-center flex-1">GlassAdmin</div>
     <el-button :style="{'height': '100%','width': layoutMenus.collapse?'100%':'50px'}"
                @click="collapse" plain text type="primary">
-      <el-icon size="35" >
+      <el-icon size="26" >
         <Expand v-if="layoutMenus.collapse"/>
         <Fold v-else/>
       </el-icon>

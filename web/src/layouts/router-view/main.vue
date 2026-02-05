@@ -1,14 +1,13 @@
 <script setup lang="ts">
-
 </script>
 
 <template>
   <el-main>
-    <el-scrollbar height="calc(100vh - 100px)">
-      <router-view v-slot="{ Component }">
-        <transition>
+    <el-scrollbar height="calc(100vh - 70px)" class="pr-[16px]" noresize>
+      <router-view v-slot="{ Component, route }" >
+        <transition name="fade">
           <keep-alive>
-            <component :is="Component"/>
+            <component :is="Component" :key="route.fullPath"/>
           </keep-alive>
         </transition>
       </router-view>
@@ -19,5 +18,8 @@
 <style scoped>
 .el-main {
   background: var(--el-fill-color-light);
+  padding-right: 4px;
+  padding-bottom: 5px;
+  padding-top: 5px;
 }
 </style>
