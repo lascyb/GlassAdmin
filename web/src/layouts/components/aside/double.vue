@@ -22,7 +22,7 @@ watch(() => layoutMenus.collapse, (newVal) => {
     unMountModule()
     aside_with.value = "calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding)*2)";
   } else {
-    aside_with.value = "300px"
+    aside_with.value = "250px"
     mountModule()
   }
 })
@@ -81,5 +81,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-
+.el-aside {
+  --el-aside-width:250px;
+}
 </style>

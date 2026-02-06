@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {reactive, ref, shallowRef} from "vue";
+import {reactive, shallowRef} from "vue";
 import {Delete, Edit} from "@element-plus/icons-vue";
 import AddChildSvg from "@/assets/icons/add_child.svg"
 import {ElMessage} from "element-plus";
@@ -49,32 +49,28 @@ const clickEdit = (id: number) => {
     pid: undefined,
     id: id,
   })
-  ElMessage.success({message: `clickEdit:id:${id}`})
 }
 const clickDel = (id: number) => {
   ElMessage.success({message: `clickDel:id:${id}`})
 }
 const clickAddChild = (pid: number) => {
-  console.log(editController.show)
   Object.assign(editController, {
     show: true,
     pid: pid,
     id: undefined,
   })
-
-  ElMessage.success({message: `clickAddChild:id:${pid}`})
 }
 
 </script>
 
 <template>
-  <div>
+  <el-card style="min-height: max(calc(100vh - 100px),400px)">
     <el-table :data="data" size="small" border row-key="id" default-expand-all stripe highlight-current-row
               current-row-key="id">
       <el-table-column label="ID" prop="id"></el-table-column>
       <el-table-column label="名称" prop="name"></el-table-column>
       <el-table-column label="描述" prop="desc"></el-table-column>
-      <el-table-column label="操作">
+      <el-table-column label="操作" align="right" width="150px">
         <template #default="scope">
           <el-button title="编辑" size="small" plain type="primary" :icon="Edit"
                      @click="clickEdit(scope.row.id)"></el-button>
@@ -90,7 +86,7 @@ const clickAddChild = (pid: number) => {
                :pid="editController.pid" @close="(_)=>{
                  console.log(_)
                }"></edit-view>
-  </div>
+  </el-card>
 </template>
 
 <style scoped>

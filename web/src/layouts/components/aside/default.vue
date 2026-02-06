@@ -12,7 +12,7 @@ watch(() => layoutMenus.collapse, (newVal) => {
   if (newVal) {
     aside_with.value = "calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding)*2)";
   } else {
-    aside_with.value = "300px"
+    aside_with.value = "200px"
   }
 })
 
@@ -27,5 +27,7 @@ watch(() => layoutMenus.collapse, (newVal) => {
 </template>
 
 <style scoped>
-
+.el-aside {
+  --el-aside-width:200px;
+}
 </style>

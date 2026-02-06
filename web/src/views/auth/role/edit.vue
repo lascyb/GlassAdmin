@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from "vue";
 import {get} from "@/apis/auth/role.ts";
-import GaSelectRemote from "@/components/select-remote"
+import GaSelectRemote from "@components/select-remote/index.vue"
 
 const props = defineProps({
   id: Number,
@@ -43,11 +43,14 @@ onMounted(() => {
 
 <template>
   <el-dialog draggable :title="title" destroy-on-close lock-scroll top="12vh">
-    <el-scrollbar class="pr-[20px]" max-height="60vh">
+    <el-scrollbar class="pr-5" max-height="60vh">
       <el-form v-model="form" v-loading.lock="loading" element-loading-text="正在获取角色数据..." label-position="right"
                label-width="80px" class="min-h-[40vh]">
         <el-form-item label="上级角色" prop="pid">
-          <ga-select-remote  v-model="form.pid" placeholder="选择上级角色,或留空作为顶级角色"></ga-select-remote>
+          <ga-select-remote v-model="form.pid"
+                            remote-url="/mock"
+                            :init-option="{value:1,label:'超级管理员1'}"
+                            placeholder="选择上级角色,或留空作为顶级角色"></ga-select-remote>
         </el-form-item>
         <el-form-item label="角色名" prop="name">
           <el-input v-model.trim="form.name" placeholder="请输入角色名" clearable show-word-limit
