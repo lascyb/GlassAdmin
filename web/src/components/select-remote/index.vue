@@ -1,61 +1,95 @@
 <script setup lang="ts">
-import { get, post } from "@/utils/request";
-import type { SelectOptionProps } from "element-plus/es/components/select/src/select";
-import { computed, onMounted, ref, watch } from "vue";
+import {get, post} from "@/utils/request";
+import type {SelectOptionProps} from "element-plus/es/components/select/src/select";
+import {computed, onMounted, ref, useSlots, shallowRef} from "vue";
 
+/**
+ * 组件双向绑定的值，支持单选或多选
+ * 用途：用于存储选中的选项值
+ */
 const model = defineModel<any>()
 
+/**
+ * Props 组件属性接口
+ * 用途：定义组件接收的所有配置项
+ */
 interface Props {
-  /** 远程请求地址 */
+  /** 远程请求地址，用于获取选项数据 */
   remoteUrl: string
-  /** el-select 的 props 配置 */
+  /** el-select 的 props 配置，用于自定义选项的 value 和 label 字段名 */
   props?: SelectOptionProps
-  /** 请求方法，默认 GET */
+  /** 请求方法，默认 GET。{GET: 'GET', POST: 'POST'} */
   method?: 'GET' | 'POST'
-  /** 响应数据转换函数，将接口返回的数据转换为选项格式 */
+  /** 响应数据转换函数，将接口返回的数据转换为选项格式。用途：适配不同后端接口的数据结构 */
   transform?: (response: any) => { list: any[], total: number }
-  /** 每页数量，默认 10 */
+  /** 每页数量，默认 10。用途：控制分页大小 */
   pageSize?: number
-  /** 额外的请求参数，会合并到请求参数中 */
-  filter?: Record<string, any>
-  /** 自定义请求函数，如果提供则使用此函数替代默认的 fetch */
+  /** 额外的请求参数，会合并到请求参数中。用途：传递额外的筛选条件 */
+  filters?: Record<string, any>
+  /** 自定义请求函数，如果提供则使用此函数替代默认的 fetch。用途：支持自定义请求逻辑，如添加特殊认证、拦截器等 */
   requestFn?: (url: string, params: Record<string, any>) => Promise<any>
-  /** 初始化选项，用于回显。如果提供且与 v-model 值匹配，将直接使用，无需请求接口 */
+  /** 初始化选项，用于回显。如果提供且与 v-model 值匹配，将直接使用，无需请求接口。用途：编辑场景下的数据回显优化 */
   initOptions?: Record<string, any> | Record<string, any>[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   method: 'GET',
-  transform: undefined,
   pageSize: 10,
-  filter: () => ({}),
-  requestFn: undefined
+  filters: () => ({}),
 })
 
-const searchOptions = ref<Record<string, any>[]>([]) // 搜索结果选项
-const selectedOptions = ref<Record<string, any>[]>([]) // 已选中选项
+/** 搜索结果选项列表 */
+const options = ref<Record<string, any>[]>([])
+/** 加载状态，用于显示 loading 动画 */
 const loading = ref<boolean>(false)
+/** 当前页码 */
 const currentPage = ref<number>(1)
+/** 数据总数，用于分页计算 */
 const total = ref<number>(0)
+/** 当前搜索关键词，用于分页时保留搜索条件 */
 const currentQuery = ref<string>('')
 
-// 计算 valueKey，用于标识选项的值字段
+/**
+ * passthroughSlotNames 需要透传的 el-select 插槽名称列表
+ * 用途：自动兼容除 default、header、footer 外的所有 el-select 插槽
+ */
+const slots = useSlots()
+const passthroughSlotNames = shallowRef(Object.keys(slots).filter(name => !['default', 'header', 'footer'].includes(name)))
+
+/**
+ * valueKey 计算属性：用于标识选项的值字段
+ * 用途：支持自定义选项的值字段名，默认使用 'value'
+ */
 const valueKey = computed(() => props.props?.value || 'value')
+
+/**
+ * labelKey 计算属性：用于标识选项的标签字段
+ * 用途：支持自定义选项的标签字段名，默认使用 'label'
+ */
 const labelKey = computed(() => props.props?.label || 'label')
 
-// 计算是否需要显示分页器（数据量超过每页数量时才显示）
+/**
+ * shouldShowPagination 计算属性：判断是否需要显示分页器
+ * 用途：当数据量超过每页数量时才显示分页器，避免不必要的 UI 元素
+ */
 const shouldShowPagination = computed(() => {
   return total.value > props.pageSize
 })
 
-// 根据值获取选项
-const getOptionByValue = (value: any, optionsList: Record<string, any>[]): Record<string, any> | undefined => {
-  return optionsList.find(opt => opt[valueKey.value] === value)
-}
-
-
-// 处理响应数据转换
+/**
+ * transformResponse 处理响应数据转换
+ * 用途：将不同格式的接口响应统一转换为组件需要的格式 {list: [], total: 0}
+ * 支持的数据格式：
+ * - 直接数组：Array
+ * - 对象包含 list：{list: [], total: number}
+ * - 对象包含 data：{data: [], total: number}
+ * - 单个对象：Object（用于根据值查询单个选项的场景）
+ *
+ * @param response 接口返回的原始数据
+ * @returns 转换后的数据格式 {list: any[], total: number}
+ */
 const transformResponse = (response: any): { list: any[], total: number } => {
+  // 如果提供了自定义转换函数，优先使用
   if (props.transform) {
     return props.transform(response)
   }
@@ -75,12 +109,20 @@ const transformResponse = (response: any): { list: any[], total: number } => {
   }
 }
 
-// 执行请求
+/**
+ * executeRequest 执行请求
+ * 用途：统一处理请求逻辑，支持自定义请求函数或使用默认的 GET/POST 方法
+ *
+ * @param params 请求参数
+ * @returns Promise<any> 请求响应数据
+ */
 const executeRequest = async (params: Record<string, any>): Promise<any> => {
+  // 如果提供了自定义请求函数，优先使用
   if (props.requestFn) {
     return await props.requestFn(props.remoteUrl, params)
   }
 
+  // 根据 method 选择 GET 或 POST 请求
   return props.method === 'GET'
       ? await get(props.remoteUrl, params)
       : await post(props.remoteUrl, params)
@@ -88,28 +130,27 @@ const executeRequest = async (params: Record<string, any>): Promise<any> => {
 
 /**
  * refreshOptions 刷新选项列表
+ * 用途：核心方法，负责发起请求、处理响应、更新选项列表和分页信息
+ *
  * @param query 搜索关键词，如果为 undefined 则使用当前保存的查询关键词
- * @param page 页码
+ * @param page 页码，默认为 1
  * @param useModelValue 是否使用 model.value 作为查询条件（用于自动加载初始值）
  */
 const refreshOptions = async (query?: string, page: number = 1, useModelValue: boolean = false) => {
-  console.log("query", query)
-  console.log("currentQuery.value", currentQuery.value)
+  // 防抖优化：如果已有搜索关键词且新查询为空，则不执行请求
   if (currentQuery.value !== "" && (query == null || query == "")) {
     return
   }
 
   loading.value = true
   currentPage.value = page
-  // searchOptions.value = []  
   // 更新当前搜索关键词
-  if (query !== undefined) {
-    currentQuery.value = query || ''
-  }
+  currentQuery.value = query || ''
 
   try {
+    // 构建请求参数
     const params: Record<string, any> = {
-      filters: {...props.filter}
+      filters: {...props.filters}
     }
 
     // 如果使用 model.value 作为查询条件（用于自动加载初始值）
@@ -127,24 +168,18 @@ const refreshOptions = async (query?: string, page: number = 1, useModelValue: b
     params.page = page
     params.pageSize = props.pageSize
 
+    // 执行请求并转换响应数据
     const response = await executeRequest(params)
     const transformed = transformResponse(response)
 
-    // 处理搜索结果
-    if (useModelValue) {
-      // 使用 model.value 查询时，将返回结果添加到 searchOptions，供 watch 查找
-      searchOptions.value = transformed.list
-    } else {
-      // 普通搜索，更新搜索结果
-      searchOptions.value = transformed.list
-    }
-    // selectedOptions 的更新由 watch 统一处理，这里不需要重复处理
-
+    // 更新选项列表和总数
+    options.value = transformed.list
     total.value = transformed.total
   } catch (error) {
     console.error('远程搜索请求失败:', error)
+    // 如果是非初始值加载失败，清空选项列表
     if (!useModelValue) {
-      searchOptions.value = []
+      options.value = []
     }
     total.value = 0
   } finally {
@@ -154,159 +189,55 @@ const refreshOptions = async (query?: string, page: number = 1, useModelValue: b
 
 /**
  * remoteMethod 远程搜索方法
+ * 用途：作为 el-select 的 remote-method 回调，处理用户输入搜索
+ *
  * @param query 搜索关键词
  */
 const remoteMethod = (query: string) => {
-  refreshOptions(query, 1, false)
+  if (query) {
+    refreshOptions(query, 1, false)
+  } else {
+    refreshOptions(query, currentPage.value, false) //保持在同一页
+  }
 }
 
 /**
  * handlePageChange 分页变化处理
+ * 用途：处理用户切换页码时的逻辑，保留当前搜索关键词
+ *
  * @param page 页码
  */
 const handlePageChange = (page: number) => {
   // 分页时保留当前搜索关键词，分页不需要防抖
   refreshOptions(currentQuery.value, page, false)
 }
+
+/**
+ * cleanQuery 清除搜索关键词
+ * 用途：清除当前搜索条件并重新加载第一页数据
+ */
 const cleanQuery = () => {
   currentQuery.value = ''
   refreshOptions(undefined, 1, false)
 }
 
-// 监听 model 值变化，当值变化时自动刷新选项
-watch(() => model.value, (newVal, oldVal) => {
-  if (newVal != null && newVal !== oldVal) {
-    // 优先检查 initOptions
-    if (props.initOptions) {
-      const initOptionsArray = Array.isArray(props.initOptions)
-          ? props.initOptions
-          : [props.initOptions]
-
-      if (Array.isArray(newVal)) {
-        // 多选场景：检查 initOptions 是否完全匹配
-        if (initOptionsArray.length === newVal.length) {
-          const allMatched = newVal.every((item: any) =>
-              initOptionsArray.some((opt: any) => opt[valueKey.value] === item)
-          )
-          const allOptionsMatched = initOptionsArray.every((opt: any) =>
-              newVal.includes(opt[valueKey.value])
-          )
-
-          if (allMatched && allOptionsMatched) {
-            selectedOptions.value = initOptionsArray
-            return
-          }
-        }
-      } else {
-        // 单选场景：检查是否有匹配的选项
-        const matchedOption = initOptionsArray.find((opt: any) => opt[valueKey.value] === newVal)
-        if (matchedOption) {
-          selectedOptions.value = [matchedOption]
-          return
-        }
-      }
-    }
-
-    // 检查是否已经在已选中或搜索结果中存在
-    if (Array.isArray(newVal)) {
-      // 多选场景：从已选中和搜索结果中查找所有匹配的选项
-      const matchedOptions = newVal
-          .map((val: any) => getOptionByValue(val, [...selectedOptions.value, ...searchOptions.value]))
-          .filter((opt): opt is Record<string, any> => opt !== undefined)
-
-      if (matchedOptions.length === newVal.length) {
-        // 所有值都找到了对应的选项
-        selectedOptions.value = matchedOptions
-      } else {
-        // 有值找不到对应选项，需要加载
-        refreshOptions(undefined, 1, true).then(() => {
-          // 接口返回后，再次从 searchOptions 中查找
-          const matchedAfterLoad = newVal
-              .map((val: any) => getOptionByValue(val, [...selectedOptions.value, ...searchOptions.value]))
-              .filter((opt): opt is Record<string, any> => opt !== undefined)
-          if (matchedAfterLoad.length > 0) {
-            // 保留不在搜索结果中但仍在 model.value 中的已选选项
-            const existingValidOptions = selectedOptions.value.filter((opt: any) => {
-              const optValue = opt[valueKey.value]
-              return newVal.includes(optValue) && 
-                     !matchedAfterLoad.some((f: any) => f[valueKey.value] === optValue)
-            })
-            selectedOptions.value = [...existingValidOptions, ...matchedAfterLoad].filter((opt, index, self) => 
-              index === self.findIndex((o) => o[valueKey.value] === opt[valueKey.value])
-            )
-          }
-        })
-      }
-    } else {
-      // 单选场景
-      const existingOption = getOptionByValue(newVal, [...selectedOptions.value, ...searchOptions.value])
-
-      if (existingOption) {
-        // 如果已存在，移动到已选中分组
-        selectedOptions.value = [existingOption]
-      } else {
-        // 如果不存在，加载对应的选项
-        refreshOptions(undefined, 1, true).then(() => {
-          // 接口返回后，再次从 searchOptions 中查找
-          const foundAfterLoad = getOptionByValue(newVal, [...selectedOptions.value, ...searchOptions.value])
-          if (foundAfterLoad) {
-            selectedOptions.value = [foundAfterLoad]
-          }
-        })
-      }
-    }
-  } else if (newVal == null) {
-    // 值被清空时，清空已选中选项
-    selectedOptions.value = []
-  }
-}, {immediate: false})
-
-// 组件挂载时，如果 model.value 存在，自动加载对应的选项
+/**
+ * 组件挂载时的初始化逻辑
+ * 用途：根据 v-model 初始值和 initOptions 决定是否需要自动加载选项数据
+ * 优先级：initOptions > model.value > 空列表
+ */
 onMounted(() => {
-  if (model.value != null) {
-    // 优先使用 initOptions
-    if (props.initOptions) {
-      const initOptionsArray = Array.isArray(props.initOptions)
-          ? props.initOptions
-          : [props.initOptions]
-
-      // initOptions 要求必须与 model.value 完全匹配
-      if (Array.isArray(model.value)) {
-        // 多选场景：检查 initOptions 数组长度和值是否完全匹配
-        if (initOptionsArray.length === model.value.length) {
-          // 检查每个 model.value 是否都在 initOptions 中有对应项
-          const allMatched = model.value.every((item: any) =>
-              initOptionsArray.some((opt: any) => opt[valueKey.value] === item)
-          )
-          // 检查每个 initOptions 是否都在 model.value 中有对应值
-          const allOptionsMatched = initOptionsArray.every((opt: any) =>
-              model.value.includes(opt[valueKey.value])
-          )
-
-          if (allMatched && allOptionsMatched) {
-            selectedOptions.value = initOptionsArray
-            searchOptions.value = []
-            return
-          }
-        }
-      } else {
-        // 单选场景：检查是否有匹配的选项
-        const matchedOption = initOptionsArray.find((opt: any) => opt[valueKey.value] === model.value)
-        if (matchedOption) {
-          // 如果找到匹配的选项，直接使用，无需请求接口
-          selectedOptions.value = [matchedOption]
-          searchOptions.value = []
-          return
-        }
-      }
-    }
-
-    // 如果没有 initOptions 或没有匹配的选项，则请求接口
+  // 优先使用 initOptions（编辑场景下的回显优化）
+  if (props.initOptions) {
+    options.value = Array.isArray(props.initOptions)
+        ? props.initOptions
+        : [props.initOptions]
+  } else if (model.value != null) {
+    // 如果没有 initOptions 但 model.value 存在，则请求接口加载对应选项
     refreshOptions(undefined, 1, true)
   } else {
     // 初始加载空列表，等待用户搜索
-    searchOptions.value = []
-    selectedOptions.value = []
+    options.value = []
   }
 })
 </script>
@@ -318,45 +249,42 @@ onMounted(() => {
       remote
       :remote-method="remoteMethod"
       :loading="loading"
-      :props="props"
+      :props="props.props"
+      :options="options"
       :value-on-clear="undefined"
-      remote-show-suffix
       :debounce="300"
   >
+
     <template #header v-if="currentQuery">
       当前搜索：
       <el-tag closable @close="cleanQuery">{{ currentQuery }}</el-tag>
     </template>
-    <!-- 搜索结果分组 -->
-    <el-option-group v-if="searchOptions.length > 0" label="搜索结果">
-      <el-option
-          v-for="option in searchOptions"
-          :key="option[valueKey]"
-          :label="option[labelKey]"
-          :value="option[valueKey]"
-      />
-    </el-option-group>
+    <!-- 搜索结果 -->
+    <el-option
+        v-for="option in options"
+        :key="option[valueKey]"
+        :label="option[labelKey]"
+        :value="option[valueKey]"
+    />
 
-    <!-- 已选中数据分组 -->
-    <el-option-group v-if="selectedOptions.length > 0" label="已选中">
-      <el-option
-          v-for="option in selectedOptions"
-          :key="option[valueKey]"
-          :label="option[labelKey]"
-          :value="option[valueKey]"
-      />
-    </el-option-group>
-
-    <template #footer v-if="shouldShowPagination">
+    <template #footer>
       <el-pagination
+          v-if="shouldShowPagination"
           :current-page="currentPage"
           :total="total"
           :page-size="pageSize"
           :pager-count="5"
-          small
-          layout="prev, pager, next"
+          size="small"
+          layout="prev, pager, next, jumper, ->, total"
           @current-change="handlePageChange"
       />
+    </template>
+    <template
+        v-for="name in passthroughSlotNames"
+        :key="name"
+        #[name]="slotProps"
+    >
+      <slot :name="name" v-bind="slotProps"/>
     </template>
   </el-select>
 </template>

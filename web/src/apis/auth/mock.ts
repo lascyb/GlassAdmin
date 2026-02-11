@@ -34,6 +34,7 @@ const allMockData = generateMockData(1000)
  * @param params 请求参数
  */
 export const mockRoleRequestFn = async (_url: string, params: Record<string, any>) => {
+    console.log("mockRoleRequestFn",params)
   // 模拟网络延迟
   // await new Promise(resolve => setTimeout(resolve, 1000))
   
