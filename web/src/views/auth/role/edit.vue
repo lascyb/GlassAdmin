@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {onMounted, reactive, ref} from "vue";
-import {get} from "@/apis/auth/role.ts";
-import GaSelectRemote from "@components/select-remote/index.vue"
+import { mockRoleRequestFn } from "@/apis/auth/mock.ts";
+import { get } from "@/apis/auth/role.ts";
+import GaSelectRemote from "@components/select-remote/index.vue";
+import { onMounted, reactive, ref } from "vue";
 
 const props = defineProps({
   id: Number,
@@ -10,7 +11,7 @@ const props = defineProps({
 
 const form = reactive<{
   id?: number
-  pid?: number
+  pid?: number[]
   name: string
   desc: string
 }>({
@@ -49,7 +50,9 @@ onMounted(() => {
         <el-form-item label="上级角色" prop="pid">
           <ga-select-remote v-model="form.pid"
                             remote-url="/mock"
-                            :init-option="{value:1,label:'超级管理员1'}"
+                            multiple
+                            :request-fn="mockRoleRequestFn"
+                            :init-options="[{value:1,label:'超级管理员'}]"
                             placeholder="选择上级角色,或留空作为顶级角色"></ga-select-remote>
         </el-form-item>
         <el-form-item label="角色名" prop="name">

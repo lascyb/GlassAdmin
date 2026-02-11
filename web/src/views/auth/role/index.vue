@@ -56,7 +56,7 @@ const clickDel = (id: number) => {
 const clickAddChild = (pid: number) => {
   Object.assign(editController, {
     show: true,
-    pid: pid,
+    pid: [pid],
     id: undefined,
   })
 }
