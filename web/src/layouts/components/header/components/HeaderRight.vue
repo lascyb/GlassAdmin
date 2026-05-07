@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {useLayoutSetting} from "@/pinia/layout/setting.ts";
-import GaSetting from "../../../setting.vue";
 import {Tools} from "@element-plus/icons-vue";
 import {ref} from "vue";
 
@@ -35,7 +34,6 @@ const activeName = ref("system")
     <el-icon @click="setting.showSetting()" size="20">
       <Tools/>
     </el-icon>
-    <ga-setting></ga-setting>
   </div>
 </template>
 
