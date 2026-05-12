@@ -1,14 +1,30 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
+import { useAdmin } from '@/pinia/admin'
+import { useSecurityRsa } from '@/pinia/security/rsa'
+import { post } from '@/utils/request'
+import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const securityRsa = useSecurityRsa()
+const admin = useAdmin()
+
+/** LoginPasswordRes 密码登录接口返回（expireAt 为秒级时间戳） */
+interface LoginPasswordRes {
+  code: number
+  msg: string
+  data: null | {
+    token: string
+    expireAt: number
+    user: { id: number; username: string; nickname: string; role_id?: number | null }
+  }
+}
 
 // 登录方式：password | sms
 const loginType = ref<'password' | 'sms'>('password')
-
+const logining = ref<boolean>(false)
 // 密码登录表单
 const passwordForm = reactive({
   username: '',
@@ -32,23 +48,23 @@ const getVerificationCode = () => {
     ElMessage.warning('请输入手机号')
     return
   }
-  
+
   // 验证手机号格式
   const phoneRegex = /^1[3-9]\d{9}$/
   if (!phoneRegex.test(smsForm.phone)) {
     ElMessage.warning('请输入正确的手机号')
     return
   }
-  
+
   // 这里应该调用API发送验证码
   ElMessage.success('验证码已发送')
-  
+
   // 开始倒计时
   countdown.value = 60
   const timer = setInterval(() => {
     countdown.value--
     codeButtonText.value = `${countdown.value}秒后重试`
-    
+
     if (countdown.value <= 0) {
       clearInterval(timer)
       codeButtonText.value = '获取验证码'
@@ -62,10 +78,37 @@ const handlePasswordLogin = async () => {
     ElMessage.warning('请输入用户名和密码')
     return
   }
-  
-  // 这里应该调用登录API
-  ElMessage.success('登录成功')
-  router.push('/')
+  logining.value = true
+  try {
+    const { serial: rsaSerial, texts: [encryptedUsername,encryptedPassword] } = await securityRsa.encrypt(passwordForm.username, passwordForm.password)
+    if (!rsaSerial || !encryptedUsername || !encryptedPassword) {
+      ElMessage.error('获取登录公钥失败，请稍后重试')
+      return
+    }
+
+    const res = await post<LoginPasswordRes>('login/password', {
+      username: encryptedUsername,
+      password: encryptedPassword,
+      remember: passwordForm.remember,
+    }, {
+      headers: {
+        'X-RSA-Serial': rsaSerial,
+      },
+    })
+    if (res.code !== 0 || !res.data?.token || !res.data?.user || !res.data?.expireAt) {
+      ElMessage.error(res.msg || '登录失败')
+      return
+    }
+
+    admin.init(res.data.token, res.data.user, res.data.expireAt, passwordForm.remember)
+
+    ElMessage.success('登录成功')
+    await router.push('/')
+  } catch(e) {
+    ElMessage.error('登录请求失败'+e)
+  } finally {
+    logining.value = false
+  }
 }
 
 // 验证码登录
@@ -77,7 +120,7 @@ const handleSmsLogin = async () => {
   
   // 这里应该调用登录API
   ElMessage.success('登录成功')
-  router.push('/')
+  await router.push('/')
 }
 
 // 第三方登录
@@ -129,7 +172,7 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
             <el-form-item>
               <div class="form-options">
                 <el-checkbox v-model="passwordForm.remember">记住我</el-checkbox>
-                <el-link type="primary" :underline="false">忘记密码？</el-link>
+                <el-link type="primary">忘记密码？</el-link>
               </div>
             </el-form-item>
             <el-form-item>
@@ -138,6 +181,7 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
                 size="large"
                 class="login-button"
                 @click="handlePasswordLogin"
+                :loading="logining"
               >
                 登录
               </el-button>

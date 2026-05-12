@@ -274,7 +274,7 @@ onMounted(() => {
           :total="total"
           :page-size="pageSize"
           :pager-count="5"
-          size="small"
+
           layout="prev, pager, next, jumper, ->, total"
           @current-change="handlePageChange"
       />

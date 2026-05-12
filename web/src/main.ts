@@ -8,7 +8,7 @@ import 'element-plus/dist/index.css'
 
 const pinia = createPinia()
 pinia.use(createPersistedState({
-    key: id => `__GA__${id}`,
+    key: id => `${import.meta.env.VITE_PERSIST_STORAGE_PREFIX}${id}`,
 }))
 const app = createApp(App)
 

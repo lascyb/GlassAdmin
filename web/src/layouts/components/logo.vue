@@ -1,32 +1,51 @@
 <script setup lang="ts">
-import {useRouter} from "vue-router";
-import {useLayoutMenus} from "@/pinia/layout/menus";
-import {Expand, Fold} from "@element-plus/icons-vue";
+import { useLayoutMenus } from "@/pinia/layout/menus"
+import { Expand, Fold } from "@element-plus/icons-vue"
+import { computed } from "vue"
+import { useRouter } from "vue-router"
 
 const layoutMenus = useLayoutMenus()
 const router = useRouter()
 const toHome = () => {
-  layoutMenus.module = undefined
-  router.push('/')
+    layoutMenus.module = undefined
+    router.push('/')
 }
 
 const collapse = () => {
-  layoutMenus.collapse = !layoutMenus.collapse
+    layoutMenus.collapse = !layoutMenus.collapse
 }
+
+/** btnStyle 折叠按钮宽度过渡 */
+const btnStyle = computed(() => ({
+    height: '100%',
+    width: layoutMenus.collapse ? '100%' : '50px',
+    transition: 'width var(--ga-duration-slow) var(--ga-ease)',
+}))
 </script>
 
 <template>
-  <div style="height: 60px;border-right: 1px solid var(--el-menu-border-color);box-sizing: border-box"
-       class="flex items-center justify-between">
-    <div v-if="!layoutMenus.collapse" @click="toHome" class="flex items-center justify-center flex-1">GlassAdmin</div>
-    <el-button :style="{'height': '100%','width': layoutMenus.collapse?'100%':'50px'}"
-               @click="collapse" plain text type="primary">
-      <el-icon size="26" >
-        <Expand v-if="layoutMenus.collapse"/>
-        <Fold v-else/>
-      </el-icon>
-    </el-button>
-  </div>
+    <div
+        style="height: 60px; border-right: 1px solid var(--el-menu-border-color); box-sizing: border-box"
+        class="ga-logo-bar flex items-center justify-between"
+    >
+        <div
+            v-if="!layoutMenus.collapse"
+            class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
+            @click="toHome"
+        >
+            GlassAdmin
+        </div>
+        <el-button :style="btnStyle" plain text type="primary" @click="collapse">
+            <el-icon size="26">
+                <Expand v-if="layoutMenus.collapse" />
+                <Fold v-else />
+            </el-icon>
+        </el-button>
+    </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.ga-logo-bar {
+    transition: border-color var(--ga-duration) var(--ga-ease);
+}
+</style>

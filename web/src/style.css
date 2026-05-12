@@ -4,8 +4,59 @@ html, body, #app {
     margin: 0;
 }
 
+/**
+ * 全局动效时长与曲线（侧栏、路由、布局壳等共用）
+ * prefers-reduced-motion 时近似关闭动画
+ */
 :root {
-    .el-header {
-        --el-header-padding: 0;
+    --ga-duration: 0.22s;
+    --ga-duration-slow: 0.32s;
+    --ga-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ga-ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --ga-duration: 0.01ms;
+        --ga-duration-slow: 0.01ms;
     }
+}
+
+/**
+ * ga-page 主内容区路由切换（与 router-view/main 中 name 一致），仅淡入淡出
+ */
+.ga-page-enter-active,
+.ga-page-leave-active {
+    transition: opacity var(--ga-duration) var(--ga-ease);
+}
+
+.ga-page-enter-from,
+.ga-page-leave-to {
+    opacity: 0;
+}
+
+/**
+ * page-fade 布局壳 loading ↔ 主布局（layouts/index.vue）
+ */
+.page-fade-enter-active,
+.page-fade-leave-active {
+    transition:
+        opacity var(--ga-duration-slow) var(--ga-ease-out),
+        transform var(--ga-duration-slow) var(--ga-ease-out);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.page-fade-enter-to,
+.page-fade-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.el-header {
+    --el-header-padding: 0;
 }

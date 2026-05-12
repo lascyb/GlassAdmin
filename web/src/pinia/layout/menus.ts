@@ -16,13 +16,14 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
     const collapse = ref<boolean>(false)
 
     const init = (data: Menu[]) => {
-
         let routes = menusToRoutes(data);
         if (routes) {
             for (const route of routes) {
+                console.log("route", route)
                 router.addRoute("root", route)
             }
         }
+
         menus.value = data;
     }
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type {PropType} from "vue";
-import type {Menu, Extend} from "./types.ts";
-import {router} from "@/router";
-import {Grid} from "@element-plus/icons-vue";
+import { router } from "@/router";
+import MenuIcon from "@/components/menu-icon/index.vue";
+import type { PropType } from "vue";
+import type { Extend, Menu } from "./types.ts";
 
 const props = defineProps({
   menus: {
@@ -16,6 +16,7 @@ const props = defineProps({
     })
   }
 })
+
 const click = (index: string, indexPath: string[], active: boolean, menu: Menu) => {
   console.log(index, indexPath, active, menu)
   console.log(router.getRoutes())
@@ -27,16 +28,16 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
     <template v-if="menu.type == 'menu' && menu.children && menu.children.length > 0">
       <el-sub-menu :index="menu.path_full" :key="menu.id">
         <template #title>
-          <el-icon><Grid /></el-icon>
+          <MenuIcon :icon="menu.icon" />
           <span>{{ menu.name }}</span>
         </template>
         <MenuTree :extend="{ ...props.extend, level: props.extend.level + 1 }" :menus="menu.children"/>
       </el-sub-menu>
     </template>
-    <template v-else-if="menu.type=='page' || menu.type=='link' || menu.type == 'iframe'">
+    <template v-else-if="menu.type == 'page' || menu.type == 'view' || menu.type == 'route' || menu.type == 'link' || menu.type == 'iframe'">
       <el-menu-item :index="menu.path_full" :key="menu.id"
                     @click="(index: string, indexPath: string[], active: boolean)=>click(index, indexPath, active,menu)">
-        <el-icon><Grid /></el-icon>
+        <MenuIcon :icon="menu.icon" />
         <span>{{ menu.name }}</span>
       </el-menu-item>
     </template>

@@ -4,10 +4,10 @@
 <template>
   <el-main>
     <el-scrollbar height="calc(100vh - 70px)" class="pr-[16px]" noresize>
-      <router-view v-slot="{ Component, route }" >
-        <transition name="fade">
+      <router-view v-slot="{ Component, route }">
+        <transition name="ga-page" mode="out-in">
           <keep-alive>
-            <component :is="Component" :key="route.fullPath"/>
+            <component :is="Component" :key="route.fullPath" />
           </keep-alive>
         </transition>
       </router-view>

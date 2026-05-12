@@ -1,105 +1,22 @@
-export const index = async () => {
-    return new Promise((resolve, _) => {
-        setTimeout(() => {
+import type { Menu } from '@/layouts/components/menus/types'
+import { get } from '@/utils/request'
 
-            resolve({
-                menus: [
-                    {
-                        id: 9,
-                        name: "仪表盘",
-                        path: "dashboard",
-                        type: "page",
-                        component: "dashboard",
-                    },
-                    {
-                        id: 1,
-                        name: "权限管理",
-                        path: "auth",
-                        type: "menu",
-                        children: [
-                            {
-                                id: 2,
-                                name: "角色管理",
-                                path: "role",
-                                type: "page",
-                                component: "auth/role/index.vue",
-                                children: [
-                                    {
-                                        id: 9,
-                                        name: "添加",
-                                        path: "add",
-                                        type: "btn",
-                                    },
-                                    {
-                                        id: 10,
-                                        name: "编辑",
-                                        path: "edit",
-                                        type: "btn",
-                                    },
-                                    {
-                                        id: 11,
-                                        name: "删除",
-                                        path: "del",
-                                        type: "btn",
-                                    }
-                                ]
-                            },
-                            {
-                                id: 3,
-                                name: "规则管理",
-                                path: "rule",
-                                type: "page",
-                                component: "auth/rule/index.vue",
-                                children: [
-                                    // {
-                                    //     id: 7,
-                                    //     name: "页面管理",
-                                    //     type: "page",
-                                    //     path: "page",
-                                    //     component: "auth/rule/page",
-                                    // },
-                                    // {
-                                    //     id: 8,
-                                    //     name: "接口管理",
-                                    //     type: "route",
-                                    //     path: "api",
-                                    //     component: "auth/rule/api",
-                                    // }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        id: 4,
-                        name: "组织架构",
-                        path: "/organization",
-                        type: "menu",
-                        children: [
-                            {
-                                id: 5,
-                                name: "部门管理",
-                                path: "/organization/department",
-                                type: "page",
-                                component: "organization/department",
-                            },
-                            {
-                                id: 6,
-                                name: "人员管理",
-                                path: "/organization/personnel",
-                                type: "page",
-                                component: "organization/personnel",
-                            }
-                        ]
-                    },
-                    // {
-                    //     id: 12,
-                    //     name: "百度",
-                    //     path: "http://baidu.com",
-                    //     type: "link",
-                    // },
-                ]
-            })
-        }, 100);
-    })
-    // reject()
+/** ApiEnvelope 后端统一 JSON 外壳 */
+export type ApiEnvelope<T> = {
+    code: number
+    msg: string
+    data: T
+}
+
+/**
+ * index 拉取当前用户动态菜单（需登录 token）
+ *
+ * @returns menus 供 useLayoutMenus.init
+ */
+export const index = async (): Promise<{ menus: Menu[] }> => {
+    const res = await get<ApiEnvelope<{ menus: Menu[] }>>('menu/menus')
+    if (res.code !== 0) {
+        throw new Error(res.msg || '菜单加载失败')
+    }
+    return res.data
 }

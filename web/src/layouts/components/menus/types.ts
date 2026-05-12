@@ -3,7 +3,10 @@ export type Menu = {
     name: string
     path: string
     path_full: string; //根据层级前端自动补全
-    type: 'menu' | 'page' | 'route' | 'btn' | 'iframe' | 'link'
+    /** {menu:目录,page:页面(兼容),view:页面,route:路由,btn:按钮,iframe:内嵌,link:外链} */
+    type: 'menu' | 'page' | 'view' | 'route' | 'btn' | 'iframe' | 'link'
+    /** 图标存储串：ep:组件名、url:图片地址 */
+    icon?: string | null
     component?: string
     // components?: { [key: string]: any }
     children?: Menu[]
@@ -12,8 +15,9 @@ export type Extend = {
     level: number
 }
 export const tree = {
-    "menu": ["menu", "page", "route", "btn", "iframe", "link"],
-    "page": ["page", "route", "btn"],
+    "menu": ["menu", "page", "view", "route", "btn", "iframe", "link"],
+    "page": ["page", "view", "route", "btn"],
+    "view": ["page", "view", "route", "btn"],
     "route": ["route", "btn"],
     "btn": [],
     "iframe": [],

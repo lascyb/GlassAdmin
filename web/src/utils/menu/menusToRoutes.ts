@@ -52,7 +52,7 @@ export const menusToRoutes = (menus: Menu[] | undefined, parentPath: string = "/
         }
 
         menu.path_full = fullPath;
-        if (menu.type == "menu" || menu.type == "page" || menu.type == "route") {
+        if (menu.type == "menu" || menu.type == "page" || menu.type == "view" || menu.type == "route") {
             let component = getComponent(menu.component)
             let children = menusToRoutes(menu.children, fullPath)
             if (children || component) {
