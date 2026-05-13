@@ -1,5 +1,5 @@
 import { del, get, post, put } from '@/utils/request'
-import type { ApiEnvelope } from '@/apis/index'
+import type { ApiEnvelope } from '@/apis'
 
 /** RoleRow 角色树节点 */
 export type RoleRow = {

@@ -80,7 +80,7 @@ class Login extends BaseController
         $ttl      = $remember ? 604800 : 86400;
         $token    = bin2hex(random_bytes(32));
         $expireAt = time() + $ttl;
-        Cache::set('admin_token:' . $token, ['uid' => (int) $user->getAttr('id')], $ttl);
+        Cache::set('admin_token:' . $token, ['admin_id' => (int) $user->getAttr('id'),"role_id"=> (int) $user->getAttr("role_id")], $ttl);
 
         return json([
             'code' => 0,
@@ -92,7 +92,6 @@ class Login extends BaseController
                     'id'       => (int) $user->getAttr('id'),
                     'username' => (string) $user->getAttr('username'),
                     'nickname' => (string) ($user->getAttr('nickname') ?: $user->getAttr('username')),
-                    'role_id'  => $user->getAttr('role_id') !== null ? (int) $user->getAttr('role_id') : null,
                 ],
             ],
         ]);

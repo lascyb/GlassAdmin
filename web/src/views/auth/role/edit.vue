@@ -207,6 +207,7 @@ const submit = async () => {
                             :data="permTree"
                             node-key="id"
                             show-checkbox
+                            :check-strictly="true"
                             default-expand-all
                             :props="{ children: 'children', label: 'name' }"
                         />

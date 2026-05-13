@@ -14,7 +14,7 @@ use think\Response;
 class AdminAuth
 {
     /**
-     * handle 解析 token 并写入 request->adminId
+     * handle 解析 token 并写入 request->admin_id,role_id
      *
      * @param Request $request
      * @param Closure $next
@@ -34,10 +34,11 @@ class AdminAuth
             return json(['code' => 401, 'msg' => '未登录', 'data' => null], 401);
         }
         $payload = Cache::get('admin_token:' . $token);
-        if (!is_array($payload) || empty($payload['uid'])) {
+        if (!is_array($payload) || empty($payload['admin_id'])) {
             return json(['code' => 401, 'msg' => '登录已失效', 'data' => null], 401);
         }
-        $request->adminId = (int) $payload['uid'];
+        $request->admin_id = (int) $payload['admin_id'];
+        $request->role_id = (int) $payload['role_id'];
 
         return $next($request);
     }

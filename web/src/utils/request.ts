@@ -108,6 +108,8 @@ export const useFetch = createFetch({
     },
     fetchOptions: {
         mode: 'cors',
+        credentials: "omit",
+        // cache: "default"
     },
 })
 

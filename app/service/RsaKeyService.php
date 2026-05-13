@@ -4,17 +4,19 @@ declare (strict_types = 1);
 namespace app\service;
 
 use app\model\RsaKey;
+use Cassandra\Uuid;
 use Throwable;
 
 class RsaKeyService
 {
     private int $defaultExpireSeconds = 3600;
+    private int $defaultSkipSeconds = 600;
 
     public function getAvailablePublicKey(): ?array
     {
         $now = time();
         $key = RsaKey::where('status', 1)
-            ->where('expire_time', '>', $now)
+            ->where('expire_time', '>', $now+$this->defaultSkipSeconds)
             ->order('expire_time', 'asc')
             ->find();
 
@@ -38,7 +40,7 @@ class RsaKeyService
         $now = time();
         $key = RsaKey::where('serial', $serial)
             ->where('status', 1)
-            ->where('expire_time', '>', $now)
+            ->where('expire_time', '>', $now-$this->defaultSkipSeconds)
             ->find();
         if ($key === null) {
             return null;
@@ -91,11 +93,9 @@ class RsaKeyService
                 return null;
             }
 
-
-
             $key = new RsaKey();
             $key->save([
-                'serial'      => mb_strtolower(base_convert(date('YmdHis'),10,36) . bin2hex(random_bytes(8))),
+                'serial'      => uniqid(),
                 'public_key'  => $publicInfo['key'],
                 'private_key' => $privateKey,
                 'expire_time' => time() + $expireSeconds,

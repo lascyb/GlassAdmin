@@ -32,6 +32,6 @@ class Security extends BaseController
                 'publicKey' => $key['public_key'],
                 'expireAt'  => $key['expire_time'],
             ],
-        ]);
+        ])->cacheControl("public, max-age=60");
     }
 }

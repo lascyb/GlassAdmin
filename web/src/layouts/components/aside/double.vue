@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { User } from '@element-plus/icons-vue'
 import GaLogo from '../logo.vue'
 import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'

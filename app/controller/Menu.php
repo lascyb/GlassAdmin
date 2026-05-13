@@ -21,14 +21,8 @@ class Menu extends BaseController
      */
     public function menus(): Response
     {
-        $uid = (int) $this->request->adminId;
-        /** @var Admin|null $admin */
-        $admin = Admin::field("role_id")->find($uid);
-        if (!$admin) {
-            return json(['code' => 401, 'msg' => '用户不存在', 'data' => null], 401);
-        }
+        $roleId = (int) $this->request->role_id;
 
-        $roleId = (int) ($admin->getAttr('role_id') ?? 0);
         $rows    = Rule::where('scope', 'frontend')
             ->where('status', 1)
             ->order('sort', 'asc')

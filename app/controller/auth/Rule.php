@@ -5,6 +5,8 @@ namespace app\controller\auth;
 
 use app\BaseController;
 use app\model\auth\Rule as RuleModel;
+use app\model\auth\RuleFrontendApi;
+use Exception;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -52,9 +54,7 @@ class Rule extends BaseController
         }
         $data = $row->toArray();
         if ($data['scope'] === 'frontend' && in_array($data['type'], ['view', 'btn'], true)) {
-            $data['api_ids'] = Db::name('auth_rule_frontend_api')
-                ->where('frontend_rule_id', $id)
-                ->column('backend_rule_id');
+            $data['api_ids'] = RuleFrontendApi::where('frontend_rule_id', $id)->column('backend_rule_id');
             $data['api_ids'] = array_map('intval', $data['api_ids']);
         }
 
@@ -71,7 +71,7 @@ class Rule extends BaseController
         if (!$request->isPost()) {
             return json(['code' => 405, 'msg' => '仅支持 POST', 'data' => null]);
         }
-        $payload = array_merge($request->post(), $this->parseJsonBody($request));
+        $payload = $request->post();
         $err     = $this->validatePayload($payload, true);
         if ($err !== null) {
             return json(['code' => 400, 'msg' => $err, 'data' => null]);
@@ -100,7 +100,7 @@ class Rule extends BaseController
         if (!$row) {
             return json(['code' => 404, 'msg' => '不存在', 'data' => null]);
         }
-        $payload = array_merge($row->toArray(), $this->parseJsonBody($request), $request->put());
+        $payload = array_merge($row->toArray(), $request->put());
         $err     = $this->validatePayload($payload, false);
         if ($err !== null) {
             return json(['code' => 400, 'msg' => $err, 'data' => null]);
@@ -146,34 +146,32 @@ class Rule extends BaseController
         if (!$request->isPost()) {
             return json(['code' => 405, 'msg' => '仅支持 POST', 'data' => null]);
         }
-        $post = array_merge($request->post(), $this->parseJsonBody($request));
-        $fid    = (int) ($post['frontend_rule_id'] ?? 0);
-        $apiIds = $post['api_rule_ids'] ?? [];
+        $apiIds = $request->post('api_ids/a',[],"is_int");
+        $fid = $request->post('frontend_rule_id/d',0,);
         if ($fid <= 0 || !is_array($apiIds)) {
             return json(['code' => 400, 'msg' => '参数无效', 'data' => null]);
         }
-        $apiIds = array_map('intval', $apiIds);
-        $front  = RuleModel::find($fid);
-        if (!$front || $front->getAttr('scope') !== 'frontend' || !in_array($front->getAttr('type'), ['view', 'btn'], true)) {
-            return json(['code' => 400, 'msg' => '仅允许对前端 view/btn 绑定接口', 'data' => null]);
+
+        $front  = RuleModel::where([["id","=",$fid],["scope","=","frontend"],["type","in",["view","btn"]]])->find();
+        if (!$front) {
+            return json(['code' => 400, 'msg' => '数据不存在，仅允许对前端 view/btn 绑定接口', 'data' => null]);
         }
+        $apiIds = RuleModel::where([["id","in", $apiIds],['scope',"=", 'backend'],["type","=","api"]])->column("id");
+        $insert = [];
         foreach ($apiIds as $bid) {
-            if ($bid <= 0) {
-                return json(['code' => 400, 'msg' => 'api_rule_ids 含无效项', 'data' => null]);
-            }
-            $api = RuleModel::find($bid);
-            if (!$api || $api->getAttr('scope') !== 'backend' || $api->getAttr('type') !== 'api') {
-                return json(['code' => 400, 'msg' => '仅允许绑定后端 api 类型规则', 'data' => null]);
-            }
-        }
-        Db::name('auth_rule_frontend_api')->where('frontend_rule_id', $fid)->delete();
-        foreach (array_unique($apiIds) as $bid) {
-            Db::name('auth_rule_frontend_api')->insert([
+            $insert[] = [
                 'frontend_rule_id' => $fid,
                 'backend_rule_id'  => $bid,
-            ]);
+            ];
         }
-
+        try {
+            RuleFrontendApi::where('frontend_rule_id', $fid)->delete();
+            if (count($insert)>0){
+                RuleFrontendApi::insertAll($insert);
+            }
+        }catch (Exception $exception){
+            return json(['code' => 400, 'msg' => $exception->getMessage(), 'data' => null]);
+        }
         return json(['code' => 0, 'msg' => 'ok', 'data' => null]);
     }
 
@@ -182,7 +180,7 @@ class Rule extends BaseController
      *
      * @return Response
      */
-    public function apiList(): Response
+    private function apiList(): Response
     {
         $list = RuleModel::where('scope', 'backend')
             ->where('type', 'api')
@@ -228,26 +226,6 @@ class Rule extends BaseController
     }
 
     /**
-     * parseJsonBody 读取 application/json 请求体
-     *
-     * @return array<string,mixed>
-     */
-    private function parseJsonBody(Request $request): array
-    {
-        $ct = (string) $request->header('Content-Type', '');
-        if (!str_contains($ct, 'application/json')) {
-            return [];
-        }
-        $raw = (string) $request->getContent();
-        if ($raw === '') {
-            return [];
-        }
-        $decoded = json_decode($raw, true);
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
      * normalizePayload 写入字段白名单
      *
      * @param  array<string,mixed> $p
@@ -260,10 +238,10 @@ class Rule extends BaseController
             'type'      => (string) $p['type'],
             'pid'       => (int) ($p['pid'] ?? 0),
             'name'      => (string) ($p['name'] ?? ''),
-            'path'      => $p['path'] !== null && $p['path'] !== '' ? (string) $p['path'] : null,
-            'method'    => $p['method'] !== null && $p['method'] !== '' ? (string) $p['method'] : null,
-            'component' => $p['component'] !== null && $p['component'] !== '' ? (string) $p['component'] : null,
-            'icon'      => $p['icon'] !== null && $p['icon'] !== '' ? (string) $p['icon'] : null,
+            'path'      => $p['path'] ?? null,
+            'method'    => $p['method'] ?? null,
+            'component' => $p['component'] ?? null,
+            'icon'      => $p['icon'] ?? null,
             'sort'      => (int) ($p['sort'] ?? 0),
             'status'    => (int) ($p['status'] ?? 1),
         ];

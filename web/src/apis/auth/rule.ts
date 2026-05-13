@@ -1,5 +1,5 @@
 import { del, get, post, put } from '@/utils/request'
-import type { ApiEnvelope } from '@/apis/index'
+import type { ApiEnvelope } from '@/apis'
 
 /** RuleRow 规则行（树节点） */
 export type RuleRow = {
@@ -77,14 +77,4 @@ export const bindApis = async (frontend_rule_id: number, api_rule_ids: number[])
         api_rule_ids,
     })
     return unwrap(res)
-}
-
-/**
- * fetchApiList 后端 api 规则扁平列表
- */
-export const fetchApiList = async () => {
-    const res = await get<ApiEnvelope<{ list: Pick<RuleRow, 'id' | 'pid' | 'name' | 'path' | 'method' | 'sort'>[] }>>(
-        'auth/rule/apiList',
-    )
-    return unwrap(res).list
 }

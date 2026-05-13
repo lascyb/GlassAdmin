@@ -62,9 +62,9 @@ const onSaved = () => {
 <template>
     <el-card style="min-height: max(calc(100vh - 100px), 400px)">
         <div class="mb-3">
-            <el-button type="primary"  @click="Object.assign(editController, { show: true, id: undefined, pid: undefined })"
-                >新增角色</el-button
-            >
+            <el-button type="primary" @click="Object.assign(editController, { show: true, id: undefined, pid: undefined })">
+              新增角色
+            </el-button>
             <el-button  @click="load">刷新</el-button>
         </div>
         <el-table
@@ -79,9 +79,9 @@ const onSaved = () => {
             :tree-props="{ children: 'children' }"
         >
             <el-table-column label="ID" prop="id" width="80" />
-            <el-table-column label="名称" prop="name" min-width="140" />
-            <el-table-column label="描述" prop="desc" min-width="180" show-overflow-tooltip />
-            <el-table-column label="操作" align="right" width="190px">
+            <el-table-column label="名称" prop="name"  />
+            <el-table-column label="描述" prop="desc"  show-overflow-tooltip />
+            <el-table-column label="操作" fixed="right" width="190px">
                 <template #default="scope">
                     <el-button title="编辑"  plain type="primary" :icon="Edit" @click="clickEdit(scope.row.id)" />
                     <el-button

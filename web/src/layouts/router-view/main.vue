@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
+
+const mainRefresh = useMainViewRefresh()
 </script>
 
 <template>
@@ -7,7 +10,10 @@
       <router-view v-slot="{ Component, route }">
         <transition name="ga-page" mode="out-in">
           <keep-alive>
-            <component :is="Component" :key="route.fullPath" />
+            <component
+              :is="Component"
+              :key="`${route.fullPath}:${mainRefresh.nonceFor(route.fullPath)}`"
+            />
           </keep-alive>
         </transition>
       </router-view>
