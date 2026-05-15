@@ -24,7 +24,7 @@ class Role extends Model
     protected array|bool $autoWriteTimestamp = true;
 
     /** @var array<string, string> */
-    protected $type = [
+    protected array $type = [
         'id' => 'integer',
         'pid' => 'integer',
         'sort' => 'integer',

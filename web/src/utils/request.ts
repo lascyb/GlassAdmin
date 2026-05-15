@@ -3,12 +3,15 @@
  * 自动添加 token 等认证信息
  */
 
-import {useAdmin} from '@/pinia/admin'
-import {createFetch} from '@vueuse/core'
-import {ElMessage} from "element-plus";
-import {router} from "@/router";
+import { useAdmin } from '@/pinia/admin'
+import { createFetch } from '@vueuse/core'
+import { ElMessage } from "element-plus";
+import { router } from "@/router";
 
 const admin = useAdmin()
+
+/** retried401Execute 已对该 useFetch 实例执行过「刷新 + 重放」后，再次 401 则不再重试（按 execute 引用区分并发请求） */
+const retried401Execute = new WeakSet<() => Promise<Response | null>>()
 /**
  * getApiBaseUrl 获取 API 基础地址
  * 从环境变量中读取，如果没有配置则使用空字符串（相对路径）
@@ -65,7 +68,9 @@ const buildUrl = (url: string, params?: Record<string, any>): string => {
  */
 export const useFetch = createFetch({
     options: {
-        async beforeFetch({url, options}) {
+        async beforeFetch({
+                              url, options
+                          }) {
             // 处理相对路径的 baseURL 拼接（get 函数已通过 buildUrl 处理，这里主要处理 post 等请求）
             let requestUrl = url
             if (!isFullUrl(url)) {
@@ -80,36 +85,58 @@ export const useFetch = createFetch({
                 options.headers = {}
             }
             const headers = options.headers as Record<string, string>
-            if (!headers['Content-Type']) {
-                headers['Content-Type'] = 'application/json'
+            const body = options.body
+            if (!(body instanceof FormData)) {
+                if (!headers['Content-Type']) {
+                    headers['Content-Type'] = 'application/json'
+                }
             }
 
             // 添加 token
             if (admin.token) {
                 options.headers = {
-                    ...options.headers,
-                    Authorization: `Bearer ${admin.token}`,
+                    ...options.headers, Authorization: `Bearer ${admin.token}`,
                 } as HeadersInit
             }
 
 
-            return {options, url: requestUrl}
-        },
-        async onFetchError({response, error}) {
-            // 处理错误
+            return {
+                options, url: requestUrl
+            }
+        }, async afterFetch({data}) {
+            // 请求成功返回后再按需刷新 access，不阻塞本次响应解析（不 await）
+            void admin.tryRefreshAccessTokenIfNeeded()
+            return {data}
+        }, async onFetchError({response, error, execute}) {
             if (response?.status === 401) {
-                ElMessage.warning({message:'未授权，请重新登录'})
-                // token 过期或未授权，可以跳转到登录页
-                admin.setReferer(location.href)
-                await router.push('/login')
+                if (retried401Execute.has(execute)) {
+                    ElMessage.warning({message: '未授权，请重新登录'})
+                    admin.setReferer(location.href)
+                    await router.push('/login')
+                    return {error}
+                }
+                const refreshed = await admin.tryRefreshAccessToken()
+                if (!refreshed) {
+                    ElMessage.warning({message: '未授权，请重新登录'})
+                    admin.setReferer(location.href)
+                    await router.push('/login')
+                    return {error}
+                }
+                retried401Execute.add(execute)
+                try {
+                    const res = await execute(false)
+                    if (res === null) {
+                        return {error}
+                    }
+                    return {error: null}
+                } finally {
+                    retried401Execute.delete(execute)
+                }
             }
             return {error}
         },
-    },
-    fetchOptions: {
-        mode: 'cors',
-        credentials: "omit",
-        // cache: "default"
+    }, fetchOptions: {
+        mode: 'cors', credentials: "omit", // cache: "default"
     },
 })
 
@@ -118,10 +145,7 @@ export const useFetch = createFetch({
  * @param url 请求地址（相对路径会自动拼接 baseURL，完整 URL 会直接使用）
  * @param params 查询参数
  */
-export const get = async <T = any>(
-    url: string,
-    params?: Record<string, any>
-): Promise<T> => {
+export const get = async <T = any>(url: string, params?: Record<string, any>): Promise<T> => {
     // 构建带查询参数的 URL（不拼接域名，域名由 beforeFetch 处理）
     const requestUrl = buildUrl(url, params)
 
@@ -147,18 +171,12 @@ export const get = async <T = any>(
  * @param params 请求体参数
  * @param options
  */
-export const post = async <T = any>(
-    url: string,
-    params?: Record<string, any>,
-    options?: {
-        headers?: Record<string, string>
-    }
-): Promise<T> => {
+export const post = async <T = any>(url: string, params?: Record<string, any>, options?: {
+    headers?: Record<string, string>
+}): Promise<T> => {
     // URL 处理由 beforeFetch 统一处理，这里直接传入原始 URL
     const fetchResult = useFetch<T>(url, {
-        method: 'POST',
-        body: params ? JSON.stringify(params) : undefined,
-        headers: options?.headers,
+        method: 'POST', body: params ? JSON.stringify(params) : undefined, headers: options?.headers,
     }, {
         immediate: false,
     }).json()
@@ -174,23 +192,45 @@ export const post = async <T = any>(
 }
 
 /**
+ * postFormData 发起 multipart POST（如上传文件），不设置 JSON Content-Type
+ */
+export const postFormData = async <T = any>(
+    url: string,
+    formData: FormData,
+    options?: { headers?: Record<string, string> },
+): Promise<T> => {
+    const fetchResult = useFetch<T>(
+        url,
+        {
+            method: 'POST',
+            body: formData,
+            headers: options?.headers,
+        },
+        {
+            immediate: false,
+        },
+    ).json()
+
+    await fetchResult.execute()
+
+    if (fetchResult.error.value) {
+        throw fetchResult.error.value
+    }
+
+    return fetchResult.data.value as T
+}
+
+/**
  * put 发起 PUT 请求（JSON body）
  */
-export const put = async <T = any>(
-    url: string,
-    params?: Record<string, any>,
-    options?: {
-        headers?: Record<string, string>
-    }
-): Promise<T> => {
+export const put = async <T = any>(url: string, params?: Record<string, any>, options?: {
+    headers?: Record<string, string>
+}): Promise<T> => {
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(options?.headers ?? {}),
+        'Content-Type': 'application/json', ...(options?.headers ?? {}),
     }
     const fetchResult = useFetch<T>(url, {
-        method: 'PUT',
-        body: params !== undefined ? JSON.stringify(params) : undefined,
-        headers,
+        method: 'PUT', body: params !== undefined ? JSON.stringify(params) : undefined, headers,
     }, {
         immediate: false,
     }).json()
@@ -207,10 +247,7 @@ export const put = async <T = any>(
 /**
  * del 发起 DELETE 请求
  */
-export const del = async <T = any>(
-    url: string,
-    params?: Record<string, any>
-): Promise<T> => {
+export const del = async <T = any>(url: string, params?: Record<string, any>): Promise<T> => {
     const requestUrl = buildUrl(url, params)
     const fetchResult = useFetch<T>(requestUrl, {
         method: 'DELETE',

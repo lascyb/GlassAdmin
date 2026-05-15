@@ -5,7 +5,7 @@ import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
 import { useRoute, useRouter } from 'vue-router'
-import MenuIcon from "@components/menu-icon/index.vue";
+import GaIcon from "@components/ga-icon/index.vue";
 
 const router = useRouter()
 const route = useRoute()
@@ -80,7 +80,7 @@ onMounted(() => {
                 >
                     <template #default="scope">
                         <div>
-                          <MenuIcon :icon="scope.item?.icon" />
+                          <GaIcon :icon="scope.item?.icon" />
                           <div >{{ scope.item.name }}</div>
                         </div>
                     </template>

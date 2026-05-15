@@ -3,23 +3,28 @@ import { computed, ref } from 'vue'
 
 /** AdminTokenSetup token 容器 setup，session/local 共用同一份实现 */
 function createAdminTokenSetup() {
+    /** access_token（opaque），请求头 Authorization 使用 */
     const token = ref('')
-    /** expireAt 秒级时间戳；为 0 视为无效（防止前端使用未初始化数据） */
+    /** refresh_token（opaque），仅用于换发 access */
+    const refreshToken = ref('')
+    /** expireAt access 过期秒级时间戳；为 0 视为无效 */
     const expireAt = ref(0)
 
-    /** setToken 写入 token 与过期时间戳（秒） */
-    const setToken = (value: string, expireAtValue: number) => {
-        token.value = value
+    /** setTokens 写入 access、refresh 与 access 过期时间戳（秒） */
+    const setTokens = (access: string, refresh: string, expireAtValue: number) => {
+        token.value = access
+        refreshToken.value = refresh
         expireAt.value = expireAtValue
     }
 
-    /** clearToken 清空 token 与过期时间戳 */
+    /** clearToken 清空双令牌与过期时间戳 */
     const clearToken = () => {
         token.value = ''
+        refreshToken.value = ''
         expireAt.value = 0
     }
 
-    /** valid token 存在且未过期 */
+    /** valid access 存在且未过期 */
     const valid = computed(() => {
         if (!token.value) return false
         if (expireAt.value <= 0) return false
@@ -28,9 +33,10 @@ function createAdminTokenSetup() {
 
     return {
         token,
+        refreshToken,
         expireAt,
         valid,
-        setToken,
+        setTokens,
         clearToken,
     }
 }
@@ -39,7 +45,7 @@ function createAdminTokenSetup() {
 export const useAdminTokenSession = defineStore('token_session', createAdminTokenSetup, {
     persist: {
         storage: sessionStorage,
-        pick: ['token', 'expireAt'],
+        pick: ['token', 'refreshToken', 'expireAt'],
     },
 })
 
@@ -47,6 +53,6 @@ export const useAdminTokenSession = defineStore('token_session', createAdminToke
 export const useAdminTokenLocal = defineStore('token_local', createAdminTokenSetup, {
     persist: {
         storage: localStorage,
-        pick: ['token', 'expireAt'],
+        pick: ['token', 'refreshToken', 'expireAt'],
     },
 })

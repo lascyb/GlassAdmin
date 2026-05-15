@@ -11,7 +11,7 @@ export type RuleRow = {
     path?: string | null
     method?: string | null
     component?: string | null
-    /** ep:组件名、url:图片地址 */
+    /** el:组件名、url:图片地址、local:stem */
     icon?: string | null
     sort: number
     status: number
@@ -37,10 +37,10 @@ export const fetchTree = async (scope: 'backend' | 'frontend') => {
 }
 
 /**
- * fetchRead 规则详情（view/btn 含 api_ids）
+ * fetchRead 规则详情（view/btn 含 backend_rule_ids）
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<RuleRow & { api_ids?: number[] }>>('auth/rule/read', { id })
+    const res = await get<ApiEnvelope<RuleRow & { backend_rule_ids?: number[] }>>('auth/rule/read', { id })
     return unwrap(res)
 }
 
@@ -71,10 +71,10 @@ export const deleteRule = async (id: number) => {
 /**
  * bindApis 前端 view/btn 绑定后端 api
  */
-export const bindApis = async (frontend_rule_id: number, api_rule_ids: number[]) => {
+export const bindApis = async (frontend_rule_id: number, backend_rule_ids: number[]) => {
     const res = await post<ApiEnvelope<null>>('auth/rule/bindApis', {
         frontend_rule_id,
-        api_rule_ids,
+        backend_rule_ids,
     })
     return unwrap(res)
 }

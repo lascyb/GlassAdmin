@@ -1,4 +1,4 @@
-import { type RouteRecordRaw } from 'vue-router'
+import {type RouteLocationNormalizedGeneric, type RouteRecordRaw} from 'vue-router'
 
 import { useAdmin } from '@/pinia/admin'
 
@@ -8,12 +8,14 @@ export const routes: RouteRecordRaw[] = [
         name: "root",
         path: '/',
         component: () => import("@/layouts/index.vue"), //全部走layout布局模板
-        beforeEnter: (_to, _from, next) => {
+        beforeEnter: (_to, from:RouteLocationNormalizedGeneric, next) => {
+            console.log("to root",from.fullPath)
             const admin = useAdmin()
             if (admin.loggedIn) {
                 next()
             } else {
                 admin.clear()
+                admin.setReferer(from.fullPath)
                 next({ name: 'login', replace: true })
             }
         },

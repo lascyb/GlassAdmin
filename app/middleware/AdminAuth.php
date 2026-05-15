@@ -3,16 +3,20 @@ declare (strict_types = 1);
 
 namespace app\middleware;
 
+use app\service\AdminRbacService;
+use app\service\AuthService;
 use Closure;
-use think\facade\Cache;
 use think\Request;
 use think\Response;
 
 /**
- * AdminAuth 校验管理端 Bearer token（与 Login 写入的 Cache 键一致）
+ * AdminAuth 校验管理端 Bearer access_token（opaque，经 AuthService）；非超级管理员再经 AdminRbacService 做接口 RBAC
  */
 class AdminAuth
 {
+    /** 超级管理员 role_id，仅校验登录，不走 RBAC（与 MenuService 超级角色语义一致） */
+    private const int SUPER_ROLE_ID = 1;
+
     /**
      * handle 解析 token 并写入 request->admin_id,role_id
      *
@@ -20,7 +24,7 @@ class AdminAuth
      * @param Closure $next
      * @return Response|mixed
      */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): mixed
     {
         $auth = (string) $request->header('Authorization', '');
         $token = '';
@@ -33,12 +37,15 @@ class AdminAuth
         if ($token === '') {
             return json(['code' => 401, 'msg' => '未登录', 'data' => null], 401);
         }
-        $payload = Cache::get('admin_token:' . $token);
-        if (!is_array($payload) || empty($payload['admin_id'])) {
+        $payload = AuthService::authenticate($token);
+        if ($payload === null) {
             return json(['code' => 401, 'msg' => '登录已失效', 'data' => null], 401);
         }
-        $request->admin_id = (int) $payload['admin_id'];
-        $request->role_id = (int) $payload['role_id'];
+        if ($payload->roleId !== self::SUPER_ROLE_ID && !AdminRbacService::isApiAllowed($request, $payload->roleId)) {
+            return json(['code' => 403, 'msg' => '无权访问', 'data' => null], 403);
+        }
+        $request->admin_id = $payload->adminId;
+        $request->role_id = $payload->roleId;
 
         return $next($request);
     }

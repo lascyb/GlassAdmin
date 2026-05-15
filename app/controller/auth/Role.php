@@ -4,6 +4,8 @@ declare (strict_types=1);
 namespace app\controller\auth;
 
 use app\BaseController;
+use app\service\AdminRbacService;
+use app\service\MenuService;
 use app\model\auth\Role as RoleModel;
 use app\model\auth\RoleRule;
 use app\model\auth\Rule as RuleModel;
@@ -129,6 +131,8 @@ class Role extends BaseController
         }
         Db::name('auth_role_rule')->where('role_id', $id)->delete();
         RoleModel::destroy($id);
+        MenuService::forgetRoleMenuCache($id);
+        AdminRbacService::forgetRoleRbacCache($id);
 
         return json(['code' => 0, 'msg' => 'ok', 'data' => null]);
     }
@@ -150,9 +154,9 @@ class Role extends BaseController
         if (!RoleModel::find($id)) {
             return json(['code' => 404, 'msg' => '角色不存在', 'data' => null]);
         }
-        $ruleIds = $request->put("rule_ids/a", [], "is_int");
-//        $ruleIds = array_unique(array_map('intval', $ruleIds));
-        $ruleIds = RuleModel::where([['id', "in", $id], ["scope", "=", "frontend"]])->column('id');
+        $ruleIds = $request->put('rule_ids/a', []);
+        $ruleIds = is_array($ruleIds) ? array_unique(array_map('intval', $ruleIds)) : [];
+        $ruleIds = $ruleIds === [] ? [] : RuleModel::where([['id', 'in', $ruleIds], ['scope', '=', 'frontend']])->column('id');
         $insert = [];
         foreach ($ruleIds as $rid) {
             $insert[] = ['role_id' => $id, 'rule_id' => $rid];
@@ -161,8 +165,11 @@ class Role extends BaseController
             RoleRule::where('role_id', $id)->delete();
             RoleRule::insertAll($insert);
         } catch (\Exception $e) {
-            return json(['code' => 400, 'msg' => $e->getMessage()]);
+            return json(['code' => 400, 'msg' => $e->getMessage(), 'data' => null]);
         }
+
+        MenuService::forgetRoleMenuCache($id);
+        AdminRbacService::forgetRoleRbacCache($id);
 
         return json(['code' => 0, 'msg' => 'ok', 'data' => null]);
     }

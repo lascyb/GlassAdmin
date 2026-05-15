@@ -169,7 +169,7 @@ defineExpose({ openAdd, openEdit })
 </script>
 
 <template>
-    <el-dialog v-model="visible" :title="title" width="520px" destroy-on-close>
+    <el-dialog draggable v-model="visible" :title="title" width="520px" destroy-on-close>
         <el-form label-width="88px">
             <el-form-item label="类型">
                 <el-tag>{{ form.type }}</el-tag>

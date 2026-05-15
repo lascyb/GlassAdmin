@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { RuleRow } from '@/apis/auth/rule'
-import MenuIcon from '@/components/menu-icon/index.vue'
 import BindBackendApiDialog from '@/views/auth/rule/BindBackendApiDialog.vue'
 import RuleEdit from '@/views/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/auth/rule/useRuleTreePage'
+import GaIcon from '@components/ga-icon/index.vue'
 import { Delete, Edit, Link, Plus } from '@element-plus/icons-vue'
 import { onMounted, reactive, useTemplateRef } from 'vue'
 
@@ -19,6 +19,26 @@ const bindDlg = reactive<{
 }>({
     visible: false,
 })
+
+/** ruleTypeTagType 前端规则 type → el-tag 的 type，用于差异化展示 */
+function ruleTypeTagType(t: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+    switch (t) {
+        case 'menu':
+            return 'primary'
+        case 'view':
+            return 'success'
+        case 'btn':
+            return 'warning'
+        case 'page':
+        case 'route':
+        case 'link':
+            return 'info'
+        case 'iframe':
+            return 'danger'
+        default:
+            return 'info'
+    }
+}
 
 onMounted(load)
 
@@ -38,8 +58,12 @@ const openBind = (row: RuleRow) => {
         <el-tree :data="treeData" node-key="id" default-expand-all :props="{ children: 'children', label: 'name' }">
             <template #default="{ data }">
                 <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2">
-                    <el-tag>{{ data.type }}</el-tag>
-                    <MenuIcon v-if="data.icon" :icon="data.icon" class="shrink-0" />
+                    <el-tag :type="ruleTypeTagType(data.type)">{{ data.type }}</el-tag>
+                    <GaIcon
+                        v-if="data.icon"
+                        :icon="data.icon"
+                        class="shrink-0"
+                    />
                     <span>{{ data.name }}</span>
                     <span v-if="data.path" class="text-xs text-gray-500">{{ data.path }}</span>
                     <el-button-group class="ml-auto flex flex-wrap gap-1">

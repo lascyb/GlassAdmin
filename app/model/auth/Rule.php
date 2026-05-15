@@ -16,7 +16,7 @@ use think\Model;
  * @property string|null $path
  * @property string|null $method
  * @property string|null $component
- * @property string|null $icon      ep:组件名、url:图片地址
+ * @property string|null $icon      el:组件名、url:图片地址、local:stem
  * @property int         $sort
  * @property int         $status  {1:启用,0:禁用}
  */

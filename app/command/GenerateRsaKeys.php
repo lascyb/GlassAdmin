@@ -24,7 +24,7 @@ class GenerateRsaKeys extends Command
         $count = max(1, (int) $input->getOption('count'));
         $expireSeconds = max(3600, (int) $input->getOption('expire'));
 
-        $generated = (new RsaKeyService())->generateDailyKeys($count, $expireSeconds);
+        $generated = RsaKeyService::generateDailyKeys($count, $expireSeconds);
         $output->writeln("计划生成: {$count}，实际生成: {$generated}");
 
         return 0;

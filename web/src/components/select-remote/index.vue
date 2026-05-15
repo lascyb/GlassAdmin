@@ -22,8 +22,8 @@ interface Props {
   method?: 'GET' | 'POST'
   /** 响应数据转换函数，将接口返回的数据转换为选项格式。用途：适配不同后端接口的数据结构 */
   transform?: (response: any) => { list: any[], total: number }
-  /** 每页数量，默认 10。用途：控制分页大小 */
-  pageSize?: number
+  /** 每页数量，默认 10；请求参数名为 limit */
+  limit?: number
   /** 额外的请求参数，会合并到请求参数中。用途：传递额外的筛选条件 */
   filters?: Record<string, any>
   /** 自定义请求函数，如果提供则使用此函数替代默认的 fetch。用途：支持自定义请求逻辑，如添加特殊认证、拦截器等 */
@@ -34,7 +34,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   method: 'GET',
-  pageSize: 10,
+  limit: 10,
   filters: () => ({}),
 })
 
@@ -73,7 +73,7 @@ const labelKey = computed(() => props.props?.label || 'label')
  * 用途：当数据量超过每页数量时才显示分页器，避免不必要的 UI 元素
  */
 const shouldShowPagination = computed(() => {
-  return total.value > props.pageSize
+  return total.value > props.limit
 })
 
 /**
@@ -164,9 +164,9 @@ const refreshOptions = async (query?: string, page: number = 1, useModelValue: b
       }
     }
 
-    // 添加分页参数（固定使用 page 和 pageSize）
+    // 添加分页参数（固定使用 page、limit）
     params.page = page
-    params.pageSize = props.pageSize
+    params.limit = props.limit
 
     // 执行请求并转换响应数据
     const response = await executeRequest(params)
@@ -272,7 +272,7 @@ onMounted(() => {
           v-if="shouldShowPagination"
           :current-page="currentPage"
           :total="total"
-          :page-size="pageSize"
+          :page-size="limit"
           :pager-count="5"
 
           layout="prev, pager, next, jumper, ->, total"

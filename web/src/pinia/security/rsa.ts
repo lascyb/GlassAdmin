@@ -11,7 +11,11 @@ export type RsaPublicKeyInfo = {
 type RsaPublicKeyRes = {
     code: number
     msg: string
-    data: null | RsaPublicKeyInfo
+    data: null | {
+        serial: string
+        public_key: string
+        expire_at: number
+    }
 }
 
 export const useSecurityRsa = defineStore('security_rsa', () => {
@@ -41,11 +45,15 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
 
         pendingRsaPublicKeyRequest = (async () => {
             const res = await get<RsaPublicKeyRes>('security/rsa-public-key')
-            if (res.code !== 0 || !res.data?.serial || !res.data.publicKey) {
+            if (res.code !== 0 || !res.data?.serial || !res.data.public_key) {
                 clearRsaPublicKey()
                 return null
             }
-            setRsaPublicKey(res.data)
+            setRsaPublicKey({
+                serial: res.data.serial,
+                publicKey: res.data.public_key,
+                expireAt: res.data.expire_at,
+            })
             return rsaPublicKey.value
         })()
 
@@ -148,5 +156,5 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         encrypt
     }
 }, {
-    persist: true
+    // persist: true
 })

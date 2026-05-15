@@ -23,6 +23,10 @@ const emit = defineEmits<{
 const loading = ref(false)
 const saving = ref(false)
 const treeData = ref<TreeNode[]>([])
+/** defaultExpandedKeys 有绑定时与 backend_rule_ids 一致（树内有效 api id）；无绑定时配合 expandAllDefault 走 default-expand-all */
+const defaultExpandedKeys = ref<number[]>([])
+/** expandAllDefault backend_rule_ids 为空时默认展开整棵树 */
+const expandAllDefault = ref(false)
 const treeRef = ref()
 let apiIdSet = new Set<number>()
 
@@ -60,9 +64,11 @@ const load = async () => {
     loading.value = true
     try {
         const [tree, detail] = await Promise.all([ruleApi.fetchTree('backend'), ruleApi.fetchRead(id)])
-        treeData.value = toTreeNodes(tree)
         apiIdSet = collectApiIds(tree)
-        const raw = (detail.api_ids ?? []).filter((x) => apiIdSet.has(x))
+        const raw = (detail.backend_rule_ids ?? []).filter((x) => apiIdSet.has(x))
+        expandAllDefault.value = raw.length === 0
+        defaultExpandedKeys.value = raw
+        treeData.value = toTreeNodes(tree)
         await nextTick()
         treeRef.value?.setCheckedKeys(raw, false)
     } catch (e: unknown) {
@@ -113,11 +119,13 @@ const submit = async () => {
                 <el-tree
                     v-if="treeData.length"
                     ref="treeRef"
+                    :key="`${frontendRuleId ?? 0}-${expandAllDefault ? 1 : 0}-${defaultExpandedKeys.join(',')}`"
                     :data="treeData"
                     node-key="id"
                     show-checkbox
                     check-strictly
-                    default-expand-all
+                    :default-expand-all="expandAllDefault"
+                    :default-expanded-keys="expandAllDefault ? [] : defaultExpandedKeys"
                     :props="{ children: 'children', label: 'name', disabled: 'disabled' }"
                 >
                     <template #default="{ data }">

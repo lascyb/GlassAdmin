@@ -102,7 +102,7 @@
   },
   "keyword": "搜索关键词",
   "page": 1,
-  "pageSize": 10
+  "limit": 10
 }
 ```
 
@@ -257,7 +257,7 @@
 
 #### 2. `#footer` 插槽（底部）
 
-用于显示分页器（当数据量超过 `pageSize` 时自动显示）：
+用于显示分页器（当数据量超过 `limit` 时自动显示）：
 
 ```vue
 
@@ -327,7 +327,7 @@
 | `props`       | el-select 的 props 配置，主要用于设置 value 和 label 字段名，也可传递其他 el-select 属性 | `SelectOptionProps`                                          | -       | 否  |
 | `method`      | 请求方法                                                              | `'GET' \| 'POST'`                                            | `'GET'` | 否  |
 | `transform`   | 响应数据转换函数                                                          | `(response: any) => { list: any[], total: number }`          | -       | 否  |
-| `pageSize`    | 每页数量                                                              | `number`                                                     | `10`    | 否  |
+| `limit`       | 每页数量（请求参数名 `limit`）                                                | `number`                                                     | `10`    | 否  |
 | `filters`     | 额外的请求参数，会合并到请求参数中                                                 | `Record<string, any>`                                        | `{}`    | 否  |
 | `requestFn`   | 自定义请求函数                                                           | `(url: string, params: Record<string, any>) => Promise<any>` | -       | 否  |
 | `initOptions` | 初始化选项，用于回显                                                        | `Record<string, any> \| Record<string, any>[]`               | -       | 否  |
@@ -340,18 +340,11 @@
 {
     filters: {
         // ...filters 属性传入的额外参数
-    }
-,
+    },
     keyword: "搜索关键词",        // 用户输入的搜索关键词
-        init_values
-:
-    "初始值",        // 当 useModelValue=true 时使用
-        page
-:
-    1,                      // 当前页码
-        pageSize
-:
-    10                  // 每页数量
+    init_values: "初始值",        // 当 useModelValue=true 时使用
+    page: 1,                      // 当前页码
+    limit: 10                     // 每页数量
 }
 ```
 
@@ -403,7 +396,7 @@
 ## 注意事项
 
 1. **搜索防抖**：组件内置 300ms 防抖，避免频繁请求
-2. **分页参数**：固定使用 `page` 和 `pageSize` 作为分页参数名
+2. **分页参数**：固定使用 `page` 和 `limit` 作为分页参数名
 3. **搜索参数**：固定使用 `keyword` 作为搜索关键词参数名
 4. **初始值查询**：当使用 `useModelValue=true` 时，使用 `init_values` 参数查询
 5. **数据格式**：如果后端返回格式特殊，建议使用 `transform` 函数转换
@@ -419,7 +412,7 @@ A: 目前搜索参数名固定为 `keyword`，如需修改可以：
 
 ### Q: 如何修改分页参数名？
 
-A: 分页参数名固定为 `page` 和 `pageSize`，如需修改可以：
+A: 分页参数名固定为 `page` 和 `limit`，如需修改可以：
 
 1. 使用 `request-fn` 自定义请求函数
 2. 在 `request-fn` 中修改参数名后再调用原始请求方法

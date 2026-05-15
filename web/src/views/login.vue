@@ -11,14 +11,16 @@ const router = useRouter()
 const securityRsa = useSecurityRsa()
 const admin = useAdmin()
 
-/** LoginPasswordRes 密码登录接口返回（expireAt 为秒级时间戳） */
+/** LoginPasswordRes 密码登录接口返回（expire_at 为 access 过期秒级时间戳） */
 interface LoginPasswordRes {
   code: number
   msg: string
   data: null | {
-    token: string
-    expireAt: number
-    user: { id: number; username: string; nickname: string; role_id?: number | null }
+    access_token: string
+    refresh_token: string
+    expire_at: number
+    refresh_expire_at: number
+    user: { id: number; username: string; nickname: string; avatar?: string | null; role_id?: number | null }
   }
 }
 
@@ -95,15 +97,21 @@ const handlePasswordLogin = async () => {
         'X-RSA-Serial': rsaSerial,
       },
     })
-    if (res.code !== 0 || !res.data?.token || !res.data?.user || !res.data?.expireAt) {
+    if (res.code !== 0 || !res.data?.access_token || !res.data?.refresh_token || !res.data?.user || !res.data?.expire_at) {
       ElMessage.error(res.msg || '登录失败')
       return
     }
 
-    admin.init(res.data.token, res.data.user, res.data.expireAt, passwordForm.remember)
+    admin.init(
+      res.data.access_token,
+      res.data.refresh_token,
+      res.data.user,
+      res.data.expire_at,
+      passwordForm.remember,
+    )
 
     ElMessage.success('登录成功')
-    await router.push('/')
+    await router.push(admin.getReferer())
   } catch(e) {
     ElMessage.error('登录请求失败'+e)
   } finally {

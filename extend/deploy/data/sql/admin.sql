@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `admin` (
   `username` varchar(64) NOT NULL COMMENT '登录名',
   `password` varchar(255) NOT NULL COMMENT 'password_hash bcrypt',
   `nickname` varchar(100) DEFAULT NULL COMMENT '昵称',
+  `avatar` varchar(255) DEFAULT NULL COMMENT '头像相对路径（public/storage 下）',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '{1:正常,0:禁用}',
   `role_id` bigint unsigned DEFAULT NULL COMMENT '主角色 auth_role.id',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',

@@ -1,13 +1,15 @@
-import {defineStore} from 'pinia'
-import {computed, ref} from 'vue'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 
-import {useAdminTokenLocal, useAdminTokenSession} from '@/pinia/admin/token'
+import { useAdminTokenLocal, useAdminTokenSession } from '@/pinia/admin/token'
 
 /** AdminUser 登录后的后台管理员信息 */
 export type Admin = {
     id: number
     username: string
     nickname: string
+    /** 头像相对路径（public/storage） */
+    avatar?: string | null
     /** 主角色 auth_role.id，未绑定为 null */
     role_id?: number | null
 }
@@ -30,19 +32,22 @@ export const useAdmin = defineStore('admin', () => {
     const activeTokenStore = computed(() => (remember.value ? tokenLocal : tokenSession))
 
     const token = computed(() => activeTokenStore.value.token)
+    const refreshToken = computed(() => activeTokenStore.value.refreshToken)
     const expireAt = computed(() => activeTokenStore.value.expireAt)
     const tokenValid = computed(() => activeTokenStore.value.valid)
     const loggedIn = computed(() => !!data.value && tokenValid.value)
 
     /**
-     * init 登录成功：写入 remember / user，并把 token 写入 remember 对应侧、清掉另一侧
-     * @param tokenValue 服务端签发 token
+     * init 登录成功：写入 remember / user，并把 access、refresh 写入 remember 对应侧、清掉另一侧
+     * @param accessToken 访问令牌（opaque）
+     * @param refreshToken 刷新令牌
      * @param admin 用户信息
-     * @param expireAt 服务端给出的token过期秒级时间戳
+     * @param expireAt access 过期秒级时间戳
      * @param rememberLogin 是否勾选「记住我」
      */
     const init = (
-        tokenValue: string,
+        accessToken: string,
+        refreshToken: string,
         admin: Admin,
         expireAt: number,
         rememberLogin: boolean,
@@ -50,7 +55,7 @@ export const useAdmin = defineStore('admin', () => {
         const inactive = rememberLogin ? tokenSession : tokenLocal
         const target = rememberLogin ? tokenLocal : tokenSession
         inactive.clearToken()
-        target.setToken(tokenValue, expireAt)
+        target.setTokens(accessToken, refreshToken, expireAt)
         data.value = admin
         remember.value = rememberLogin
     }
@@ -67,14 +72,66 @@ export const useAdmin = defineStore('admin', () => {
             referer.value = href
         }
     }
-    const getReferer = () => {
+    const getReferer = (defaultPath="/") => {
         let r = referer.value
         referer.value = ""
+        if (r==""){
+            r = defaultPath
+        }
         return r
+    }
+
+    /**
+     * tryRefreshAccessToken 用 refresh_token 换发新令牌（裸 fetch，避免与 useFetch 循环依赖）
+     */
+    const tryRefreshAccessToken = async (): Promise<boolean> => {
+        const store = activeTokenStore.value
+        const rt = store.refreshToken
+        if (!rt) return false
+        const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+        const url = `${base}/login/refresh`
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: rt }),
+            })
+            const json = (await res.json()) as {
+                code: number
+                data?: {
+                    access_token: string
+                    refresh_token: string
+                    expire_at: number
+                    user?: Admin
+                }
+            }
+            if (json.code !== 0 || !json.data?.access_token || !json.data?.refresh_token || !json.data?.expire_at) {
+                return false
+            }
+            store.setTokens(json.data.access_token, json.data.refresh_token, json.data.expire_at)
+            if (json.data.user) {
+                data.value = json.data.user
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /**
+     * tryRefreshAccessTokenIfNeeded access 将过期或已过期且有 refresh 时尝试刷新
+     */
+    const tryRefreshAccessTokenIfNeeded = async (): Promise<void> => {
+        const store = activeTokenStore.value
+        if (!store.token || !store.refreshToken) return
+        const now = Math.floor(Date.now() / 1000)
+        if (store.expireAt > now + 900) return
+        await tryRefreshAccessToken()
     }
 
     return {
         token,
+        refreshToken,
         expireAt,
         tokenValid,
         data,
@@ -84,7 +141,9 @@ export const useAdmin = defineStore('admin', () => {
         init,
         clear,
         setReferer,
-        getReferer
+        getReferer,
+        tryRefreshAccessToken,
+        tryRefreshAccessTokenIfNeeded,
     }
 }, {
     persist: {

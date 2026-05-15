@@ -4,24 +4,30 @@ declare (strict_types = 1);
 namespace app\service;
 
 use app\model\RsaKey;
-use Cassandra\Uuid;
+use think\facade\Cache;
 use Throwable;
 
+/**
+ *  RSA 密钥对管理
+ */
 class RsaKeyService
 {
-    private int $defaultExpireSeconds = 3600;
-    private int $defaultSkipSeconds = 600;
+    /** 无可用密钥时新建密钥的默认有效期（秒） */
+    private const int DEFAULT_EXPIRE_SECONDS = 3600;
 
-    public function getAvailablePublicKey(): ?array
+    /** 选取/解密时距过期预留秒数 */
+    private const int DEFAULT_SKIP_SECONDS = 600;
+
+    public static function getAvailablePublicKey(): ?array
     {
         $now = time();
         $key = RsaKey::where('status', 1)
-            ->where('expire_time', '>', $now+$this->defaultSkipSeconds)
+            ->where('expire_time', '>', $now + self::DEFAULT_SKIP_SECONDS)
             ->order('expire_time', 'asc')
             ->find();
 
         if ($key === null) {
-            $key = $this->createOne($this->defaultExpireSeconds);
+            $key = self::createOne(self::DEFAULT_EXPIRE_SECONDS);
         }
 
         if ($key === null) {
@@ -35,12 +41,12 @@ class RsaKeyService
         ];
     }
 
-    public function decryptBySerial(string $serial, string $cipherText): ?string
+    public static function decryptBySerial(string $serial, string $cipherText): ?string
     {
         $now = time();
         $key = RsaKey::where('serial', $serial)
             ->where('status', 1)
-            ->where('expire_time', '>', $now-$this->defaultSkipSeconds)
+            ->where('expire_time', '>', $now - self::DEFAULT_SKIP_SECONDS)
             ->find();
         if ($key === null) {
             return null;
@@ -61,18 +67,19 @@ class RsaKeyService
         return $plainText;
     }
 
-    public function generateDailyKeys(int $count, int $expireSeconds): int
+    public static function generateDailyKeys(int $count, int $expireSeconds): int
     {
         $generated = 0;
         for ($i = 0; $i < $count; $i++) {
-            if ($this->createOne($expireSeconds) !== null) {
+            if (self::createOne($expireSeconds) !== null) {
                 $generated++;
             }
         }
+
         return $generated;
     }
 
-    private function createOne(int $expireSeconds): ?RsaKey
+    private static function createOne(int $expireSeconds): ?RsaKey
     {
         try {
             $config = [
@@ -104,7 +111,7 @@ class RsaKeyService
 
             return $key;
         } catch (Throwable $e) {
-            dump($e->getMessage());
+
             return null;
         }
     }
