@@ -24,21 +24,17 @@ const btnStyle = computed(() => ({
 </script>
 
 <template>
-    <div
-        style="height: 60px; border-right: 1px solid var(--el-menu-border-color); box-sizing: border-box"
-        class="ga-logo-bar flex items-center justify-between"
-    >
-        <div
-            v-if="!layoutMenus.collapse"
-            class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
-            @click="toHome"
-        >
+    <div style="height: 60px; border-right: 1px solid var(--el-menu-border-color); box-sizing: border-box"
+         class="ga-logo-bar flex items-center justify-between">
+        <div v-if="!layoutMenus.collapse"
+             class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
+             @click="toHome">
             GlassAdmin
         </div>
         <el-button :style="btnStyle" plain text type="primary" @click="collapse">
-            <el-icon size="26">
-                <Expand v-if="layoutMenus.collapse" />
-                <Fold v-else />
+            <el-icon size="22">
+                <Expand v-if="layoutMenus.collapse"/>
+                <Fold v-else/>
             </el-icon>
         </el-button>
     </div>

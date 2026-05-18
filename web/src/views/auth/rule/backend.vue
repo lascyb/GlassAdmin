@@ -3,10 +3,11 @@ import type { RuleRow } from '@/apis/auth/rule'
 import RuleEdit from '@/views/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/auth/rule/useRuleTreePage'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { onMounted, useTemplateRef } from 'vue'
+import {  onMounted, useTemplateRef } from 'vue'
 
-const { treeData, loading, load, remove } = useRuleTreeBase('backend')
+const { treeData, loading, load, remove,top_ids } = useRuleTreeBase('backend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
+
 
 const openAdd = (pid: number, type: 'menu' | 'api') => ruleEditRef.value?.openAdd(pid, type)
 const openEdit = (row: RuleRow) => ruleEditRef.value?.openEdit(row)
@@ -24,7 +25,7 @@ onMounted(load)
         <el-tree
             :data="treeData"
             node-key="id"
-            default-expand-all
+            :default-expanded-keys="top_ids"
             :props="{ children: 'children', label: 'name' }"
         >
             <template #default="{ data }">

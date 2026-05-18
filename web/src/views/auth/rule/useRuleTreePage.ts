@@ -1,7 +1,7 @@
 import * as ruleApi from '@/apis/auth/rule'
 import type { RuleRow } from '@/apis/auth/rule'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 /**
  * useRuleTreeBase 加载规则树与删除（前后端页面共用）
@@ -35,6 +35,9 @@ export function useRuleTreeBase(scope: 'backend' | 'frontend') {
             ElMessage.error(e instanceof Error ? e.message : '删除失败')
         }
     }
-
-    return { treeData, loading, load, remove }
+    // 用来默认展开第一层数据
+    const top_ids = computed(()=>{
+        return treeData.value.map((item)=>item.id);
+    })
+    return { treeData, loading, load, remove,top_ids }
 }

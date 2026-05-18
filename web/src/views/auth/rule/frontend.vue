@@ -7,7 +7,7 @@ import GaIcon from '@components/ga-icon/index.vue'
 import { Delete, Edit, Link, Plus } from '@element-plus/icons-vue'
 import { onMounted, reactive, useTemplateRef } from 'vue'
 
-const { treeData, loading, load, remove } = useRuleTreeBase('frontend')
+const { treeData, loading, load, remove,top_ids } = useRuleTreeBase('frontend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
 
 const openAdd = (pid: number, type: 'menu' | 'view' | 'btn') => ruleEditRef.value?.openAdd(pid, type)
@@ -55,7 +55,7 @@ const openBind = (row: RuleRow) => {
             <el-button type="success" :icon="Plus" @click="openAdd(0, 'view')">新增根页面</el-button>
             <el-button @click="load">刷新</el-button>
         </div>
-        <el-tree :data="treeData" node-key="id" default-expand-all :props="{ children: 'children', label: 'name' }">
+        <el-tree :data="treeData" node-key="id" :default-expanded-keys="top_ids" :props="{ children: 'children', label: 'name' }">
             <template #default="{ data }">
                 <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2">
                     <el-tag :type="ruleTypeTagType(data.type)">{{ data.type }}</el-tag>

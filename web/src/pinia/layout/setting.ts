@@ -8,7 +8,7 @@ type Layout = {
 
 export const useLayoutSetting = defineStore('layout_setting', () => {
     const layout = reactive<Layout>({
-        showSetting: true,
+        showSetting: false,
         container: 'Default'
     })
     const showSetting = () => {
