@@ -3,7 +3,7 @@ import type { RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
 import IconPicker from '@/components/icon-picker/index.vue'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 const props = defineProps<{ scope: 'backend' | 'frontend' }>()
 
@@ -27,6 +27,25 @@ type RuleEditForm = {
 const visible = ref(false)
 const title = ref('')
 const saving = ref(false)
+
+/** 父级树数据 */
+const treeData = ref<RuleRow[]>([])
+
+/** 递归移除当前节点及其子节点，防止选自己为父级造成循环 */
+function removeNodeAndChildren(nodes: RuleRow[], targetId: number): RuleRow[] {
+    const result: RuleRow[] = []
+    for (const node of nodes) {
+        if (node.id === targetId) continue
+        const children = node.children?.length ? removeNodeAndChildren(node.children, targetId) : []
+        result.push({ ...node, children })
+    }
+    return result
+}
+
+const parentTreeData = computed(() => {
+    if (!form.id) return treeData.value
+    return removeNodeAndChildren(treeData.value, form.id)
+})
 
 const form = reactive<RuleEditForm>({
     scope: props.scope,
@@ -70,11 +89,23 @@ function ruleEditAddTitle(pid: number, type: string) {
 }
 
 /**
+ * loadTree 加载当前 scope 的规则树（供父级选择）
+ */
+async function loadTree() {
+    try {
+        treeData.value = await ruleApi.fetchTree(props.scope)
+    } catch (e: unknown) {
+        ElMessage.error(e instanceof Error ? e.message : '加载规则树失败')
+    }
+}
+
+/**
  * openAdd 打开新增（type：backend 为 menu|api，frontend 为 menu|view|btn）
  */
 function openAdd(pid: number, type: string) {
     title.value = ruleEditAddTitle(pid, type)
     ruleEditResetForAdd(pid, type)
+    loadTree()
     visible.value = true
 }
 
@@ -101,6 +132,7 @@ function ruleEditMapRow(row: RuleRow) {
 function openEdit(row: RuleRow) {
     title.value = '编辑'
     ruleEditMapRow(row)
+    loadTree()
     visible.value = true
 }
 
@@ -173,6 +205,21 @@ defineExpose({ openAdd, openEdit })
         <el-form label-width="88px">
             <el-form-item label="类型">
                 <el-tag>{{ form.type }}</el-tag>
+            </el-form-item>
+            <el-form-item label="父级">
+                <el-tree-select
+                    v-model="form.pid"
+                    class="w-full"
+                    :data="parentTreeData"
+                    :props="{ value: 'id', label: 'name', children: 'children' }"
+                    node-key="id"
+                    placeholder="留空为顶级"
+                    clearable
+                    filterable
+                    check-strictly
+                    default-expand-all
+                    :render-after-expand="false"
+                />
             </el-form-item>
             <el-form-item label="名称" required>
                 <el-input v-model.trim="form.name" maxlength="100" show-word-limit />

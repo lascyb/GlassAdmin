@@ -4,8 +4,8 @@ import Frontend from './frontend.vue'
 </script>
 
 <template>
-  <el-card style="min-height: max(calc(100vh - 100px), 400px)">
-    <el-tabs>
+  <el-card style="min-height: max(calc(100vh - 100px), 400px);">
+    <el-tabs style="min-width: 900px">
       <el-tab-pane label="前端页面规则 (menu / view / btn)">
         <frontend/>
       </el-tab-pane>

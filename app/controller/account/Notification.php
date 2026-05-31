@@ -39,7 +39,7 @@ class Notification extends BaseController
         if ($category !== '') {
             $unreadQ->where('category', $category);
         }
-        $unreadCount = (int) $unreadQ->count();
+        $unreadCount = $unreadQ->count();
         $paginator = $q->order('id', 'desc')->paginate([
             'list_rows' => $limit,
             'page'      => $page,

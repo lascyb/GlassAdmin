@@ -51,6 +51,14 @@ Route::group('api', function () {
         Route::put('auth/admin/update', 'auth.Admin/update');
         Route::delete('auth/admin/delete', 'auth.Admin/delete');
 
+        Route::get('system/config/list', 'system.Config/list');
+        Route::get('system/config/read', 'system.Config/read');
+        Route::get('system/config/groups', 'system.Config/groups');
+        Route::post('system/config/save', 'system.Config/save');
+        Route::put('system/config/update', 'system.Config/update');
+        Route::delete('system/config/delete', 'system.Config/delete');
+        Route::put('system/config/batchSave', 'system.Config/batchSave');
+
         Route::get('account/profile', 'account.Profile/read');
         Route::put('account/profile', 'account.Profile/update');
         Route::post('account/profile/avatar', 'account.Profile/uploadAvatar');
