@@ -15,19 +15,11 @@ class AdminOperationLogService
     private const int SUMMARY_MAX = 255;
 
     /**
-     * normalizeApiPath 与 auth_rule.path、AdminRbacService 对齐（不含 api 前缀）
+     * normalizeApiPath 与 auth_rule.path、AdminRbacService 对齐（pathinfo 点号格式，如 auth.Rule/tree）
      */
     public static function normalizeApiPath(string $pathinfo): string
     {
-        $p = trim($pathinfo, '/');
-        if ($p === '') {
-            return '';
-        }
-        if (str_starts_with(strtolower($p), 'api/')) {
-            $p = substr($p, 4);
-        }
-
-        return trim($p, '/');
+        return trim($pathinfo, '/');
     }
 
     /**
@@ -57,7 +49,7 @@ class AdminOperationLogService
             return;
         }
         $m      = strtoupper($method);
-        $action = 'api.' . $m . '.' . $apiPath;
+        $action = $m . '.' . $apiPath;
         $get    = $request->get();
         $suffix = '';
         if ($get !== []) {

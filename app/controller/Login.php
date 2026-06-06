@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace app\controller;
 
 use app\BaseController;
+use app\middleware\ApiThrottle;
 use app\model\Admin;
 use app\service\AdminOperationLogService;
 use app\service\AuthService;
@@ -15,6 +16,11 @@ use think\Response;
 
 class Login extends BaseController
 {
+    /** @var array 控制器中间件 */
+    protected array $middleware = [
+        ApiThrottle::class,
+    ];
+
     /**
      * password 用户名密码登录（仅成功时写入 admin_operation_log，失败不写库）
      *

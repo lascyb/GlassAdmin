@@ -3,11 +3,17 @@
 namespace app\controller;
 
 use app\BaseController;
+use app\middleware\ApiThrottle;
 use app\service\RsaKeyService;
 use think\Response;
 
 class Security extends BaseController
 {
+    /** @var array 控制器中间件 */
+    protected array $middleware = [
+        ApiThrottle::class,
+    ];
+
     /**
      * 获取加密 RSA 公钥
      *

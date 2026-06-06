@@ -44,7 +44,7 @@ export const fetchList = async (params: {
     group?: string
     keyword?: string
 }) => {
-    const res = await get<ApiEnvelope<SystemConfigListRes>>('system/config/list', params)
+    const res = await get<ApiEnvelope<SystemConfigListRes>>('system.Config/list', params)
     return unwrap(res)
 }
 
@@ -52,7 +52,7 @@ export const fetchList = async (params: {
  * fetchRead 获取配置详情
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<SystemConfigRow>>('system/config/read', { id })
+    const res = await get<ApiEnvelope<SystemConfigRow>>('system.Config/read', { id })
     return unwrap(res)
 }
 
@@ -60,7 +60,7 @@ export const fetchRead = async (id: number) => {
  * fetchGroups 获取所有配置分组
  */
 export const fetchGroups = async () => {
-    const res = await get<ApiEnvelope<SystemConfigGroupsRes>>('system/config/groups')
+    const res = await get<ApiEnvelope<SystemConfigGroupsRes>>('system.Config/groups')
     return unwrap(res)
 }
 
@@ -68,7 +68,7 @@ export const fetchGroups = async () => {
  * saveConfig 新建配置
  */
 export const saveConfig = async (payload: Partial<SystemConfigRow>) => {
-    const res = await post<ApiEnvelope<{ id: number }>>('system/config/save', payload)
+    const res = await post<ApiEnvelope<{ id: number }>>('system.Config/save', payload)
     return unwrap(res)
 }
 
@@ -76,7 +76,7 @@ export const saveConfig = async (payload: Partial<SystemConfigRow>) => {
  * updateConfig 更新配置
  */
 export const updateConfig = async (id: number, payload: Partial<SystemConfigRow>) => {
-    const res = await put<ApiEnvelope<null>>(`system/config/update?id=${id}`, payload)
+    const res = await put<ApiEnvelope<null>>(`system.Config/update?id=${id}`, payload)
     return unwrap(res)
 }
 
@@ -84,7 +84,7 @@ export const updateConfig = async (id: number, payload: Partial<SystemConfigRow>
  * deleteConfig 删除配置
  */
 export const deleteConfig = async (id: number) => {
-    const res = await del<ApiEnvelope<null>>('system/config/delete', { id })
+    const res = await del<ApiEnvelope<null>>('system.Config/delete', { id })
     return unwrap(res)
 }
 
@@ -92,8 +92,7 @@ export const deleteConfig = async (id: number) => {
  * batchSaveConfig 批量保存配置（按 group）
  */
 export const batchSaveConfig = async (group: string, pairs: Record<string, string>) => {
-    const res = await put<ApiEnvelope<null>>('system/config/batchSave', { group, pairs })
+    const res = await put<ApiEnvelope<null>>('system.Config/batchSave', { group, pairs })
     return unwrap(res)
 }
-
 

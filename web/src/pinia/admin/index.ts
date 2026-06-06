@@ -89,7 +89,7 @@ export const useAdmin = defineStore('admin', () => {
         const rt = store.refreshToken
         if (!rt) return false
         const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-        const url = `${base}/login/refresh`
+        const url = `${base}/Login/refresh`
         try {
             const res = await fetch(url, {
                 method: 'POST',

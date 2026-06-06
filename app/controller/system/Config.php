@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\controller\system;
 
-use app\BaseController;
+use app\AuthController;
 use app\service\SystemConfigService;
 use think\Request;
 use think\Response;
@@ -11,7 +11,7 @@ use think\Response;
 /**
  * Config 系统配置管理控制器
  */
-class Config extends BaseController
+class Config extends AuthController
 {
     /** list 默认每页条数 */
     private const int LIMIT_DEFAULT = 20;

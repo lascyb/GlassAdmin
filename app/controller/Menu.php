@@ -3,14 +3,14 @@ declare (strict_types=1);
 
 namespace app\controller;
 
-use app\BaseController;
+use app\AuthController;
 use app\service\MenuService;
 use think\Response;
 
 /**
  * Menu 动态侧栏菜单接口（逻辑见 MenuService）
  */
-class Menu extends BaseController
+class Menu extends AuthController
 {
     /**
      * menus 返回当前用户可见菜单树

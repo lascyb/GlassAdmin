@@ -88,7 +88,7 @@ const handlePasswordLogin = async () => {
       return
     }
 
-    const res = await post<LoginPasswordRes>('login/password', {
+    const res = await post<LoginPasswordRes>('Login/password', {
       username: encryptedUsername,
       password: encryptedPassword,
       remember: passwordForm.remember,

@@ -4,7 +4,7 @@
 
 ```env
 # API 基础地址
-VITE_API_BASE_URL=http://localhost:3000/api
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
 ### 环境变量说明
@@ -17,7 +17,7 @@ VITE_API_BASE_URL=http://localhost:3000/api
 
 ```env
 # 开发环境 (.env.development)
-VITE_API_BASE_URL=http://localhost:3000/api
+VITE_API_BASE_URL=http://localhost:8080
 
 # 生产环境 (.env.production)
 VITE_API_BASE_URL=https://api.example.com

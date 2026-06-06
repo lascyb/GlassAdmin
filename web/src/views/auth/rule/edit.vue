@@ -228,7 +228,7 @@ defineExpose({ openAdd, openEdit })
             <template v-if="scope === 'backend'">
                 <template v-if="form.type === 'api'">
                     <el-form-item label="path" required>
-                        <el-input v-model.trim="form.path" placeholder="如 auth/rule/tree" />
+                        <el-input v-model.trim="form.path" placeholder="如 auth.Rule/tree" />
                     </el-form-item>
                     <el-form-item label="method">
                         <el-select v-model="form.method" class="w-full">

@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app;
 
+use app\middleware\ApiThrottle;
 use think\App;
 use think\exception\ValidateException;
 use think\Validate;
@@ -16,25 +17,27 @@ abstract class BaseController
      * Request实例
      * @var \think\Request
      */
-    protected $request;
+    protected \think\Request $request;
 
     /**
      * 应用实例
-     * @var \think\App
+     * @var App
      */
-    protected $app;
+    protected App $app;
 
     /**
      * 是否批量验证
      * @var bool
      */
-    protected $batchValidate = false;
+    protected bool $batchValidate = false;
 
     /**
      * 控制器中间件
      * @var array
      */
-    protected $middleware = [];
+    protected array $middleware = [
+        ApiThrottle::class,
+    ];
 
     /**
      * 构造方法
@@ -64,7 +67,7 @@ abstract class BaseController
      * @return array|string|true
      * @throws ValidateException
      */
-    protected function validate(array $data, string|array $validate, array $message = [], bool $batch = false)
+    protected function validate(array $data, string|array $validate, array $message = [], bool $batch = false): true|array|string
     {
         if (is_array($validate)) {
             $v = new Validate();
@@ -74,7 +77,7 @@ abstract class BaseController
                 // 支持场景
                 [$validate, $scene] = explode('.', $validate);
             }
-            $class = false !== strpos($validate, '\\') ? $validate : $this->app->parseClass('validate', $validate);
+            $class = str_contains($validate, '\\') ? $validate : $this->app->parseClass('validate', $validate);
             $v     = new $class();
             if (!empty($scene)) {
                 $v->scene($scene);

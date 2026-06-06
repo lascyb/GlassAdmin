@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\controller\account;
 
-use app\BaseController;
+use app\AuthController;
 use app\model\Admin as AdminModel;
 use app\service\RsaKeyService;
 use think\exception\FileException;
@@ -14,7 +14,7 @@ use think\Response;
 /**
  * Profile 当前登录管理员的个人资料与头像
  */
-class Profile extends BaseController
+class Profile extends AuthController
 {
     /** password 明文最小长度（与 auth.Admin 一致） */
     private const int PASSWORD_MIN_LEN = 6;

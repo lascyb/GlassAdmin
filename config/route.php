@@ -12,6 +12,8 @@ return [
     'url_route_must'        => false,
     // 是否区分大小写
     'url_case_sensitive'    => false,
+    // 是否自动转换 URL 中的控制器和操作名（false 保留 bindApis 等驼峰方法名）
+    'url_convert'           => false,
     // 自动扫描子目录分组
     'route_auto_group'      => false,
     // 合并路由规则

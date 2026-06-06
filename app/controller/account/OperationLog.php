@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\controller\account;
 
-use app\BaseController;
+use app\AuthController;
 use app\model\AdminOperationLog;
 use think\Request;
 use think\Response;
@@ -11,7 +11,7 @@ use think\Response;
 /**
  * OperationLog 当前登录管理员的操作日志
  */
-class OperationLog extends BaseController
+class OperationLog extends AuthController
 {
     /** operationLogsMax 操作日志单页 limit 上限 */
     private const int OPERATION_LOGS_MAX = 100;

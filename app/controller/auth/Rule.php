@@ -3,11 +3,11 @@ declare (strict_types = 1);
 
 namespace app\controller\auth;
 
-use app\BaseController;
-use app\service\AdminRbacService;
-use app\service\MenuService;
+use app\AuthController;
 use app\model\auth\Rule as RuleModel;
 use app\model\auth\RuleFrontendApi;
+use app\service\AdminRbacService;
+use app\service\MenuService;
 use Exception;
 use think\facade\Db;
 use think\Request;
@@ -16,7 +16,7 @@ use think\Response;
 /**
  * Rule 权限规则管理
  */
-class Rule extends BaseController
+class Rule extends AuthController
 {
     /**
      * tree 按 scope 返回树
@@ -212,7 +212,7 @@ class Rule extends BaseController
      *
      * @return Response
      */
-    private function apiList(): Response
+    public function apiList(): Response
     {
         $list = RuleModel::where('scope', 'backend')
             ->where('type', 'api')

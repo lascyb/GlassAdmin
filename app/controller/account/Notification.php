@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\controller\account;
 
-use app\BaseController;
+use app\AuthController;
 use app\model\AdminNotification;
 use think\Request;
 use think\Response;
@@ -11,7 +11,7 @@ use think\Response;
 /**
  * Notification 当前登录管理员的站内消息通知
  */
-class Notification extends BaseController
+class Notification extends AuthController
 {
     /** notificationsBriefMax GET 通知列表在 Header 等场景下的 limit 上限 */
     private const int NOTIFICATIONS_BRIEF_MAX = 50;

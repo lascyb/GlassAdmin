@@ -34,7 +34,7 @@ function unwrap<T>(res: ApiEnvelope<T>): T {
  * fetchList 分页列表
  */
 export const fetchList = async (params: { page?: number; limit?: number; keyword?: string }) => {
-    const res = await get<ApiEnvelope<AdminListRes>>('auth/admin/list', params)
+    const res = await get<ApiEnvelope<AdminListRes>>('auth.Admin/list', params)
     return unwrap(res)
 }
 
@@ -42,7 +42,7 @@ export const fetchList = async (params: { page?: number; limit?: number; keyword
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<AdminRow>>('auth/admin/read', { id })
+    const res = await get<ApiEnvelope<AdminRow>>('auth.Admin/read', { id })
     return unwrap(res)
 }
 
@@ -53,7 +53,7 @@ export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_id: number; status: number; password: string },
     headers: { 'X-RSA-Serial': string },
 ) => {
-    const res = await post<ApiEnvelope<{ id: number }>>('auth/admin/save', payload, { headers })
+    const res = await post<ApiEnvelope<{ id: number }>>('auth.Admin/save', payload, { headers })
     return unwrap(res)
 }
 
@@ -66,7 +66,7 @@ export const updateAdmin = async (
     headers?: { 'X-RSA-Serial': string },
 ) => {
     const res = await put<ApiEnvelope<null>>(
-        'auth/admin/update?id=' + id,
+        'auth.Admin/update?id=' + id,
         payload,
         headers ? { headers } : undefined,
     )
@@ -77,6 +77,6 @@ export const updateAdmin = async (
  * deleteAdmin 删除
  */
 export const deleteAdmin = async (id: number) => {
-    const res = await del<ApiEnvelope<null>>('auth/admin/delete', { id })
+    const res = await del<ApiEnvelope<null>>('auth.Admin/delete', { id })
     return unwrap(res)
 }

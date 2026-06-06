@@ -44,7 +44,7 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         }
 
         pendingRsaPublicKeyRequest = (async () => {
-            const res = await get<RsaPublicKeyRes>('security/rsa-public-key')
+            const res = await get<RsaPublicKeyRes>('Security/rsaPublicKey')
             if (res.code !== 0 || !res.data?.serial || !res.data.public_key) {
                 clearRsaPublicKey()
                 return null

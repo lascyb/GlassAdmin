@@ -28,7 +28,7 @@ function unwrap<T>(res: ApiEnvelope<T>): T {
  * fetchTree 角色树
  */
 export const fetchTree = async () => {
-    const res = await get<ApiEnvelope<{ list: RoleRow[] }>>('auth/role/tree')
+    const res = await get<ApiEnvelope<{ list: RoleRow[] }>>('auth.Role/tree')
     return unwrap(res).list
 }
 
@@ -36,7 +36,7 @@ export const fetchTree = async () => {
  * fetchRead 角色详情
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<RoleDetail>>('auth/role/read', { id })
+    const res = await get<ApiEnvelope<RoleDetail>>('auth.Role/read', { id })
     return unwrap(res)
 }
 
@@ -44,7 +44,7 @@ export const fetchRead = async (id: number) => {
  * saveRole 新建角色
  */
 export const saveRole = async (payload: { pid?: number; name: string; desc?: string; sort?: number; status?: number }) => {
-    const res = await post<ApiEnvelope<{ id: number }>>('auth/role/save', payload)
+    const res = await post<ApiEnvelope<{ id: number }>>('auth.Role/save', payload)
     return unwrap(res)
 }
 
@@ -55,7 +55,7 @@ export const updateRole = async (
     id: number,
     payload: { pid?: number; name: string; desc?: string; sort?: number; status?: number },
 ) => {
-    const res = await put<ApiEnvelope<null>>('auth/role/update?id=' + id, payload)
+    const res = await put<ApiEnvelope<null>>('auth.Role/update?id=' + id, payload)
     return unwrap(res)
 }
 
@@ -63,7 +63,7 @@ export const updateRole = async (
  * deleteRole 删除角色
  */
 export const deleteRole = async (id: number) => {
-    const res = await del<ApiEnvelope<null>>('auth/role/delete', { id })
+    const res = await del<ApiEnvelope<null>>('auth.Role/delete', { id })
     return unwrap(res)
 }
 
@@ -71,6 +71,6 @@ export const deleteRole = async (id: number) => {
  * assignRules 扁平分配前端规则（无父子继承）
  */
 export const assignRules = async (id: number, rule_ids: number[]) => {
-    const res = await put<ApiEnvelope<null>>('auth/role/assignRules?id=' + id, { rule_ids })
+    const res = await put<ApiEnvelope<null>>('auth.Role/assignRules?id=' + id, { rule_ids })
     return unwrap(res)
 }

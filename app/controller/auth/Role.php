@@ -3,12 +3,12 @@ declare (strict_types=1);
 
 namespace app\controller\auth;
 
-use app\BaseController;
-use app\service\AdminRbacService;
-use app\service\MenuService;
+use app\AuthController;
 use app\model\auth\Role as RoleModel;
 use app\model\auth\RoleRule;
 use app\model\auth\Rule as RuleModel;
+use app\service\AdminRbacService;
+use app\service\MenuService;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -16,7 +16,7 @@ use think\Response;
 /**
  * Role 权限角色管理（树形仅组织；权限 assignRules 扁平无继承）
  */
-class Role extends BaseController
+class Role extends AuthController
 {
     /**
      * tree 角色树（含 children）

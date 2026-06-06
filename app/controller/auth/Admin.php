@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\controller\auth;
 
-use app\BaseController;
+use app\AuthController;
 use app\model\Admin as AdminModel;
 use app\model\auth\Role as RoleModel;
 use app\service\RsaKeyService;
@@ -13,7 +13,7 @@ use think\Response;
 /**
  * Admin 后台管理员账号 CRUD（密码经 RSA 解密后 bcrypt 存储）
  */
-class Admin extends BaseController
+class Admin extends AuthController
 {
     /** list 默认每页条数（请求参数 limit） */
     private const int LIMIT_DEFAULT = 20;

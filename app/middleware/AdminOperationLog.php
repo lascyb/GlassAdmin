@@ -15,7 +15,7 @@ class AdminOperationLog
 {
     /** skipPaths 不记录日志的 API 路径（与 AdminOperationLogService::normalizeApiPath 结果一致） */
     private const array SKIP_PATHS = [
-        'account/operation-logs',
+        'account.OperationLog/index',
     ];
 
     /**

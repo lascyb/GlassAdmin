@@ -5,8 +5,7 @@ export function resolveStorageUrl(path: string | null | undefined): string {
     const p = (path ?? '').trim()
     if (!p) return ''
     if (/^https?:\/\//i.test(p)) return p
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-    const origin = apiBase.replace(/\/api\/?$/i, '')
+    const origin = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
     const rel = p.replace(/^\/+/, '')
     const prefix = origin ? `${origin}/storage/` : '/storage/'
     return `${prefix}${rel}`

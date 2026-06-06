@@ -9,7 +9,7 @@ use think\Request;
 use think\Response;
 
 /**
- * ApiThrottle 固定窗口计数限流：公开接口仅挂本中间件时按 IP+路径；在 AdminAuth 之后则按 admin_id+路径（见 route 分组）
+ * ApiThrottle 固定窗口计数限流：公开接口仅挂本中间件时按 IP+路径；鉴权接口在 AdminAuth 之后按 admin_id+路径
  */
 class ApiThrottle
 {

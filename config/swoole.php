@@ -58,7 +58,7 @@ return [
     'hot_update' => [
         'enable' => env('APP_DEBUG', false),
         'name' => ['*.php'],
-        'include' => [root_path("app"),root_path("extend"),root_path("config"),root_path("route")],
+        'include' => [root_path("app"),root_path("extend"),root_path("config")],
         'exclude' => [],
     ],
     //连接池

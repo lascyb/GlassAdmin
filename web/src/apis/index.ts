@@ -14,7 +14,7 @@ export type ApiEnvelope<T> = {
  * @returns menus 供 useLayoutMenus.init
  */
 export const index = async (): Promise<{ menus: Menu[] }> => {
-    const res = await get<ApiEnvelope<{ menus: Menu[] }>>('menu/menus')
+    const res = await get<ApiEnvelope<{ menus: Menu[] }>>('Menu/menus')
     if (res.code !== 0) {
         throw new Error(res.msg || '菜单加载失败')
     }
