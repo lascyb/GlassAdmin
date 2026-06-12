@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
-import IconPicker from '@/components/icon-picker/index.vue'
+import Picker from '@components/ga-icon/picker.vue'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 
@@ -251,7 +251,7 @@ defineExpose({ openAdd, openEdit })
                     <el-input v-model.trim="form.component" placeholder="如 auth/rule/index.vue" />
                 </el-form-item>
                 <el-form-item label="图标">
-                    <IconPicker v-model="form.icon" />
+                    <Picker v-model="form.icon" />
                 </el-form-item>
             </template>
 

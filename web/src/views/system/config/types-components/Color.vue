@@ -12,7 +12,8 @@ const emit = defineEmits<{
     change: [value: string]
 }>()
 
-const onChange = (val: string) => {
+const onChange = (val: string | null) => {
+    if (val === null) return
     emit('update:modelValue', val)
     emit('change', val)
 }

@@ -1,5 +1,4 @@
-import { del, get, post, put } from '@/utils/request'
-import type { ApiEnvelope } from '@/apis'
+import { delData, getData, postData, putData } from '@/apis/http'
 
 /** RuleRow 规则行（树节点） */
 export type RuleRow = {
@@ -19,62 +18,47 @@ export type RuleRow = {
 }
 
 /**
- * unwrap 解析 code===0 的 data
- */
-function unwrap<T>(res: ApiEnvelope<T>): T {
-    if (res.code !== 0) {
-        throw new Error(res.msg || '请求失败')
-    }
-    return res.data
-}
-
-/**
  * fetchTree 按 scope 取规则树
  */
 export const fetchTree = async (scope: 'backend' | 'frontend') => {
-    const res = await get<ApiEnvelope<{ list: RuleRow[] }>>('auth.Rule/tree', { scope })
-    return unwrap(res).list
+    const data = await getData<{ list: RuleRow[] }>('auth.Rule/tree', { scope })
+    return data.list
 }
 
 /**
  * fetchRead 规则详情（view/btn 含 backend_rule_ids）
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<RuleRow & { backend_rule_ids?: number[] }>>('auth.Rule/read', { id })
-    return unwrap(res)
+    return getData<RuleRow & { backend_rule_ids?: number[] }>('auth.Rule/read', { id })
 }
 
 /**
  * saveRule 新建规则
  */
 export const saveRule = async (payload: Record<string, unknown>) => {
-    const res = await post<ApiEnvelope<{ id: number }>>('auth.Rule/save', payload)
-    return unwrap(res)
+    return postData<{ id: number }>('auth.Rule/save', payload)
 }
 
 /**
  * updateRule 更新规则
  */
 export const updateRule = async (id: number, payload: Record<string, unknown>) => {
-    const res = await put<ApiEnvelope<null>>('auth.Rule/update?id=' + id, payload)
-    return unwrap(res)
+    return putData<null>('auth.Rule/update?id=' + id, payload)
 }
 
 /**
  * deleteRule 删除规则
  */
 export const deleteRule = async (id: number) => {
-    const res = await del<ApiEnvelope<null>>('auth.Rule/delete', { id })
-    return unwrap(res)
+    return delData<null>('auth.Rule/delete', { id })
 }
 
 /**
  * bindApis 前端 view/btn 绑定后端 api
  */
 export const bindApis = async (frontend_rule_id: number, backend_rule_ids: number[]) => {
-    const res = await post<ApiEnvelope<null>>('auth.Rule/bindApis', {
+    return postData<null>('auth.Rule/bindApis', {
         frontend_rule_id,
         backend_rule_ids,
     })
-    return unwrap(res)
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {views} from "@/router";
+import {views} from "@/router/views.ts";
 import {ref} from "vue";
 
 // 将文件路径转换为相对路径格式（去掉 /src/views/ 前缀和 .vue 后缀）
@@ -20,7 +20,7 @@ const file = ref("");
   <div>
     <el-alert>index</el-alert>
     {{ file }}
-    <el-select v-model="file" clearable>
+   <el-select v-model="file" clearable>
       <el-option v-for="item in options" :value="item.value" :label="item.label"></el-option>
     </el-select>
   </div>

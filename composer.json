@@ -30,7 +30,8 @@
         "ext-openssl": "*",
         "ext-redis": "*",
         "ext-swoole": "^4.0|^5.0|^6.0",
-        "topthink/think-swoole": "^4.1"
+        "topthink/think-swoole": "^4.1",
+        "topthink/think-multi-app": "^1.1"
     },
     "require-dev": {
         "topthink/think-dumper": "^1.0",

@@ -1,12 +1,8 @@
 import type { Menu } from '@/layouts/components/menus/types'
-import { get } from '@/utils/request'
+import { getData } from '@/apis/http'
 
-/** ApiEnvelope 后端统一 JSON 外壳 */
-export type ApiEnvelope<T> = {
-    code: number
-    msg: string
-    data: T
-}
+export type { ApiEnvelope } from '@/apis/envelope'
+export { ApiError, unwrap, getData, postData, putData, delData, postFormDataData } from '@/apis/http'
 
 /**
  * index 拉取当前用户动态菜单（需登录 token）
@@ -14,9 +10,5 @@ export type ApiEnvelope<T> = {
  * @returns menus 供 useLayoutMenus.init
  */
 export const index = async (): Promise<{ menus: Menu[] }> => {
-    const res = await get<ApiEnvelope<{ menus: Menu[] }>>('Menu/menus')
-    if (res.code !== 0) {
-        throw new Error(res.msg || '菜单加载失败')
-    }
-    return res.data
+    return getData<{ menus: Menu[] }>('Menu/menus')
 }

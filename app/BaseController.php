@@ -3,9 +3,10 @@ declare (strict_types = 1);
 
 namespace app;
 
-use app\middleware\ApiThrottle;
+use app\common\ApiResponse;
 use think\App;
 use think\exception\ValidateException;
+use think\Response;
 use think\Validate;
 
 /**
@@ -35,9 +36,7 @@ abstract class BaseController
      * 控制器中间件
      * @var array
      */
-    protected array $middleware = [
-        ApiThrottle::class,
-    ];
+    protected array $middleware = [];
 
     /**
      * 构造方法
@@ -92,6 +91,30 @@ abstract class BaseController
         }
 
         return $v->failException(true)->check($data);
+    }
+
+    /**
+     * ok 成功响应，委托 ApiResponse::success
+     */
+    protected function ok(mixed $data = null, string $msg = 'ok'): Response
+    {
+        return ApiResponse::success($data, $msg);
+    }
+
+    /**
+     * fail 失败响应，委托 ApiResponse::fail
+     */
+    protected function fail(int $code, string $msg, mixed $data = null, ?int $httpStatus = null): Response
+    {
+        return ApiResponse::fail($code, $msg, $data, $httpStatus);
+    }
+
+    /**
+     * paginate 分页响应，委托 ApiResponse::paginate
+     */
+    protected function paginate(array $list, int $total, int $page, int $limit): Response
+    {
+        return ApiResponse::paginate($list, $total, $page, $limit);
     }
 
 }

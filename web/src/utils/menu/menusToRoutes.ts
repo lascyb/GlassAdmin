@@ -1,6 +1,6 @@
 import type {RouteRecordRaw} from "vue-router";
 import type {Menu} from "@/layouts/components/menus/types.ts";
-import {views} from "@/router"
+import {views} from "@/router/views.ts"
 
 const iframeView = () => import("./../../layouts/router-view/iframe.vue");
 // const linkView = () => import("./../../layouts/router-view/link.vue");

@@ -1,5 +1,4 @@
-import type { ApiEnvelope } from '@/apis'
-import { get, postFormData, put } from '@/utils/request'
+import { getData, postFormDataData, putData } from '@/apis/http'
 
 /** ProfileRow 当前用户资料 */
 export type ProfileRow = {
@@ -52,19 +51,11 @@ export type OperationLogsListRes = {
     limit: number
 }
 
-function unwrap<T>(res: ApiEnvelope<T>): T {
-    if (res.code !== 0) {
-        throw new Error(res.msg || '请求失败')
-    }
-    return res.data
-}
-
 /**
  * fetchProfile 当前用户资料
  */
 export const fetchProfile = async () => {
-    const res = await get<ApiEnvelope<ProfileRow>>('account.Profile/read')
-    return unwrap(res)
+    return getData<ProfileRow>('account.Profile/read')
 }
 
 /**
@@ -74,24 +65,21 @@ export const updateProfile = async (
     payload: { nickname?: string; password?: string },
     headers?: { 'X-RSA-Serial': string },
 ) => {
-    const res = await put<ApiEnvelope<null>>('account.Profile/update', payload, headers ? { headers } : undefined)
-    return unwrap(res)
+    return putData<null>('account.Profile/update', payload, headers ? { headers } : undefined)
 }
 
 /**
  * uploadProfileAvatar 上传当前用户头像（字段名 file）
  */
 export const uploadProfileAvatar = async (formData: FormData) => {
-    const res = await postFormData<ApiEnvelope<{ avatar: string }>>('account.Profile/uploadAvatar', formData)
-    return unwrap(res)
+    return postFormDataData<{ avatar: string }>('account.Profile/uploadAvatar', formData)
 }
 
 /**
  * fetchOperationLogs 操作日志分页
  */
 export const fetchOperationLogs = async (params: { page?: number; limit?: number }) => {
-    const res = await get<ApiEnvelope<OperationLogsListRes>>('account.OperationLog/index', params)
-    return unwrap(res)
+    return getData<OperationLogsListRes>('account.OperationLog/index', params)
 }
 
 /**
@@ -102,14 +90,12 @@ export const fetchNotifications = async (params: {
     limit?: number
     category?: string
 }) => {
-    const res = await get<ApiEnvelope<NotificationsListRes>>('account.Notification/index', params)
-    return unwrap(res)
+    return getData<NotificationsListRes>('account.Notification/index', params)
 }
 
 /**
  * markNotificationsRead 标记已读：ids 或 all
  */
 export const markNotificationsRead = async (payload: { ids?: number[]; all?: boolean }) => {
-    const res = await put<ApiEnvelope<null>>('account.Notification/markRead', payload)
-    return unwrap(res)
+    return putData<null>('account.Notification/markRead', payload)
 }

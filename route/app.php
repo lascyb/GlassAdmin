@@ -8,9 +8,6 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
-use app\middleware\AdminAuth;
-use app\middleware\AdminOperationLog;
-use app\middleware\ApiThrottle;
 use think\facade\Route;
 
 Route::get('', function () {

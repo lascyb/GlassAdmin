@@ -1,5 +1,4 @@
-import { del, get, post, put } from '@/utils/request'
-import type { ApiEnvelope } from '@/apis'
+import { delData, getData, postData, putData } from '@/apis/http'
 
 /** AdminRow 管理员列表行 */
 export type AdminRow = {
@@ -23,27 +22,18 @@ export type AdminListRes = {
     limit: number
 }
 
-function unwrap<T>(res: ApiEnvelope<T>): T {
-    if (res.code !== 0) {
-        throw new Error(res.msg || '请求失败')
-    }
-    return res.data
-}
-
 /**
  * fetchList 分页列表
  */
 export const fetchList = async (params: { page?: number; limit?: number; keyword?: string }) => {
-    const res = await get<ApiEnvelope<AdminListRes>>('auth.Admin/list', params)
-    return unwrap(res)
+    return getData<AdminListRes>('auth.Admin/list', params)
 }
 
 /**
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    const res = await get<ApiEnvelope<AdminRow>>('auth.Admin/read', { id })
-    return unwrap(res)
+    return getData<AdminRow>('auth.Admin/read', { id })
 }
 
 /**
@@ -53,8 +43,7 @@ export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_id: number; status: number; password: string },
     headers: { 'X-RSA-Serial': string },
 ) => {
-    const res = await post<ApiEnvelope<{ id: number }>>('auth.Admin/save', payload, { headers })
-    return unwrap(res)
+    return postData<{ id: number }>('auth.Admin/save', payload, { headers })
 }
 
 /**
@@ -65,18 +54,16 @@ export const updateAdmin = async (
     payload: { nickname?: string; role_id: number; status: number; password?: string },
     headers?: { 'X-RSA-Serial': string },
 ) => {
-    const res = await put<ApiEnvelope<null>>(
+    return putData<null>(
         'auth.Admin/update?id=' + id,
         payload,
         headers ? { headers } : undefined,
     )
-    return unwrap(res)
 }
 
 /**
  * deleteAdmin 删除
  */
 export const deleteAdmin = async (id: number) => {
-    const res = await del<ApiEnvelope<null>>('auth.Admin/delete', { id })
-    return unwrap(res)
+    return delData<null>('auth.Admin/delete', { id })
 }

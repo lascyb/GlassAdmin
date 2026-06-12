@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { ApiEnvelope } from '@/apis/envelope'
+import { unwrap } from '@/apis/envelope'
 import { useAdminTokenLocal, useAdminTokenSession } from '@/pinia/admin/token'
 
 /** AdminUser 登录后的后台管理员信息 */
@@ -96,21 +98,19 @@ export const useAdmin = defineStore('admin', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refresh_token: rt }),
             })
-            const json = (await res.json()) as {
-                code: number
-                data?: {
-                    access_token: string
-                    refresh_token: string
-                    expire_at: number
-                    user?: Admin
-                }
-            }
-            if (json.code !== 0 || !json.data?.access_token || !json.data?.refresh_token || !json.data?.expire_at) {
+            const json = (await res.json()) as ApiEnvelope<{
+                access_token: string
+                refresh_token: string
+                expire_at: number
+                user?: Admin
+            }>
+            const payload = unwrap(json)
+            if (!payload.access_token || !payload.refresh_token || !payload.expire_at) {
                 return false
             }
-            store.setTokens(json.data.access_token, json.data.refresh_token, json.data.expire_at)
-            if (json.data.user) {
-                data.value = json.data.user
+            store.setTokens(payload.access_token, payload.refresh_token, payload.expire_at)
+            if (payload.user) {
+                data.value = payload.user
             }
             return true
         } catch {

@@ -3,12 +3,13 @@
  * 自动添加 token 等认证信息
  */
 
-import { useAdmin } from '@/pinia/admin'
-import { createFetch } from '@vueuse/core'
-import { ElMessage } from "element-plus";
+import { useAdmin } from '@/pinia/admin';
 import { router } from "@/router";
+import { createFetch } from '@vueuse/core';
+import { ElMessage } from "element-plus";
 
-const admin = useAdmin()
+/** getAdmin 延迟获取 store，避免 request ↔ pinia/admin ↔ apis/http 模块循环依赖 */
+const getAdmin = () => useAdmin()
 
 /** retried401Execute 已对该 useFetch 实例执行过「刷新 + 重放」后，再次 401 则不再重试（按 execute 引用区分并发请求） */
 const retried401Execute = new WeakSet<() => Promise<Response | null>>()
@@ -93,6 +94,7 @@ export const useFetch = createFetch({
             }
 
             // 添加 token
+            const admin = getAdmin()
             if (admin.token) {
                 options.headers = {
                     ...options.headers, Authorization: `Bearer ${admin.token}`,
@@ -105,9 +107,10 @@ export const useFetch = createFetch({
             }
         }, async afterFetch({data}) {
             // 请求成功返回后再按需刷新 access，不阻塞本次响应解析（不 await）
-            void admin.tryRefreshAccessTokenIfNeeded()
+            void getAdmin().tryRefreshAccessTokenIfNeeded()
             return {data}
         }, async onFetchError({response, error, execute}) {
+            const admin = getAdmin()
             if (response?.status === 401) {
                 if (retried401Execute.has(execute)) {
                     ElMessage.warning({message: '未授权，请重新登录'})

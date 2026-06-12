@@ -1,43 +1,19 @@
 import * as ruleApi from '@/apis/auth/rule'
 import type { RuleRow } from '@/apis/auth/rule'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, ref, shallowRef } from 'vue'
+import { useTreeCrud } from '@/composables/useTreeCrud'
 
 /**
  * useRuleTreeBase 加载规则树与删除（前后端页面共用）
  */
 export function useRuleTreeBase(scope: 'backend' | 'frontend') {
-    const treeData = shallowRef<RuleRow[]>([])
-    const loading = ref(false)
+    const { treeData, loading, load, remove, topIds } = useTreeCrud<RuleRow>(
+        () => ruleApi.fetchTree(scope),
+        (id) => ruleApi.deleteRule(id),
+        {
+            getDeleteMessage: (row) => `确定删除「${row.name}」？`,
+            deleteSuccessMsg: '已删除',
+        },
+    )
 
-    const load = async () => {
-        loading.value = true
-        try {
-            treeData.value = await ruleApi.fetchTree(scope)
-        } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '加载失败')
-        } finally {
-            loading.value = false
-        }
-    }
-
-    const remove = async (row: RuleRow) => {
-        try {
-            await ElMessageBox.confirm(`确定删除「${row.name}」？`, '确认', { type: 'warning' })
-        } catch {
-            return
-        }
-        try {
-            await ruleApi.deleteRule(row.id)
-            ElMessage.success('已删除')
-            await load()
-        } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '删除失败')
-        }
-    }
-    // 用来默认展开第一层数据
-    const top_ids = computed(()=>{
-        return treeData.value.map((item)=>item.id);
-    })
-    return { treeData, loading, load, remove,top_ids }
+    return { treeData, loading, load, remove, top_ids: topIds }
 }

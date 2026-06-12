@@ -12,3 +12,4 @@ Thumbs.db
 /.project
 /.codebuddy
 /public/storage/
+/php-cli.ini

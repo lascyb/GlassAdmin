@@ -5,6 +5,6 @@
 return [
     // 指令定义
     'commands' => [
-        'rsa:generate' => \app\command\GenerateRsaKeys::class,
+        'rsa:generate' => \app\admin\command\GenerateRsaKeys::class,
     ],
 ];

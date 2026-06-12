@@ -1,4 +1,4 @@
-import { get } from "@/utils/request";
+import { getData } from '@/apis/http'
 import { defineStore } from 'pinia';
 import { ref } from "vue";
 
@@ -6,16 +6,6 @@ export type RsaPublicKeyInfo = {
     serial: string
     publicKey: string
     expireAt: number
-}
-
-type RsaPublicKeyRes = {
-    code: number
-    msg: string
-    data: null | {
-        serial: string
-        public_key: string
-        expire_at: number
-    }
 }
 
 export const useSecurityRsa = defineStore('security_rsa', () => {
@@ -44,17 +34,26 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         }
 
         pendingRsaPublicKeyRequest = (async () => {
-            const res = await get<RsaPublicKeyRes>('Security/rsaPublicKey')
-            if (res.code !== 0 || !res.data?.serial || !res.data.public_key) {
+            try {
+                const res = await getData<{
+                    serial: string
+                    public_key: string
+                    expire_at: number
+                }>('Security/rsaPublicKey')
+                if (!res.serial || !res.public_key) {
+                    clearRsaPublicKey()
+                    return null
+                }
+                setRsaPublicKey({
+                    serial: res.serial,
+                    publicKey: res.public_key,
+                    expireAt: res.expire_at,
+                })
+                return rsaPublicKey.value
+            } catch {
                 clearRsaPublicKey()
                 return null
             }
-            setRsaPublicKey({
-                serial: res.data.serial,
-                publicKey: res.data.public_key,
-                expireAt: res.data.expire_at,
-            })
-            return rsaPublicKey.value
         })()
 
         try {

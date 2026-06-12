@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAdmin } from '@/pinia/admin'
 import { useSecurityRsa } from '@/pinia/security/rsa'
-import { post } from '@/utils/request'
+import { ApiError, postData } from '@/apis/http'
 import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { reactive, ref } from 'vue'
@@ -10,19 +10,6 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const securityRsa = useSecurityRsa()
 const admin = useAdmin()
-
-/** LoginPasswordRes 密码登录接口返回（expire_at 为 access 过期秒级时间戳） */
-interface LoginPasswordRes {
-  code: number
-  msg: string
-  data: null | {
-    access_token: string
-    refresh_token: string
-    expire_at: number
-    refresh_expire_at: number
-    user: { id: number; username: string; nickname: string; avatar?: string | null; role_id?: number | null }
-  }
-}
 
 // 登录方式：password | sms
 const loginType = ref<'password' | 'sms'>('password')
@@ -88,7 +75,13 @@ const handlePasswordLogin = async () => {
       return
     }
 
-    const res = await post<LoginPasswordRes>('Login/password', {
+    const data = await postData<{
+      access_token: string
+      refresh_token: string
+      expire_at: number
+      refresh_expire_at: number
+      user: { id: number; username: string; nickname: string; avatar?: string | null; role_id?: number | null }
+    }>('Login/password', {
       username: encryptedUsername,
       password: encryptedPassword,
       remember: passwordForm.remember,
@@ -97,23 +90,19 @@ const handlePasswordLogin = async () => {
         'X-RSA-Serial': rsaSerial,
       },
     })
-    if (res.code !== 0 || !res.data?.access_token || !res.data?.refresh_token || !res.data?.user || !res.data?.expire_at) {
-      ElMessage.error(res.msg || '登录失败')
-      return
-    }
 
     admin.init(
-      res.data.access_token,
-      res.data.refresh_token,
-      res.data.user,
-      res.data.expire_at,
+      data.access_token,
+      data.refresh_token,
+      data.user,
+      data.expire_at,
       passwordForm.remember,
     )
 
     ElMessage.success('登录成功')
     await router.push(admin.getReferer())
   } catch(e) {
-    ElMessage.error('登录请求失败'+e)
+    ElMessage.error(e instanceof ApiError ? e.message : '登录请求失败' + e)
   } finally {
     logining.value = false
   }

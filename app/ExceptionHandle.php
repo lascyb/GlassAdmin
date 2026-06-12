@@ -1,6 +1,7 @@
 <?php
 namespace app;
 
+use app\common\ApiResponse;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\ModelNotFoundException;
 use think\exception\Handle;
@@ -50,8 +51,12 @@ class ExceptionHandle extends Handle
      */
     public function render($request, Throwable $e): Response
     {
+        if ($e instanceof ValidateException) {
+            return ApiResponse::badRequest($e->getError() ?: $e->getMessage());
+        }
+
         if ($e instanceof HttpException && $e->getStatusCode() === 404) {
-            return json(['code' => 404, 'msg' => '请求的接口不存在', 'data' => null], 404);
+            return ApiResponse::notFound('请求的接口不存在');
         }
 
         return parent::render($request, $e);

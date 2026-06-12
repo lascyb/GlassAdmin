@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { getElIcon } from '@/utils/gaIcon/elRegistry';
-import { getLocalIconUrl } from '@/utils/gaIcon/localIcons';
-import { parseGaIconString } from '@/utils/gaIcon/parse';
+import { getElIcon } from '@components/ga-icon/elRegistry';
+import { getLocalIconUrl } from '@components/ga-icon/localIcons';
+import { parseGaIconString } from '@components/ga-icon/parse';
 import { StarFilled } from '@element-plus/icons-vue';
 import { computed } from 'vue';
 
