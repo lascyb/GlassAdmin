@@ -15,11 +15,8 @@ use think\Response;
  */
 class AdminAuth
 {
-    /** 超级管理员 role_id，仅校验登录，不走 RBAC（与 MenuService 超级角色语义一致） */
-    private const int SUPER_ROLE_ID = 1;
-
     /**
-     * handle 解析 token 并写入 request->admin_id,role_id
+     * handle 解析 token 并写入 request->admin_id、request->role_ids、request->auth
      *
      * @param Request $request
      * @param Closure $next
@@ -42,11 +39,12 @@ class AdminAuth
         if ($payload === null) {
             return ApiResponse::unauthorized('登录已失效');
         }
-        if ($payload->roleId !== self::SUPER_ROLE_ID && !AdminRbacService::isApiAllowed($request, $payload->roleId)) {
+        if (!$payload->isSuper() && !AdminRbacService::isApiAllowed($request, $payload->roleIds)) {
             return ApiResponse::forbidden('无权访问');
         }
         $request->admin_id = $payload->adminId;
-        $request->role_id = $payload->roleId;
+        $request->role_ids = $payload->roleIds;
+        $request->auth     = $payload;
 
         return $next($request);
     }

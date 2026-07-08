@@ -6,9 +6,9 @@ export type ProfileRow = {
     username: string
     nickname?: string | null
     avatar?: string | null
-    role_id?: number | null
+    role_ids?: number[]
     status: number
-    role?: { id: number; name: string } | null
+    roles?: { id: number; name: string }[]
     create_time?: string | null
     update_time?: string | null
 }

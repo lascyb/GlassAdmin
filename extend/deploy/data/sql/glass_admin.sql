@@ -28,7 +28,7 @@ CREATE TABLE `admin`  (
   `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '昵称',
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像相对路径（public/storage 下，如 avatar/xxx.jpg）',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '{1:正常,0:禁用}',
-  `role_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '主角色 auth_role.id',
+  `last_login_time` bigint NULL DEFAULT NULL COMMENT '上次登录时间（Unix 秒）',
   `create_time` bigint NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` bigint NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -38,8 +38,25 @@ CREATE TABLE `admin`  (
 -- ----------------------------
 -- Records of admin
 -- ----------------------------
-INSERT INTO `admin` VALUES (1, 'admin', '$2y$10$xwPex1q7KkR6aDhR2UtMAuYtYxRH8bN.bSXeyiQFs7IaKpYOfJq0a', '管理员', 'avatar/fd75e560334c440fffe9c6b359e006e5.png', 1, 1, NULL, 1780159132);
-INSERT INTO `admin` VALUES (3, 'black', '$2y$12$AY55kBfDoQM8cyw9BXoreeIPqq659OJ2oiJ61D0pWO7U9EOW8bNHS', 'lascyb', 'storage/avatar/27f3488295fb624974736daf3148d3ae.jpg', 1, 11, 1778745753, 1778839154);
+INSERT INTO `admin` VALUES (1, 'admin', '$2y$10$xwPex1q7KkR6aDhR2UtMAuYtYxRH8bN.bSXeyiQFs7IaKpYOfJq0a', '管理员', 'avatar/fd75e560334c440fffe9c6b359e006e5.png', 1, NULL, NULL, 1780159132);
+INSERT INTO `admin` VALUES (3, 'black', '$2y$12$AY55kBfDoQM8cyw9BXoreeIPqq659OJ2oiJ61D0pWO7U9EOW8bNHS', 'lascyb', 'storage/avatar/27f3488295fb624974736daf3148d3ae.jpg', 1, NULL, 1778745753, 1778839154);
+
+-- ----------------------------
+-- Table structure for admin_role
+-- ----------------------------
+DROP TABLE IF EXISTS `admin_role`;
+CREATE TABLE `admin_role`  (
+  `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员 id',
+  `role_id` bigint UNSIGNED NOT NULL COMMENT '角色 id',
+  PRIMARY KEY (`admin_id`, `role_id`) USING BTREE,
+  INDEX `idx_role`(`role_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理员与角色多对多' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of admin_role
+-- ----------------------------
+INSERT INTO `admin_role` VALUES (1, 1);
+INSERT INTO `admin_role` VALUES (3, 11);
 
 -- ----------------------------
 -- Table structure for admin_notification
@@ -205,6 +222,7 @@ INSERT INTO `auth_rule` VALUES (28, 'backend', 'api', 227, '操作日志列表',
 INSERT INTO `auth_rule` VALUES (29, 'backend', 'api', 229, '通知列表', 'account.Notification/index', 'GET', NULL, NULL, 3, 1, NULL, '2026-05-31 09:53:39');
 INSERT INTO `auth_rule` VALUES (30, 'backend', 'api', 229, '通知已读', 'account.Notification/markRead', 'PUT', NULL, NULL, 4, 1, NULL, '2026-05-31 09:53:56');
 INSERT INTO `auth_rule` VALUES (31, 'backend', 'api', 228, '上传头像', 'account.Profile/uploadAvatar', 'POST', NULL, NULL, 5, 1, NULL, '2026-05-31 09:53:49');
+INSERT INTO `auth_rule` VALUES (32, 'backend', 'api', 18, '系统使用情况', 'dashboard.Usage/index', 'GET', NULL, NULL, 1, 1, NULL, NULL);
 INSERT INTO `auth_rule` VALUES (100, 'frontend', 'view', 0, '仪表盘', 'dashboard', NULL, 'dashboard/index.vue', 'el:DataAnalysis', 0, 1, NULL, '2026-05-12 16:06:24');
 INSERT INTO `auth_rule` VALUES (102, 'frontend', 'menu', 0, '权限管理', 'auth', NULL, NULL, 'el:Avatar', 200, 1, NULL, '2026-05-31 09:56:47');
 INSERT INTO `auth_rule` VALUES (103, 'frontend', 'view', 102, '角色管理', 'role', NULL, 'auth/role/index.vue', 'el:User', 20, 1, NULL, '2026-05-14 16:41:58');
@@ -283,6 +301,7 @@ INSERT INTO `auth_rule_frontend_api` VALUES (210, 28);
 INSERT INTO `auth_rule_frontend_api` VALUES (211, 29);
 INSERT INTO `auth_rule_frontend_api` VALUES (211, 30);
 INSERT INTO `auth_rule_frontend_api` VALUES (209, 31);
+INSERT INTO `auth_rule_frontend_api` VALUES (100, 32);
 INSERT INTO `auth_rule_frontend_api` VALUES (213, 214);
 INSERT INTO `auth_rule_frontend_api` VALUES (213, 215);
 INSERT INTO `auth_rule_frontend_api` VALUES (213, 216);

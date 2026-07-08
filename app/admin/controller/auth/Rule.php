@@ -64,7 +64,7 @@ class Rule extends AdminController
     }
 
     /**
-     * save 新建规则
+     * save 新建规则；frontend view/btn 可同时提交 backend_rule_ids 绑定后端 api
      *
      * @return Response
      */
@@ -78,20 +78,37 @@ class Rule extends AdminController
         if ($err !== null) {
             return $this->fail(400, $err);
         }
-        $m = new RuleModel();
-        $m->save($this->normalizePayload($payload));
-        if ((string) ($payload['scope'] ?? '') === 'frontend') {
+        $scope = (string) ($payload['scope'] ?? '');
+        $type  = (string) ($payload['type'] ?? '');
+        try {
+            $id = (int) Db::transaction(function () use ($payload, $scope, $type) {
+                $m = new RuleModel();
+                $m->save($this->normalizePayload($payload));
+                $id = (int) $m->getAttr('id');
+                if ($scope === 'frontend' && in_array($type, ['view', 'btn'], true) && array_key_exists('backend_rule_ids', $payload)) {
+                    $bindErr = $this->syncBackendApis($id, $payload['backend_rule_ids']);
+                    if ($bindErr !== null) {
+                        throw new Exception($bindErr);
+                    }
+                }
+
+                return $id;
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+        if ($scope === 'frontend') {
             MenuService::forgetAllRoleMenuCaches();
         }
-        if ((string) ($payload['scope'] ?? '') === 'backend') {
+        if ($scope === 'backend') {
             AdminRbacService::forgetAllRoleRbacCaches();
         }
 
-        return $this->ok(['id' => (int) $m->getAttr('id')]);
+        return $this->ok(['id' => $id]);
     }
 
     /**
-     * update 更新规则
+     * update 更新规则；frontend view/btn 可同时提交 backend_rule_ids
      *
      * @return Response
      */
@@ -114,7 +131,26 @@ class Rule extends AdminController
             return $this->fail(400, $err);
         }
         $oldScope = (string) $row->getAttr('scope');
-        $row->save($this->normalizePayload($payload));
+        try {
+            Db::transaction(function () use ($row, $payload, $id) {
+                $row->save($this->normalizePayload($payload));
+                $newScope = (string) $row->getAttr('scope');
+                $newType  = (string) $row->getAttr('type');
+                if ($newScope === 'frontend') {
+                    if (in_array($newType, ['view', 'btn'], true) && array_key_exists('backend_rule_ids', $payload)) {
+                        $bindErr = $this->syncBackendApis($id, $payload['backend_rule_ids']);
+                        if ($bindErr !== null) {
+                            throw new Exception($bindErr);
+                        }
+                    } elseif ($newType === 'menu') {
+                        RuleFrontendApi::where('frontend_rule_id', $id)->delete();
+                        AdminRbacService::forgetAllRoleRbacCaches();
+                    }
+                }
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
         $newScope = (string) $row->getAttr('scope');
         if ($oldScope === 'frontend' || $newScope === 'frontend') {
             MenuService::forgetAllRoleMenuCaches();
@@ -171,16 +207,36 @@ class Rule extends AdminController
         if (!$request->isPost()) {
             return $this->fail(405, '仅支持 POST');
         }
-        $rawIds = $request->post('backend_rule_ids/a', []);
-        $rawIds = is_array($rawIds) ? array_values(array_unique(array_map('intval', $rawIds))) : [];
         $fid = (int) $request->post('frontend_rule_id', 0);
         if ($fid <= 0) {
             return $this->fail(400, '参数无效');
         }
+        $rawIds = $request->post('backend_rule_ids/a', []);
+        try {
+            $err = Db::transaction(function () use ($fid, $rawIds) {
+                return $this->syncBackendApis($fid, $rawIds);
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+        if ($err !== null) {
+            return $this->fail(400, $err);
+        }
 
-        $front = RuleModel::where([['id', '=', $fid], ['scope', '=', 'frontend'], ['type', 'in', ['view', 'btn']]])->find();
+        return $this->ok();
+    }
+
+    /**
+     * syncBackendApis 同步前端 view/btn 与后端 api 的绑定关系
+     *
+     * @param  mixed $rawIds
+     */
+    private function syncBackendApis(int $fid, mixed $rawIds): ?string
+    {
+        $rawIds = is_array($rawIds) ? array_values(array_unique(array_map('intval', $rawIds))) : [];
+        $front  = RuleModel::where([['id', '=', $fid], ['scope', '=', 'frontend'], ['type', 'in', ['view', 'btn']]])->find();
         if (!$front) {
-            return $this->fail(400, '数据不存在，仅允许对前端 view/btn 绑定接口');
+            return '数据不存在，仅允许对前端 view/btn 绑定接口';
         }
         if ($rawIds === []) {
             $apiIds = [];
@@ -194,17 +250,13 @@ class Rule extends AdminController
                 'backend_rule_id'  => $bid,
             ];
         }
-        try {
-            RuleFrontendApi::where('frontend_rule_id', $fid)->delete();
-            if (count($insert)>0){
-                RuleFrontendApi::insertAll($insert);
-            }
-        }catch (Exception $exception){
-            return $this->fail(400, $exception->getMessage());
+        RuleFrontendApi::where('frontend_rule_id', $fid)->delete();
+        if (count($insert) > 0) {
+            RuleFrontendApi::insertAll($insert);
         }
         AdminRbacService::forgetAllRoleRbacCaches();
 
-        return $this->ok();
+        return null;
     }
 
     /**

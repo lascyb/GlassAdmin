@@ -5,8 +5,9 @@ namespace app\admin\model;
 
 use app\admin\model\auth\Role;
 use think\facade\Config;
+use think\facade\Db;
 use think\Model;
-use think\model\relation\BelongsTo;
+use think\model\relation\BelongsToMany;
 
 /**
  * Admin 后台管理员
@@ -17,7 +18,7 @@ use think\model\relation\BelongsTo;
  * @property string|null $nickname
  * @property string|null $avatar 序列化/读取时为完整 URL；数据库存相对 public/storage 盘根的路径，如 avatar/xxx.jpg
  * @property int         $status  {1:正常,0:禁用}
- * @property int|null    $role_id auth_role.id
+ * @property int|null    $last_login_time 上次登录时间（Unix 秒）
  */
 class Admin extends Model
 {
@@ -34,19 +35,55 @@ class Admin extends Model
     protected array $type = [
         'id'      => 'integer',
         'status'  => 'integer',
-        'role_id' => 'integer',
+        'last_login_time' => 'integer',
         'create_time' => 'integer',
         'update_time' => 'integer',
     ];
 
     /**
-     * role 主角色（admin.role_id -> auth_role.id）
+     * roles 管理员绑定的角色（admin_role）
      *
-     * @return BelongsTo
+     * @return BelongsToMany
      */
-    public function role(): BelongsTo
+    public function roles(): BelongsToMany
     {
-        return $this->belongsTo(Role::class, 'role_id', 'id');
+        return $this->belongsToMany(Role::class, 'admin_role', 'role_id', 'admin_id');
+    }
+
+    /**
+     * roleIdsFor 查询管理员绑定的角色 id 列表
+     *
+     * @return list<int>
+     */
+    public static function roleIdsFor(int $adminId): array
+    {
+        if ($adminId <= 0) {
+            return [];
+        }
+
+        return array_values(array_unique(array_map(
+            'intval',
+            Db::name('admin_role')->where('admin_id', $adminId)->column('role_id')
+        )));
+    }
+
+    /**
+     * syncRoles 全量覆盖管理员角色关联
+     *
+     * @param list<int> $roleIds
+     */
+    public static function syncRoles(int $adminId, array $roleIds): void
+    {
+        Db::name('admin_role')->where('admin_id', $adminId)->delete();
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        if ($roleIds === []) {
+            return;
+        }
+        $rows = [];
+        foreach ($roleIds as $roleId) {
+            $rows[] = ['admin_id' => $adminId, 'role_id' => $roleId];
+        }
+        Db::name('admin_role')->insertAll($rows);
     }
 
     /**

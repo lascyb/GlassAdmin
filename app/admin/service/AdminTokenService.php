@@ -3,8 +3,8 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
+use app\admin\model\Admin;
 use app\admin\service\auth\AdminAuthPayload;
-use app\model\Admin;
 use Random\RandomException;
 use think\facade\Cache;
 
@@ -22,13 +22,11 @@ class AdminTokenService
     /**
      * issuePair 登录成功后签发 access、refresh 并写入缓存
      *
-     * @param int $adminId
-     * @param int $roleId
-     * @param bool $remember
+     * @param list<int> $roleIds
      * @return array{access_token: string, refresh_token: string, expire_at: int, refresh_expire_at: int}
      * @throws RandomException
      */
-    public static function issuePair(int $adminId, int $roleId, bool $remember): array
+    public static function issuePair(int $adminId, array $roleIds, bool $remember): array
     {
         $accessTtl = max(60, (int) env('ACCESS_TOKEN_TTL', 7200));
         $refreshTtl = $remember
@@ -38,21 +36,21 @@ class AdminTokenService
         $accessRaw = bin2hex(random_bytes(32));
         $refreshRaw = bin2hex(random_bytes(32));
         $now = time();
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
 
         Cache::set(
             self::accessCacheKey($accessRaw),
             [
-                'admin_id' => $adminId,
-                'role_id'  => $roleId,
+                'admin_id'  => $adminId,
+                'role_ids'  => $roleIds,
             ],
             $accessTtl
         );
         Cache::set(
             self::refreshCacheKey($refreshRaw),
             [
-                'admin_id'   => $adminId,
-                'role_id'    => $roleId,
-                'remember'   => $remember,
+                'admin_id' => $adminId,
+                'remember' => $remember,
             ],
             $refreshTtl
         );
@@ -79,8 +77,16 @@ class AdminTokenService
         if (!is_array($payload) || empty($payload['admin_id'])) {
             return null;
         }
+        $roleIds = $payload['role_ids'] ?? [];
+        if (!is_array($roleIds)) {
+            $roleIds = [];
+        }
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        if ($roleIds === []) {
+            return null;
+        }
 
-        return new AdminAuthPayload((int) $payload['admin_id'], (int) ($payload['role_id'] ?? 0));
+        return new AdminAuthPayload((int) $payload['admin_id'], $roleIds);
     }
 
     /**
@@ -101,8 +107,7 @@ class AdminTokenService
             return null;
         }
 
-        $adminId = (int) $payload['admin_id'];
-        $roleId  = (int) ($payload['role_id'] ?? 0);
+        $adminId  = (int) $payload['admin_id'];
         $remember = !empty($payload['remember']);
 
         $user = Admin::find($adminId);
@@ -112,9 +117,16 @@ class AdminTokenService
             return null;
         }
 
+        $roleIds = Admin::roleIdsFor($adminId);
+        if ($roleIds === []) {
+            Cache::delete($key);
+
+            return null;
+        }
+
         Cache::delete($key);
 
-        return self::issuePair($adminId, $roleId, $remember);
+        return self::issuePair($adminId, $roleIds, $remember);
     }
 
     /**

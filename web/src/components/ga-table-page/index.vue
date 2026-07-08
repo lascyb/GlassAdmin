@@ -22,8 +22,6 @@ withDefaults(
         border?: boolean
         /** stripe 斑马纹 */
         stripe?: boolean
-        /** bare 不包裹 el-card（嵌入 ga-page 等已有容器时使用） */
-        bare?: boolean
     }>(),
     {
         loading: false,
@@ -35,7 +33,6 @@ withDefaults(
         minHeight: 'max(calc(100vh - 100px), 400px)',
         border: true,
         stripe: true,
-        bare: false,
     },
 )
 
@@ -46,7 +43,10 @@ const onSizeChange = () => emit('load')
 </script>
 
 <template>
-    <component :is="bare ? 'div' : 'el-card'" :style="bare ? undefined : { minHeight }" :body-style="bare ? undefined : 'padding:0'">
+    <el-card :style="{ minHeight }" :body-style="{ padding: 0 }">
+        <template v-if="$slots.header" #header>
+            <slot name="header" />
+        </template>
         <slot name="toolbar" />
         <el-table
             v-loading="loading"
@@ -71,5 +71,5 @@ const onSizeChange = () => emit('load')
             />
         </div>
         <slot name="footer" />
-    </component>
+    </el-card>
 </template>

@@ -129,6 +129,9 @@ class Role extends AdminController
         if (RoleModel::where('pid', $id)->count() > 0) {
             return $this->fail(400, '存在子角色，禁止删除');
         }
+        if (Db::name('admin_role')->where('role_id', $id)->count() > 0) {
+            return $this->fail(400, '仍有管理员绑定该角色');
+        }
         Db::name('auth_role_rule')->where('role_id', $id)->delete();
         RoleModel::destroy($id);
         MenuService::forgetRoleMenuCache($id);

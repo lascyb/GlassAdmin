@@ -19,15 +19,13 @@ class AuthService
     /**
      * issue 登录成功后签发令牌
      *
-     * @param int $adminId
-     * @param int $roleId
-     * @param bool $remember
+     * @param list<int> $roleIds
      * @return array{access_token: string, refresh_token: string, expire_at: int, refresh_expire_at: int}
      * @throws RandomException
      */
-    public static function issue(int $adminId, int $roleId, bool $remember): array
+    public static function issue(int $adminId, array $roleIds, bool $remember): array
     {
-        return AdminTokenService::issuePair($adminId, $roleId, $remember);
+        return AdminTokenService::issuePair($adminId, $roleIds, $remember);
     }
 
     /**

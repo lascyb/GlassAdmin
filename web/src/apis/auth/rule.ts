@@ -32,17 +32,33 @@ export const fetchRead = async (id: number) => {
     return getData<RuleRow & { backend_rule_ids?: number[] }>('auth.Rule/read', { id })
 }
 
+/** RulePayload 规则写入载荷 */
+export type RulePayload = {
+    scope: string
+    type: string
+    pid: number
+    name: string
+    path?: string | null
+    method?: string | null
+    component?: string | null
+    icon?: string | null
+    sort: number
+    status: number
+    /** backend_rule_ids 前端 view/btn 关联的后端 api 规则 id */
+    backend_rule_ids?: number[]
+}
+
 /**
- * saveRule 新建规则
+ * saveRule 新建规则（view/btn 可附带 backend_rule_ids）
  */
-export const saveRule = async (payload: Record<string, unknown>) => {
+export const saveRule = async (payload: RulePayload) => {
     return postData<{ id: number }>('auth.Rule/save', payload)
 }
 
 /**
- * updateRule 更新规则
+ * updateRule 更新规则（view/btn 可附带 backend_rule_ids）
  */
-export const updateRule = async (id: number, payload: Record<string, unknown>) => {
+export const updateRule = async (id: number, payload: RulePayload) => {
     return putData<null>('auth.Rule/update?id=' + id, payload)
 }
 

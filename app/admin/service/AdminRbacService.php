@@ -43,27 +43,33 @@ class AdminRbacService
 
     /**
      * isApiAllowed 当前请求是否命中已登记的后端 api 且该 api 在角色允许集合内（不含超级管理员）
+     *
+     * @param list<int> $roleIds
      */
-    public static function isApiAllowed(Request $request, int $roleId): bool
+    public static function isApiAllowed(Request $request, array $roleIds): bool
     {
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        if ($roleIds === []) {
+            return false;
+        }
         $path   = AdminOperationLogService::normalizeApiPath($request->pathinfo());
         $method = strtoupper($request->method());
         if ($path === '') {
             return false;
         }
         // 动态菜单：已登录角色均需拉取侧栏，不依赖 auth_rule_frontend_api 显式绑定
-        if ($path === 'Menu/menus' && $method === 'GET' && $roleId > 0) {
+        if ($path === 'Menu/menus' && $method === 'GET') {
             return true;
         }
         // 已登录用户拉取本人通知列表（仅 GET；数据范围固定为 request->admin_id，limit 在 account\Notification 控制器收紧）
-        if ($path === 'account.Notification/index' && $method === 'GET' && $roleId > 0) {
+        if ($path === 'account.Notification/index' && $method === 'GET') {
             return true;
         }
         $ruleId = self::resolveBackendApiRuleId($path, $method);
         if ($ruleId === null) {
             return false;
         }
-        $allowed = self::allowedBackendApiIds($roleId);
+        $allowed = self::allowedBackendApiIdsForRoles($roleIds);
 
         return in_array($ruleId, $allowed, true);
     }
@@ -93,6 +99,24 @@ class AdminRbacService
         }
 
         return (int) $row->getAttr('id');
+    }
+
+    /**
+     * allowedBackendApiIdsForRoles 多角色允许的后端 api 规则 id 并集
+     *
+     * @param list<int> $roleIds
+     * @return list<int>
+     */
+    private static function allowedBackendApiIdsForRoles(array $roleIds): array
+    {
+        $merged = [];
+        foreach ($roleIds as $roleId) {
+            foreach (self::allowedBackendApiIds($roleId) as $id) {
+                $merged[$id] = true;
+            }
+        }
+
+        return array_map('intval', array_keys($merged));
     }
 
     /**

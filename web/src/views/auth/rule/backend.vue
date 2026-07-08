@@ -2,14 +2,14 @@
 import type { RuleRow } from '@/apis/auth/rule'
 import RuleEdit from '@/views/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/auth/rule/useRuleTreePage'
-import { Delete, Edit, Plus } from '@element-plus/icons-vue'
+import {Delete, Edit, Plus, Refresh} from '@element-plus/icons-vue'
 import {  onMounted, useTemplateRef } from 'vue'
 
 const { treeData, loading, load, remove,top_ids } = useRuleTreeBase('backend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
 
 
-const openAdd = (pid: number, type: 'menu' | 'api') => ruleEditRef.value?.openAdd(pid, type)
+const openAdd = (pid: number, parentType?: string) => ruleEditRef.value?.openAdd(pid, parentType)
 const openEdit = (row: RuleRow) => ruleEditRef.value?.openEdit(row)
 
 onMounted(load)
@@ -17,10 +17,9 @@ onMounted(load)
 
 <template>
     <div v-loading="loading" class="min-h-[360px]">
-        <div class="mb-3 flex flex-wrap gap-2">
-            <el-button type="primary" :icon="Plus" @click="openAdd(0, 'menu')">新增根目录</el-button>
-            <el-button type="success" :icon="Plus" @click="openAdd(0, 'api')">新增根接口</el-button>
-            <el-button @click="load">刷新</el-button>
+        <div class="mb-3 flex flex-wrap justify-end gap-2">
+            <el-button plain :icon="Plus" @click="openAdd(0)">新增</el-button>
+            <el-button plain :icon="Refresh" @click="load">刷新</el-button>
         </div>
         <el-tree
             :data="treeData"
@@ -36,11 +35,8 @@ onMounted(load)
                         >{{ data.method }} {{ data.path }}</span
                     >
                     <span class="ml-auto flex gap-1">
-                        <el-button text type="primary" :icon="Plus" @click.stop="openAdd(data.id, 'menu')"
-                            >子目录</el-button
-                        >
-                        <el-button text type="success" :icon="Plus" @click.stop="openAdd(data.id, 'api')"
-                            >子接口</el-button
+                        <el-button text type="primary" :icon="Plus" @click.stop="openAdd(data.id, data.type)"
+                            >新增子节点</el-button
                         >
                         <el-button text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
                         <el-button text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>

@@ -3,6 +3,7 @@ import type { RoleRow } from '@/apis/auth/role'
 import * as roleApi from '@/apis/auth/role'
 import type { RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
+import { ruleTypeLabel, ruleTypeTagType } from '@/views/auth/rule/constants'
 import GaIcon from "@components/ga-icon/index.vue"
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
@@ -106,44 +107,6 @@ const parentRoleTreeData = computed((): RoleRow[] => {
       }))
   return walk(roleTree.value)
 })
-
-/** RULE_TYPE_LABELS 前端规则 type 中文展示 {menu:目录,view:页面,btn:按钮,...} */
-const RULE_TYPE_LABELS: Record<string, string> = {
-  menu: '目录',
-  view: '页面',
-  btn: '按钮',
-  page: '页面',
-  route: '路由',
-  link: '外链',
-  iframe: '内嵌',
-}
-
-/**
- * ruleTypeLabel 规则 type 转中文标签
- */
-function ruleTypeLabel(type: string): string {
-  return RULE_TYPE_LABELS[type] ?? type
-}
-
-/** ruleTypeTagType 前端规则 type → el-tag 的 type，用于差异化展示 */
-function ruleTypeTagType(t: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
-  switch (t) {
-    case 'menu':
-      return 'primary'
-    case 'view':
-      return 'success'
-    case 'btn':
-      return 'warning'
-    case 'page':
-    case 'route':
-    case 'link':
-      return 'info'
-    case 'iframe':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
 
 const loadMeta = async () => {
   roleTree.value = await roleApi.fetchTree()
@@ -259,7 +222,7 @@ const submit = async () => {
 </script>
 
 <template>
-  <el-dialog v-model="show" draggable :title="title" destroy-on-close lock-scroll top="8vh" width="640px">
+  <el-dialog v-model="show" draggable :title="title" destroy-on-close lock-scroll top="8vh" width="640px" :closeOnClickModal="false">
     <el-scrollbar class="pr-10" max-height="70vh">
       <el-skeleton :loading="loading" animated :rows="6">
         <el-form :model="form" label-position="right" label-width="96px">

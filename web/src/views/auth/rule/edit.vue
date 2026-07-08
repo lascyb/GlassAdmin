@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { RuleRow } from '@/apis/auth/rule'
+import type { RulePayload, RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
+import BindBackendApiPanel from '@/views/auth/rule/BindBackendApiPanel.vue'
 import Picker from '@components/ga-icon/picker.vue'
 import { ElMessage } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps<{ scope: 'backend' | 'frontend' }>()
 
@@ -27,9 +28,18 @@ type RuleEditForm = {
 const visible = ref(false)
 const title = ref('')
 const saving = ref(false)
+const backendRuleIds = ref<number[]>([])
 
-/** 父级树数据 */
+/** treeData 父级树数据 */
 const treeData = ref<RuleRow[]>([])
+
+/** showBackendApiPanel 是否展示关联后端 API 区域 */
+const showBackendApiPanel = computed(
+    () => props.scope === 'frontend' && (form.type === 'view' || form.type === 'btn'),
+)
+
+/** dialogWidth 弹窗宽度：含接口勾选时加宽 */
+const dialogWidth = computed(() => (showBackendApiPanel.value ? '720px' : '520px'))
 
 /** 递归移除当前节点及其子节点，防止选自己为父级造成循环 */
 function removeNodeAndChildren(nodes: RuleRow[], targetId: number): RuleRow[] {
@@ -37,7 +47,7 @@ function removeNodeAndChildren(nodes: RuleRow[], targetId: number): RuleRow[] {
     for (const node of nodes) {
         if (node.id === targetId) continue
         const children = node.children?.length ? removeNodeAndChildren(node.children, targetId) : []
-        result.push({ ...node, children })
+        result.push({...node, children})
     }
     return result
 }
@@ -61,6 +71,20 @@ const form = reactive<RuleEditForm>({
 })
 
 /**
+ * inferDefaultType 根据父节点类型推断新建默认 type
+ */
+function inferDefaultType(pid: number, parentType?: string): string {
+    if (props.scope === 'backend') {
+        if (pid === 0) return 'menu'
+        return 'api'
+    }
+    if (pid === 0) return 'menu'
+    if (parentType === 'menu') return 'view'
+    if (parentType === 'view') return 'btn'
+    return 'btn'
+}
+
+/**
  * ruleEditResetForAdd 新增时重置表单
  */
 function ruleEditResetForAdd(pid: number, type: string) {
@@ -75,17 +99,17 @@ function ruleEditResetForAdd(pid: number, type: string) {
     form.icon = null
     form.sort = 0
     form.status = 1
+    backendRuleIds.value = []
 }
 
 /**
  * ruleEditAddTitle 新增弹窗标题
  */
-function ruleEditAddTitle(pid: number, type: string) {
+function ruleEditAddTitle(pid: number): string {
     if (props.scope === 'backend') {
-        const label = type === 'menu' ? '目录' : '接口'
-        return pid === 0 ? `新增${label}` : `在节点下新增${label}`
+        return pid === 0 ? '新增规则' : '新增子节点'
     }
-    return `新增${type}`
+    return pid === 0 ? '新增规则' : '新增子节点'
 }
 
 /**
@@ -94,18 +118,20 @@ function ruleEditAddTitle(pid: number, type: string) {
 async function loadTree() {
     try {
         treeData.value = await ruleApi.fetchTree(props.scope)
+        treeData.value.unshift({pid: 0, scope: "", type: "", sort: 0, status: 1, id: 0, name: "作为顶级节点"})
     } catch (e: unknown) {
         ElMessage.error(e instanceof Error ? e.message : '加载规则树失败')
     }
 }
 
 /**
- * openAdd 打开新增（type：backend 为 menu|api，frontend 为 menu|view|btn）
+ * openAdd 打开新增
  */
-function openAdd(pid: number, type: string) {
-    title.value = ruleEditAddTitle(pid, type)
+function openAdd(pid: number, parentType?: string) {
+    const type = inferDefaultType(pid, parentType)
+    title.value = ruleEditAddTitle(pid)
     ruleEditResetForAdd(pid, type)
-    loadTree()
+    void loadTree()
     visible.value = true
 }
 
@@ -129,10 +155,20 @@ function ruleEditMapRow(row: RuleRow) {
 /**
  * openEdit 打开编辑
  */
-function openEdit(row: RuleRow) {
+async function openEdit(row: RuleRow) {
     title.value = '编辑'
     ruleEditMapRow(row)
-    loadTree()
+    backendRuleIds.value = []
+    if (props.scope === 'frontend' && (row.type === 'view' || row.type === 'btn')) {
+        try {
+            const detail = await ruleApi.fetchRead(row.id)
+            backendRuleIds.value = detail.backend_rule_ids ?? []
+        } catch (e: unknown) {
+            ElMessage.error(e instanceof Error ? e.message : '加载规则详情失败')
+            return
+        }
+    }
+    void loadTree()
     visible.value = true
 }
 
@@ -145,7 +181,7 @@ function ruleEditValidate(): string | void {
 }
 
 /**
- * ruleEditSubmit 保存
+ * ruleEditSubmit 保存（frontend view/btn 时 backend_rule_ids 随 save/update 一并提交）
  */
 async function ruleEditSubmit() {
     const hint = ruleEditValidate()
@@ -155,7 +191,7 @@ async function ruleEditSubmit() {
     }
     saving.value = true
     try {
-        let payload: Record<string, unknown>
+        let payload: RulePayload
         if (props.scope === 'backend') {
             payload = {
                 scope: 'backend',
@@ -180,6 +216,9 @@ async function ruleEditSubmit() {
                 sort: form.sort,
                 status: form.status,
             }
+            if (form.type === 'view' || form.type === 'btn') {
+                payload.backend_rule_ids = backendRuleIds.value
+            }
         }
         if (form.id) {
             await ruleApi.updateRule(form.id, payload)
@@ -197,15 +236,21 @@ async function ruleEditSubmit() {
     }
 }
 
-defineExpose({ openAdd, openEdit })
+watch(
+    () => form.type,
+    (type) => {
+        if (props.scope === 'frontend' && type === 'menu') {
+            backendRuleIds.value = []
+        }
+    },
+)
+
+defineExpose({openAdd, openEdit})
 </script>
 
 <template>
-    <el-dialog draggable v-model="visible" :title="title" width="520px" destroy-on-close>
+    <el-dialog draggable v-model="visible" :title="title" :width="dialogWidth" destroy-on-close :closeOnClickModal="false">
         <el-form label-width="88px">
-            <el-form-item label="类型">
-                <el-tag>{{ form.type }}</el-tag>
-            </el-form-item>
             <el-form-item label="父级">
                 <el-tree-select
                     v-model="form.pid"
@@ -221,23 +266,34 @@ defineExpose({ openAdd, openEdit })
                     :render-after-expand="false"
                 />
             </el-form-item>
+            <el-form-item label="类型">
+                <el-select v-if="scope === 'frontend'" v-model="form.type" class="w-full">
+                    <el-option label="目录" value="menu"/>
+                    <el-option label="页面" value="view"/>
+                    <el-option label="按钮" value="btn"/>
+                </el-select>
+                <el-select v-else v-model="form.type" class="w-full">
+                    <el-option label="目录" value="menu"/>
+                    <el-option label="接口" value="api"/>
+                </el-select>
+            </el-form-item>
             <el-form-item label="名称" required>
-                <el-input v-model.trim="form.name" maxlength="100" show-word-limit />
+                <el-input v-model.trim="form.name" maxlength="100" show-word-limit/>
             </el-form-item>
 
             <template v-if="scope === 'backend'">
                 <template v-if="form.type === 'api'">
                     <el-form-item label="path" required>
-                        <el-input v-model.trim="form.path" placeholder="如 auth.Rule/tree" />
+                        <el-input v-model.trim="form.path" placeholder="如 auth.Rule/tree"/>
                     </el-form-item>
                     <el-form-item label="method">
                         <el-select v-model="form.method" class="w-full">
-                            <el-option label="GET" value="GET" />
-                            <el-option label="POST" value="POST" />
-                            <el-option label="PUT" value="PUT" />
-                            <el-option label="DELETE" value="DELETE" />
-                            <el-option label="PATCH" value="PATCH" />
-                            <el-option label="*" value="*" />
+                            <el-option label="GET" value="GET"/>
+                            <el-option label="POST" value="POST"/>
+                            <el-option label="PUT" value="PUT"/>
+                            <el-option label="DELETE" value="DELETE"/>
+                            <el-option label="PATCH" value="PATCH"/>
+                            <el-option label="*" value="*"/>
                         </el-select>
                     </el-form-item>
                 </template>
@@ -245,18 +301,22 @@ defineExpose({ openAdd, openEdit })
 
             <template v-else>
                 <el-form-item label="path">
-                    <el-input v-model.trim="form.path" placeholder="路由 path 片段" />
+                    <el-input v-model.trim="form.path" placeholder="路由 path 片段"/>
                 </el-form-item>
                 <el-form-item v-if="form.type === 'view'" label="component">
-                    <el-input v-model.trim="form.component" placeholder="如 auth/rule/index.vue" />
+                    <el-input v-model.trim="form.component" placeholder="如 auth/rule/index.vue"/>
                 </el-form-item>
-                <el-form-item label="图标">
-                    <Picker v-model="form.icon" />
+                <el-form-item v-if="form.type !== 'btn'" label="图标">
+                    <Picker v-model="form.icon"/>
                 </el-form-item>
             </template>
 
+            <el-form-item v-if="showBackendApiPanel" label="关联接口">
+                <BindBackendApiPanel v-model="backendRuleIds"/>
+            </el-form-item>
+
             <el-form-item label="排序">
-                <el-input-number v-model="form.sort" :step="1" class="w-full" />
+                <el-input-number v-model="form.sort" :step="1" class="w-full"/>
             </el-form-item>
             <el-form-item label="状态">
                 <el-radio-group v-model="form.status">

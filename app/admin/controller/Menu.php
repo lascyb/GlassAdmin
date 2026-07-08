@@ -19,8 +19,11 @@ class Menu extends AdminController
      */
     public function menus(): Response
     {
-        $roleId = (int) $this->request->role_id;
-        $menus   = MenuService::getMenus($roleId);
+        $roleIds = $this->request->role_ids ?? [];
+        if (!is_array($roleIds)) {
+            $roleIds = [];
+        }
+        $menus   = MenuService::getMenus($roleIds);
 
         return $this->ok(['menus' => $menus]);
     }

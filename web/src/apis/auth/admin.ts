@@ -1,5 +1,11 @@
 import { delData, getData, postData, putData } from '@/apis/http'
 
+/** AdminRoleBrief 管理员绑定的角色摘要 */
+export type AdminRoleBrief = {
+    id: number
+    name: string
+}
+
 /** AdminRow 管理员列表行 */
 export type AdminRow = {
     id: number
@@ -7,11 +13,12 @@ export type AdminRow = {
     nickname?: string | null
     avatar?: string | null
     status: number
-    role_id?: number | null
-    /** 预加载角色，与 with role 字段 id,name 一致 */
-    role?: { id: number; name: string } | null
+    role_ids?: number[]
+    /** 预加载角色，与 with roles 字段 id,name 一致 */
+    roles?: AdminRoleBrief[]
     create_time?: string | null
     update_time?: string | null
+    last_login_time?: number | null
 }
 
 /** AdminListRes 分页列表 */
@@ -25,7 +32,14 @@ export type AdminListRes = {
 /**
  * fetchList 分页列表
  */
-export const fetchList = async (params: { page?: number; limit?: number; keyword?: string }) => {
+export const fetchList = async (params: {
+    page?: number
+    limit?: number
+    keyword?: string
+    username?: string
+    nickname?: string
+    status?: number
+}) => {
     return getData<AdminListRes>('auth.Admin/list', params)
 }
 
@@ -40,7 +54,7 @@ export const fetchRead = async (id: number) => {
  * saveAdmin 新建（password 为 RSA 密文；需 headers X-RSA-Serial）
  */
 export const saveAdmin = async (
-    payload: { username: string; nickname?: string; role_id: number; status: number; password: string },
+    payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
     headers: { 'X-RSA-Serial': string },
 ) => {
     return postData<{ id: number }>('auth.Admin/save', payload, { headers })
@@ -51,7 +65,7 @@ export const saveAdmin = async (
  */
 export const updateAdmin = async (
     id: number,
-    payload: { nickname?: string; role_id: number; status: number; password?: string },
+    payload: { nickname?: string; role_ids: number[]; status: number; password?: string },
     headers?: { 'X-RSA-Serial': string },
 ) => {
     return putData<null>(

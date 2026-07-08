@@ -143,7 +143,7 @@ const submit = async () => {
 </script>
 
 <template>
-    <el-dialog v-model="show" :title="title" draggable destroy-on-close lock-scroll top="5vh" width="580px">
+    <el-dialog v-model="show" :title="title" draggable destroy-on-close lock-scroll top="5vh" width="580px" :closeOnClickModal="false">
         <el-skeleton :loading="loading" animated :rows="6">
             <el-form :model="form" label-position="right" label-width="96px">
               <el-form-item label="分组" required>

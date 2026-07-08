@@ -32,15 +32,18 @@ class Profile extends AdminController
         }
         $id = (int) $request->admin_id;
         $row = AdminModel::with([
-            'role' => static function ($query): void {
+            'roles' => static function ($query): void {
                 $query->field('id,name');
             },
-        ])->field('id,username,nickname,avatar,role_id,status,create_time,update_time')->find($id);
+        ])->field('id,username,nickname,avatar,status,create_time,update_time')->find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
         }
+        $data = $row->toArray();
+        $roles = $data['roles'] ?? [];
+        $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
 
-        return $this->ok($row->toArray());
+        return $this->ok($data);
     }
 
     /**

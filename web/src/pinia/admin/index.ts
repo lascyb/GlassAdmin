@@ -12,8 +12,8 @@ export type Admin = {
     nickname: string
     /** 头像相对路径（public/storage） */
     avatar?: string | null
-    /** 主角色 auth_role.id，未绑定为 null */
-    role_id?: number | null
+    /** 绑定的角色 auth_role.id 列表 */
+    role_ids?: number[]
 }
 
 /**

@@ -7,6 +7,7 @@ use app\admin\model\auth\Role as RoleModel;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
 use app\admin\model\Admin as AdminModel;
+use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -29,26 +30,50 @@ class Admin extends AdminController
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $page    = max(1, (int) $request->get('page', 1));
-        $limit   = min(100, max(1, (int) $request->get('limit', self::LIMIT_DEFAULT)));
-        $keyword = trim((string) $request->get('keyword', ''));
+        $page     = max(1, (int) $request->get('page', 1));
+        $limit    = min(100, max(1, (int) $request->get('limit', self::LIMIT_DEFAULT)));
+        $keyword  = trim((string) $request->get('keyword', ''));
+        $username = trim((string) $request->get('username', ''));
+        $nickname = trim((string) $request->get('nickname', ''));
+        $statusRaw = $request->get('status');
 
         $q = AdminModel::with([
-            'role' => static function ($query): void {
+            'roles' => static function ($query): void {
                 $query->field('id,name');
             },
-        ])->order('id', 'desc')->field('id,username,nickname,avatar,role_id,status,create_time,update_time');
+        ])->order('id', 'desc')->field('id,username,nickname,avatar,status,last_login_time,create_time,update_time');
         if ($keyword !== '') {
             $kw = addcslashes($keyword, '%_\\');
             $q->where('username|nickname', 'like', '%' . $kw . '%');
         }
-    
+        if ($username !== '') {
+            $q->where('username', 'like', '%' . addcslashes($username, '%_\\') . '%');
+        }
+        if ($nickname !== '') {
+            $q->where('nickname', 'like', '%' . addcslashes($nickname, '%_\\') . '%');
+        }
+        if ($statusRaw !== null && $statusRaw !== '') {
+            $status = (int) $statusRaw;
+            if (in_array($status, [0, 1], true)) {
+                $q->where('status', $status);
+            }
+        }
+
         $paginator = $q->paginate([
             'list_rows' => $limit,
             'page'      => $page,
         ]);
+        $items = array_map(static function (AdminModel $row): array {
+            $data = $row->toArray();
+            unset($data['password']);
+            $roles = $data['roles'] ?? [];
+            $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
+
+            return $data;
+        }, $paginator->items());
+
         return $this->paginate(
-            $paginator->items(),
+            $items,
             $paginator->total(),
             $paginator->currentPage(),
             $paginator->listRows()
@@ -68,7 +93,7 @@ class Admin extends AdminController
             return $this->fail(400, 'id 无效');
         }
         $row = AdminModel::with([
-            'role' => static function ($query): void {
+            'roles' => static function ($query): void {
                 $query->field('id,name');
             },
         ])->find($id);
@@ -77,6 +102,8 @@ class Admin extends AdminController
         }
         $data = $row->toArray();
         unset($data['password']);
+        $roles = $data['roles'] ?? [];
+        $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
 
         return $this->ok($data);
     }
@@ -91,7 +118,7 @@ class Admin extends AdminController
         }
         $username = trim((string) $request->post('username', ''));
         $nickname = trim((string) $request->post('nickname', ''));
-        $roleId   = (int) $request->post('role_id', 0);
+        $roleIds  = $this->parseRoleIds($request->post('role_ids'));
         $status   = (int) $request->post('status', 1);
         $serial   = trim((string) $request->header('X-RSA-Serial', ''));
         $encPwd   = (string) $request->post('password', '');
@@ -101,8 +128,9 @@ class Admin extends AdminController
         if (!preg_match('/^[a-zA-Z0-9_]{3,64}$/', $username)) {
             return $this->fail(400, '用户名须为 3～64 位字母、数字或下划线');
         }
-        if ($roleId <= 0 || !RoleModel::find($roleId)) {
-            return $this->fail(400, '角色无效');
+        $roleErr = $this->validateRoleIds($roleIds);
+        if ($roleErr !== null) {
+            return $this->fail(400, $roleErr);
         }
         if (!in_array($status, [0, 1], true)) {
             return $this->fail(400, 'status 无效');
@@ -123,9 +151,9 @@ class Admin extends AdminController
             'username' => $username,
             'password' => password_hash($plain, PASSWORD_BCRYPT),
             'nickname' => $nickname !== '' ? $nickname : null,
-            'role_id'  => $roleId,
             'status'   => $status,
         ]);
+        AdminModel::syncRoles((int) $m->getAttr('id'), $roleIds);
 
         return $this->ok(['id' => (int) $m->getAttr('id')]);
     }
@@ -147,11 +175,15 @@ class Admin extends AdminController
             return $this->fail(404, '不存在');
         }
         $nickname = trim((string) $request->put('nickname', ''));
-        $roleId   = (int) $request->put('role_id', (int) $row->getAttr('role_id'));
+        $roleIds  = $this->parseRoleIds($request->put('role_ids'));
+        if ($roleIds === []) {
+            $roleIds = AdminModel::roleIdsFor($id);
+        }
         $status   = (int) $request->put('status', (int) $row->getAttr('status'));
         $encPwd   = (string) $request->put('password', '');
-        if ($roleId <= 0 || !RoleModel::find($roleId)) {
-            return $this->fail(400, '角色无效');
+        $roleErr = $this->validateRoleIds($roleIds);
+        if ($roleErr !== null) {
+            return $this->fail(400, $roleErr);
         }
         if (!in_array($status, [0, 1], true)) {
             return $this->fail(400, 'status 无效');
@@ -162,7 +194,6 @@ class Admin extends AdminController
         }
         $data = [
             'nickname' => $nickname !== '' ? $nickname : null,
-            'role_id'  => $roleId,
             'status'   => $status,
         ];
         if ($encPwd !== '') {
@@ -181,6 +212,9 @@ class Admin extends AdminController
             $data['password'] = password_hash($plain, PASSWORD_BCRYPT);
         }
         $row->save($data);
+        if ($request->has('role_ids')) {
+            AdminModel::syncRoles($id, $roleIds);
+        }
 
         return $this->ok();
     }
@@ -204,9 +238,40 @@ class Admin extends AdminController
         if (!$row) {
             return $this->fail(404, '不存在');
         }
+        Db::name('admin_role')->where('admin_id', $id)->delete();
         AdminModel::destroy($id);
 
         return $this->ok();
+    }
+
+    /**
+     * parseRoleIds 解析请求中的角色 id 列表
+     *
+     * @return list<int>
+     */
+    private function parseRoleIds(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $raw), static fn (int $id): bool => $id > 0)));
+    }
+
+    /**
+     * validateRoleIds 校验角色 id 列表
+     */
+    private function validateRoleIds(array $roleIds): ?string
+    {
+        if ($roleIds === []) {
+            return '请至少选择一个角色';
+        }
+        $count = (int) RoleModel::where('id', 'in', $roleIds)->count();
+        if ($count !== count($roleIds)) {
+            return '角色无效';
+        }
+
+        return null;
     }
 
     /**

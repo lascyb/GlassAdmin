@@ -55,11 +55,16 @@ class Login extends BaseController
         if ($passwordHash === '' || !password_verify($password, $passwordHash)) {
             return $this->fail(401, '用户名或密码错误');
         }
+        $roleIds = Admin::roleIdsFor((int) $user->getAttr('id'));
+        if ($roleIds === []) {
+            return $this->fail(403, '账号未分配角色');
+        }
         $pair = AuthService::issue(
             (int)$user->getAttr('id'),
-            (int)$user->getAttr('role_id'),
+            $roleIds,
             $remember
         );
+        $user->save(['last_login_time' => time()]);
         AdminOperationLogService::record(
             (int)$user->getAttr('id'),
             'auth.login.password',
@@ -77,7 +82,7 @@ class Login extends BaseController
                 'username' => (string)$user->getAttr('username'),
                 'nickname' => (string)($user->getAttr('nickname') ?: $user->getAttr('username')),
                 'avatar' => $user->getAttr('avatar'),
-                'role_id' => $user->getAttr('role_id'),
+                'role_ids' => $roleIds,
             ],
         ], '登录成功');
     }
@@ -125,7 +130,7 @@ class Login extends BaseController
                 'username' => (string)$user->getAttr('username'),
                 'nickname' => (string)($user->getAttr('nickname') ?: $user->getAttr('username')),
                 'avatar' => $user->getAttr('avatar'),
-                'role_id' => $user->getAttr('role_id'),
+                'role_ids' => $authPayload->roleIds,
             ],
         ]);
     }

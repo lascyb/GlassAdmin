@@ -36,7 +36,7 @@ export function getStoredPermissions(): Set<string> {
 export function hasPermission(key: string | string[] | undefined | null): boolean {
     if (!key) return true
     const admin = useAdmin()
-    if (admin.data?.role_id === SUPER_ROLE_ID) return true
+    if (admin.data?.role_ids?.includes(SUPER_ROLE_ID)) return true
 
     const keys = Array.isArray(key) ? key : [key]
     const allowed = getStoredPermissions()

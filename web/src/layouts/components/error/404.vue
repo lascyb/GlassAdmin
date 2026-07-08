@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// import MonacoEditor from "./../../../components/monaco-editor/index.vue"
+// import GaMonacoEditor from '@/components/ga-monaco-editor/index.vue'
 // import { useRoute} from "vue-router";
 //
 // import { ref} from "vue";
@@ -11,7 +11,7 @@
 <template>
   <div>
     <el-empty description="404 not fount"></el-empty>
-<!--    <MonacoEditor v-model="code"-->
+<!--    <GaMonacoEditor v-model="code"-->
 <!--                  :init-options="{ wordWrap: 'on', scrollbar: { alwaysConsumeMouseWheel: false, }, readOnly: true }"-->
 <!--                  language="json" style="height: calc(100vh - 100px)"/>-->
 

@@ -80,7 +80,7 @@ const handlePasswordLogin = async () => {
       refresh_token: string
       expire_at: number
       refresh_expire_at: number
-      user: { id: number; username: string; nickname: string; avatar?: string | null; role_id?: number | null }
+      user: { id: number; username: string; nickname: string; avatar?: string | null; role_ids?: number[] }
     }>('Login/password', {
       username: encryptedUsername,
       password: encryptedPassword,

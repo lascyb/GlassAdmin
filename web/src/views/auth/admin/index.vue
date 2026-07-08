@@ -11,10 +11,28 @@ import EditView from '@/views/auth/admin/edit.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { computed, reactive, ref } from 'vue'
 
+/** formatUnixTime Unix 秒时间戳转本地时间字符串 */
+const formatUnixTime = (ts?: number | null) => {
+    if (!ts) return '—'
+    const d = new Date(ts * 1000)
+    if (Number.isNaN(d.getTime())) return '—'
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 const keyword = ref('')
+
+const advanced = reactive({
+    username: '',
+    nickname: '',
+    status: undefined as number | undefined,
+})
 
 const queryParams = computed(() => ({
     keyword: keyword.value.trim() || undefined,
+    username: advanced.username.trim() || undefined,
+    nickname: advanced.nickname.trim() || undefined,
+    status: advanced.status === 0 || advanced.status === 1 ? advanced.status : undefined,
 }))
 
 const { list, total, page, limit, loading, load, search } = usePaginatedList<AdminRow>(
@@ -66,15 +84,15 @@ const onSaved = () => {
             >
                 <template #advanced>
                     <el-form-item label="用户名">
-                        <el-input disabled placeholder="待接入" />
+                        <el-input v-model.trim="advanced.username" clearable placeholder="模糊匹配" class="!w-40" />
                     </el-form-item>
                     <el-form-item label="昵称">
-                        <el-input disabled placeholder="待接入" />
+                        <el-input v-model.trim="advanced.nickname" clearable placeholder="模糊匹配" class="!w-40" />
                     </el-form-item>
                     <el-form-item label="状态">
-                        <el-select placeholder="请选择状态" disabled>
-                            <el-option value="1" label="正常" />
-                            <el-option value="0" label="禁用" />
+                        <el-select v-model="advanced.status" clearable placeholder="全部" class="!w-28">
+                            <el-option :value="1" label="正常" />
+                            <el-option :value="0" label="禁用" />
                         </el-select>
                     </el-form-item>
                 </template>
@@ -86,17 +104,25 @@ const onSaved = () => {
         <el-table-column prop="id" label="ID" width="72" />
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
-        <el-table-column label="角色" min-width="120" show-overflow-tooltip>
+        <el-table-column label="角色" min-width="200">
             <template #default="{ row }">
-                {{ row.role?.name ?? '—' }}
+                <template v-if="row.roles?.length">
+                    <el-tag v-for="r in row.roles" :key="r.id"  round class="mr-1 mb-1">{{ r.name }}</el-tag>
+                </template>
+                <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
+        <el-table-column label="上次登录" width="170">
+            <template #default="{ row }">
+                {{ formatUnixTime(row.last_login_time) }}
+            </template>
+        </el-table-column>
+        <el-table-column prop="create_time" label="创建时间" width="170" />
         <el-table-column prop="status" label="状态" width="88">
             <template #default="{ row }">
                 <ga-status-tag :value="row.status" :map="ADMIN_STATUS_MAP" />
             </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="170" />
         <el-table-column label="操作" fixed="right" width="140">
             <template #default="{ row }">
                 <el-button title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />
