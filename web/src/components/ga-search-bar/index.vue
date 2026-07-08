@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Refresh, Search } from '@element-plus/icons-vue'
-import { ref } from 'vue'
+import { Refresh, Search } from '@element-plus/icons-vue';
+import { ref } from 'vue';
 
 const keyword = defineModel<string>('keyword', { default: '' })
 
@@ -20,21 +20,38 @@ withDefaults(
     },
 )
 
-const emit = defineEmits<{ refresh: []; search: [] }>()
+const emit = defineEmits<{ refresh: []; search: []; reset: [] }>()
 
 const expanded = ref(false)
 
 const onSearch = () => emit('search')
+
 const onRefresh = () => emit('refresh')
+
+/** onReset 清空关键词并通知页面重置高级条件 */
+const onReset = () => {
+    keyword.value = ''
+    emit('reset')
+    emit('search')
+}
 </script>
 
 <template>
-    <div>
-        <el-form v-if="expanded && $slots.advanced" inline class="p-2">
+    <div class="ga-search-bar w-full">
+        <el-form
+            v-if="expanded && $slots.advanced"
+            inline
+            class="ga-search-bar__advanced flex flex-wrap p-2"
+            @submit.prevent="onSearch"
+        >
             <slot name="advanced" />
+            <el-form-item class="!mr-0">
+                <el-button type="primary" native-type="submit">查询</el-button>
+                <el-button @click="onReset">重置</el-button>
+            </el-form-item>
         </el-form>
         <el-divider v-if="expanded && $slots.advanced" class="!my-0" />
-        <div class="flex flex-wrap items-center gap-2 p-2">
+        <div class="ga-search-bar__main flex flex-wrap items-center justify-end gap-2 p-2">
             <el-button :disabled="loading" :icon="Refresh" @click="onRefresh" />
             <el-input
                 v-model="keyword"
@@ -44,12 +61,12 @@ const onRefresh = () => emit('refresh')
                 @keyup.enter="onSearch"
             />
             <el-button type="primary" @click="onSearch">查询</el-button>
-            <slot name="actions" />
             <el-button
                 v-if="showToggle && $slots.advanced"
                 :icon="Search"
                 @click="expanded = !expanded"
             />
+            <slot name="actions" />
         </div>
     </div>
 </template>

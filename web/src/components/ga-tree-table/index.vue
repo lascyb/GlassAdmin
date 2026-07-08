@@ -48,16 +48,17 @@ const emit = defineEmits<{
         <el-table-column label="操作" fixed="right" :width="actionWidth">
             <template #default="{ row }">
                 <slot name="actions" :row="row">
-                    <el-button title="编辑" plain type="primary" :icon="Edit" @click="emit('edit', row)" />
+                    <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="emit('edit', row)" />
                     <el-button
                         v-if="showAddChild"
+                        v-auth="'add'"
                         title="添加子节点"
                         plain
                         type="warning"
                         :icon="AddChildSvg"
                         @click="emit('addChild', row)"
                     />
-                    <el-button title="删除" plain type="danger" :icon="Delete" @click="emit('delete', row)" />
+                    <el-button v-auth="'del'" title="删除" plain type="danger" :icon="Delete" @click="emit('delete', row)" />
                 </slot>
             </template>
         </el-table-column>

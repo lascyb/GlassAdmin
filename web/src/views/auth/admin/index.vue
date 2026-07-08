@@ -6,19 +6,11 @@ import GaStatusTag from '@/components/ga-status-tag/index.vue'
 import GaTablePage from '@/components/ga-table-page/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
+import { formatUnixTime } from '@/utils/formatUnixTime'
 import { ADMIN_STATUS_MAP } from '@/views/auth/admin/constants'
 import EditView from '@/views/auth/admin/edit.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { computed, reactive, ref } from 'vue'
-
-/** formatUnixTime Unix 秒时间戳转本地时间字符串 */
-const formatUnixTime = (ts?: number | null) => {
-    if (!ts) return '—'
-    const d = new Date(ts * 1000)
-    if (Number.isNaN(d.getTime())) return '—'
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
 
 const keyword = ref('')
 
@@ -63,6 +55,13 @@ const onSaved = () => {
     editController.show = false
     void load()
 }
+
+/** resetAdvanced 重置高级筛选条件 */
+const resetAdvanced = () => {
+    advanced.username = ''
+    advanced.nickname = ''
+    advanced.status = undefined
+}
 </script>
 
 <template>
@@ -81,23 +80,38 @@ const onSaved = () => {
                 keyword-placeholder="用户名 / 昵称"
                 @refresh="load"
                 @search="search"
+                @reset="resetAdvanced"
             >
                 <template #advanced>
                     <el-form-item label="用户名">
-                        <el-input v-model.trim="advanced.username" clearable placeholder="模糊匹配" class="!w-40" />
+                        <el-input
+                            v-model.trim="advanced.username"
+                            clearable
+                            placeholder="模糊匹配"
+                            class="!w-40"
+                        />
                     </el-form-item>
                     <el-form-item label="昵称">
-                        <el-input v-model.trim="advanced.nickname" clearable placeholder="模糊匹配" class="!w-40" />
+                        <el-input
+                            v-model.trim="advanced.nickname"
+                            clearable
+                            placeholder="模糊匹配"
+                            class="!w-40"
+                        />
                     </el-form-item>
                     <el-form-item label="状态">
                         <el-select v-model="advanced.status" clearable placeholder="全部" class="!w-28">
-                            <el-option :value="1" label="正常" />
-                            <el-option :value="0" label="禁用" />
+                            <el-option
+                                v-for="(item, value) in ADMIN_STATUS_MAP"
+                                :key="value"
+                                :value="Number(value)"
+                                :label="item.label"
+                            />
                         </el-select>
                     </el-form-item>
                 </template>
                 <template #actions>
-                    <el-button type="primary" :icon="Plus" @click="clickAdd">新增管理员</el-button>
+                    <el-button v-auth="'add'" type="primary" :icon="Plus" @click="clickAdd">新增管理员</el-button>
                 </template>
             </ga-search-bar>
         </template>
@@ -125,8 +139,8 @@ const onSaved = () => {
         </el-table-column>
         <el-table-column label="操作" fixed="right" width="140">
             <template #default="{ row }">
-                <el-button title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />
-                <el-button title="删除" plain type="danger" :icon="Delete" @click="clickDel(row)" />
+                <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />
+                <el-button v-auth="'del'" title="删除" plain type="danger" :icon="Delete" @click="clickDel(row)" />
             </template>
         </el-table-column>
         <template #footer>

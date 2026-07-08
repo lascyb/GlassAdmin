@@ -11,7 +11,8 @@ import {ElMessage} from "element-plus";
 defineOptions({
   components: {
     Default: defineAsyncComponent(() => import("./container/default.vue")),
-    Double: defineAsyncComponent(() => import("./container/double.vue"))
+    Double: defineAsyncComponent(() => import("./container/double.vue")),
+    Module: defineAsyncComponent(() => import("./container/module.vue")),
   }
 })
 const setting = useLayoutSetting()

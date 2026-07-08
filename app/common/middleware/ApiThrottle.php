@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\common\middleware;
 
+use app\admin\service\auth\AdminAuthPayload;
 use app\common\ApiResponse;
 use Closure;
 use think\facade\Cache;
@@ -10,7 +11,7 @@ use think\Request;
 use think\Response;
 
 /**
- * ApiThrottle 固定窗口计数限流：公开接口仅挂本中间件时按 IP+路径；鉴权接口在 AdminAuth 之后按 admin_id+路径
+ * ApiThrottle 固定窗口计数限流：公开接口按 IP+路径；鉴权接口按 admin_id+路径
  */
 class ApiThrottle
 {
@@ -27,19 +28,15 @@ class ApiThrottle
     private const int AUTH_DECAY_SECONDS = 60;
 
     /**
-     * handle 超过配置次数返回 429
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return Response|mixed
+     * enforce 校验限流，超限返回 429 Response，否则返回 null
      */
-    public function handle(Request $request, Closure $next): mixed
+    public static function enforce(Request $request): ?Response
     {
         if ($request->isOptions()) {
-            return $next($request);
+            return null;
         }
 
-        $adminId = (int) ($request->admin_id ?? 0);
+        $adminId = AdminAuthPayload::fromRequest()?->adminId ?? 0;
         $max     = $adminId > 0 ? self::AUTH_MAX_ATTEMPTS : self::GUEST_MAX_ATTEMPTS;
         $decay   = $adminId > 0 ? self::AUTH_DECAY_SECONDS : self::GUEST_DECAY_SECONDS;
         $suffix  = $adminId > 0 ? ('u:' . $adminId) : ('ip:' . md5($request->ip()));
@@ -57,6 +54,19 @@ class ApiThrottle
                 return ApiResponse::tooManyRequests();
             }
             Cache::set($cacheKey, $n + 1, $decay + 1);
+        }
+
+        return null;
+    }
+
+    /**
+     * handle 超过配置次数返回 429
+     */
+    public function handle(Request $request, Closure $next): mixed
+    {
+        $blocked = self::enforce($request);
+        if ($blocked instanceof Response) {
+            return $blocked;
         }
 
         return $next($request);

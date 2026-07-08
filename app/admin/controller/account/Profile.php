@@ -3,11 +3,13 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\account;
 
+use app\admin\service\AdminTokenService;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
 use app\admin\model\Admin as AdminModel;
 use think\exception\FileException;
 use think\file\UploadedFile;
+use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -16,6 +18,9 @@ use think\Response;
  */
 class Profile extends AdminController
 {
+    /** @var list<string> */
+    protected array $loginOnlyActions = ['*'];
+
     /** password 明文最小长度（与 auth.Admin 一致） */
     private const int PASSWORD_MIN_LEN = 6;
 
@@ -30,20 +35,64 @@ class Profile extends AdminController
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $id = (int) $request->admin_id;
-        $row = AdminModel::with([
-            'roles' => static function ($query): void {
-                $query->field('id,name');
-            },
-        ])->field('id,username,nickname,avatar,status,create_time,update_time')->find($id);
+        $id = $this->auth->adminId;
+        $row = AdminModel::field('id,username,nickname,avatar,status,create_time,update_time')->find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
         }
         $data = $row->toArray();
-        $roles = $data['roles'] ?? [];
-        $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
+        $rolesPayload = AdminModel::rolesPayload($id);
+        $data['roles'] = $rolesPayload['roles'];
+        $data['role_ids'] = $this->auth->roleIds;
 
         return $this->ok($data);
+    }
+
+    /**
+     * switchRoles 切换当前用户启用的角色并更新 access_token 中的 role_ids
+     */
+    public function switchRoles(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
+        }
+        $id = $this->auth->adminId;
+        $roleIds = $request->put('role_ids');
+        if (!is_array($roleIds)) {
+            return $this->fail(400, 'role_ids 无效');
+        }
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $rid): bool => $rid > 0)));
+        if ($roleIds === []) {
+            return $this->fail(400, '请至少启用一个角色');
+        }
+        $bound = AdminModel::boundRoleIdsFor($id);
+        foreach ($roleIds as $roleId) {
+            if (!in_array($roleId, $bound, true)) {
+                return $this->fail(400, '角色无效');
+            }
+        }
+
+        Db::startTrans();
+        try {
+            AdminModel::syncActiveRoles($id, $roleIds);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+
+            return $this->fail(500, '保存失败');
+        }
+
+        $accessToken = AdminTokenService::extractBearerToken((string) $request->header('Authorization', ''));
+        if ($accessToken === '' || !AdminTokenService::updateAccessRoleIds($accessToken, $roleIds)) {
+            return $this->fail(500, '更新登录态失败');
+        }
+
+        $rolesPayload = AdminModel::rolesPayload($id);
+
+        return $this->ok([
+            'role_ids' => $roleIds,
+            'roles'    => $rolesPayload['roles'],
+        ]);
     }
 
     /**
@@ -54,7 +103,7 @@ class Profile extends AdminController
         if (!$request->isPut()) {
             return $this->fail(405, '仅支持 PUT');
         }
-        $id   = (int) $request->admin_id;
+        $id   = $this->auth->adminId;
         $row  = AdminModel::find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
@@ -117,7 +166,7 @@ class Profile extends AdminController
             return $this->fail(400, '文件类型与扩展名不符');
         }
 
-        $id  = (int) $request->admin_id;
+        $id  = $this->auth->adminId;
         $row = AdminModel::find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');

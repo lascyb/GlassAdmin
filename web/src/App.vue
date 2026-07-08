@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import GaSetting from "@/layouts/setting.vue";
+import GaSetting from '@/layouts/setting/index.vue';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
 </script>
 
 <template>

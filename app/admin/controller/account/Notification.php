@@ -13,6 +13,9 @@ use think\Response;
  */
 class Notification extends AdminController
 {
+    /** @var list<string> */
+    protected array $loginOnlyActions = ['*'];
+
     /** notificationsBriefMax GET 通知列表在 Header 等场景下的 limit 上限 */
     private const int NOTIFICATIONS_BRIEF_MAX = 50;
 
@@ -24,7 +27,7 @@ class Notification extends AdminController
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $adminId  = (int) $request->admin_id;
+        $adminId  = $this->auth->adminId;
         $category = trim((string) $request->get('category', ''));
         if ($category !== '' && !in_array($category, ['system', 'friend'], true)) {
             return $this->fail(400, 'category 无效');
@@ -62,7 +65,7 @@ class Notification extends AdminController
         if (!$request->isPut()) {
             return $this->fail(405, '仅支持 PUT');
         }
-        $adminId = (int) $request->admin_id;
+        $adminId = $this->auth->adminId;
         $all     = (bool) $request->put('all', false);
         $now     = date('Y-m-d H:i:s');
         if ($all) {

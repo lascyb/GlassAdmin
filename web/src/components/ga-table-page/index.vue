@@ -43,7 +43,7 @@ const onSizeChange = () => emit('load')
 </script>
 
 <template>
-    <el-card :style="{ minHeight }" :body-style="{ padding: 0 }">
+    <el-card :style="{ minHeight }">
         <template v-if="$slots.header" #header>
             <slot name="header" />
         </template>

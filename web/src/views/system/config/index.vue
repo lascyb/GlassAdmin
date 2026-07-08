@@ -98,7 +98,7 @@ const displayValue = (row: SystemConfigRow): string => {
     <el-card v-loading="loading" style="min-height: max(calc(100vh - 100px), 400px)">
         <div class="flex items-center justify-between p-4 pb-2">
             <div class="text-base font-medium">系统配置</div>
-            <el-button type="primary" :icon="Plus" @click="clickAdd">新增配置</el-button>
+            <el-button v-auth="'add'" type="primary" :icon="Plus" @click="clickAdd">新增配置</el-button>
         </div>
 
         <el-tabs v-model="activeGroup" class="px-4">
@@ -129,8 +129,8 @@ const displayValue = (row: SystemConfigRow): string => {
                     </el-table-column>
                     <el-table-column label="操作" fixed="right" width="160">
                         <template #default="{ row }">
-                            <el-button text type="primary" size="small" :icon="Edit" @click="clickEdit(row.id)">编辑</el-button>
-                            <el-button v-if="row.status !== 2" text type="danger" size="small" :icon="Delete" @click="clickDel(row)">删除</el-button>
+                            <el-button v-auth="'edit'" text type="primary" size="small" :icon="Edit" @click="clickEdit(row.id)">编辑</el-button>
+                            <el-button v-if="row.status !== 2" v-auth="'del'" text type="danger" size="small" :icon="Delete" @click="clickDel(row)">删除</el-button>
                         </template>
                     </el-table-column>
                 </el-table>

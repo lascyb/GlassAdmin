@@ -4,7 +4,7 @@ declare (strict_types=1);
 namespace app\admin\controller;
 
 use app\admin\service\AdminOperationLogService;
-use app\admin\service\AuthService;
+use app\admin\service\AdminTokenService;
 use app\admin\service\RsaKeyService;
 use app\BaseController;
 use app\common\middleware\ApiThrottle;
@@ -55,12 +55,16 @@ class Login extends BaseController
         if ($passwordHash === '' || !password_verify($password, $passwordHash)) {
             return $this->fail(401, '用户名或密码错误');
         }
-        $roleIds = Admin::roleIdsFor((int) $user->getAttr('id'));
-        if ($roleIds === []) {
+        $adminId = (int) $user->getAttr('id');
+        if (Admin::boundRoleIdsFor($adminId) === []) {
             return $this->fail(403, '账号未分配角色');
         }
-        $pair = AuthService::issue(
-            (int)$user->getAttr('id'),
+        $roleIds = Admin::activeRoleIdsFor($adminId);
+        if ($roleIds === []) {
+            return $this->fail(403, '请至少启用一个角色');
+        }
+        $pair = AdminTokenService::issuePair(
+            $adminId,
             $roleIds,
             $remember
         );
@@ -106,11 +110,11 @@ class Login extends BaseController
         if ($refreshToken === '') {
             return $this->fail(400, '缺少 refresh_token');
         }
-        $pair = AuthService::refresh($refreshToken);
+        $pair = AdminTokenService::rotate($refreshToken);
         if ($pair === null) {
             return $this->fail(401, '刷新令牌无效或已过期', null, 401);
         }
-        $authPayload = AuthService::authenticate($pair['access_token']);
+        $authPayload = AdminTokenService::authenticateAccess($pair['access_token']);
         if ($authPayload === null) {
             return $this->fail(500, '签发 access 失败');
         }

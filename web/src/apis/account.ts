@@ -1,5 +1,12 @@
 import { getData, postFormDataData, putData } from '@/apis/http'
 
+/** AdminRoleBrief 用户绑定的角色 */
+export type AdminRoleBrief = {
+    id: number
+    name: string
+    enabled: number
+}
+
 /** ProfileRow 当前用户资料 */
 export type ProfileRow = {
     id: number
@@ -8,9 +15,15 @@ export type ProfileRow = {
     avatar?: string | null
     role_ids?: number[]
     status: number
-    roles?: { id: number; name: string }[]
+    roles?: AdminRoleBrief[]
     create_time?: string | null
     update_time?: string | null
+}
+
+/** SwitchRolesRes 切换生效角色响应 */
+export type SwitchRolesRes = {
+    role_ids: number[]
+    roles: AdminRoleBrief[]
 }
 
 /** OperationLogRow 操作日志行 */
@@ -56,6 +69,13 @@ export type OperationLogsListRes = {
  */
 export const fetchProfile = async () => {
     return getData<ProfileRow>('account.Profile/read')
+}
+
+/**
+ * switchRoles 切换当前用户启用的角色
+ */
+export const switchRoles = async (role_ids: number[]) => {
+    return putData<SwitchRolesRes>('account.Profile/switchRoles', { role_ids })
 }
 
 /**

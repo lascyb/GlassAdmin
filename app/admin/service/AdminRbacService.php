@@ -57,14 +57,6 @@ class AdminRbacService
         if ($path === '') {
             return false;
         }
-        // 动态菜单：已登录角色均需拉取侧栏，不依赖 auth_rule_frontend_api 显式绑定
-        if ($path === 'Menu/menus' && $method === 'GET') {
-            return true;
-        }
-        // 已登录用户拉取本人通知列表（仅 GET；数据范围固定为 request->admin_id，limit 在 account\Notification 控制器收紧）
-        if ($path === 'account.Notification/index' && $method === 'GET') {
-            return true;
-        }
         $ruleId = self::resolveBackendApiRuleId($path, $method);
         if ($ruleId === null) {
             return false;

@@ -3,7 +3,7 @@ import {reactive} from "vue";
 
 type Layout = {
     showSetting: boolean
-    container: 'Default' | "Double"
+    container: 'Default' | 'Double' | 'Module'
 }
 
 export const useLayoutSetting = defineStore('layout_setting', () => {

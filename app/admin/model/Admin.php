@@ -51,11 +51,11 @@ class Admin extends Model
     }
 
     /**
-     * roleIdsFor 查询管理员绑定的角色 id 列表
+     * boundRoleIdsFor 查询管理员已分配的全部角色 id
      *
      * @return list<int>
      */
-    public static function roleIdsFor(int $adminId): array
+    public static function boundRoleIdsFor(int $adminId): array
     {
         if ($adminId <= 0) {
             return [];
@@ -68,20 +68,99 @@ class Admin extends Model
     }
 
     /**
-     * syncRoles 全量覆盖管理员角色关联
+     * activeRoleIdsFor 查询管理员当前启用的角色 id（enabled=1）
+     *
+     * @return list<int>
+     */
+    public static function activeRoleIdsFor(int $adminId): array
+    {
+        if ($adminId <= 0) {
+            return [];
+        }
+
+        return array_values(array_unique(array_map(
+            'intval',
+            Db::name('admin_role')->where('admin_id', $adminId)->where('enabled', 1)->column('role_id')
+        )));
+    }
+
+    /**
+     * roleIdsFor 查询管理员当前启用的角色 id（登录鉴权用，同 activeRoleIdsFor）
+     *
+     * @return list<int>
+     */
+    public static function roleIdsFor(int $adminId): array
+    {
+        return self::activeRoleIdsFor($adminId);
+    }
+
+    /**
+     * rolesPayload 当前用户角色列表（含 enabled）与生效 role_ids
+     *
+     * @return array{roles: list<array{id:int,name:string,enabled:int}>, role_ids: list<int>}
+     */
+    public static function rolesPayload(int $adminId): array
+    {
+        $rows = Db::name('admin_role')
+            ->alias('ar')
+            ->leftJoin('auth_role r', 'r.id = ar.role_id')
+            ->where('ar.admin_id', $adminId)
+            ->field('ar.role_id,ar.enabled,r.name')
+            ->order('ar.role_id', 'asc')
+            ->select()
+            ->toArray();
+
+        $roles = [];
+        $roleIds = [];
+        foreach ($rows as $row) {
+            $enabled = (int) ($row['enabled'] ?? 0);
+            $roles[] = [
+                'id'      => (int) $row['role_id'],
+                'name'    => (string) ($row['name'] ?? ''),
+                'enabled' => $enabled,
+            ];
+            if ($enabled === 1) {
+                $roleIds[] = (int) $row['role_id'];
+            }
+        }
+
+        return ['roles' => $roles, 'role_ids' => $roleIds];
+    }
+
+    /**
+     * syncActiveRoles 更新用户启用的角色（全量置 0 后启用 role_ids）
+     *
+     * @param list<int> $roleIds
+     */
+    public static function syncActiveRoles(int $adminId, array $roleIds): void
+    {
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        Db::name('admin_role')->where('admin_id', $adminId)->update(['enabled' => 0]);
+        if ($roleIds !== []) {
+            Db::name('admin_role')->where('admin_id', $adminId)->whereIn('role_id', $roleIds)->update(['enabled' => 1]);
+        }
+    }
+
+    /**
+     * syncRoles 同步管理员角色绑定（保留仍有关联行的 enabled）
      *
      * @param list<int> $roleIds
      */
     public static function syncRoles(int $adminId, array $roleIds): void
     {
-        Db::name('admin_role')->where('admin_id', $adminId)->delete();
         $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $existing = Db::name('admin_role')->where('admin_id', $adminId)->column('enabled', 'role_id');
+        Db::name('admin_role')->where('admin_id', $adminId)->delete();
         if ($roleIds === []) {
             return;
         }
         $rows = [];
         foreach ($roleIds as $roleId) {
-            $rows[] = ['admin_id' => $adminId, 'role_id' => $roleId];
+            $enabled = isset($existing[$roleId]) ? (int) $existing[$roleId] : 1;
+            if ($enabled !== 0) {
+                $enabled = 1;
+            }
+            $rows[] = ['admin_id' => $adminId, 'role_id' => $roleId, 'enabled' => $enabled];
         }
         Db::name('admin_role')->insertAll($rows);
     }

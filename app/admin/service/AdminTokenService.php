@@ -117,7 +117,7 @@ class AdminTokenService
             return null;
         }
 
-        $roleIds = Admin::roleIdsFor($adminId);
+        $roleIds = Admin::activeRoleIdsFor($adminId);
         if ($roleIds === []) {
             Cache::delete($key);
 
@@ -127,6 +127,43 @@ class AdminTokenService
         Cache::delete($key);
 
         return self::issuePair($adminId, $roleIds, $remember);
+    }
+
+    /**
+     * updateAccessRoleIds 更新 access_token 缓存中的生效角色（切换角色后调用）
+     */
+    public static function updateAccessRoleIds(string $accessToken, array $roleIds): bool
+    {
+        $accessToken = trim($accessToken);
+        if ($accessToken === '') {
+            return false;
+        }
+        $key = self::accessCacheKey($accessToken);
+        $payload = Cache::get($key);
+        if (!is_array($payload) || empty($payload['admin_id'])) {
+            return false;
+        }
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        if ($roleIds === []) {
+            return false;
+        }
+        $payload['role_ids'] = $roleIds;
+        $ttl = max(60, (int) env('ACCESS_TOKEN_TTL', 7200));
+        Cache::set($key, $payload, $ttl);
+
+        return true;
+    }
+
+    /**
+     * extractBearerToken 从 Authorization 头解析 Bearer token
+     */
+    public static function extractBearerToken(string $authorization): string
+    {
+        if (str_starts_with($authorization, 'Bearer ')) {
+            return trim(substr($authorization, 7));
+        }
+
+        return '';
     }
 
     /**

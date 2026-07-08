@@ -188,7 +188,7 @@ class Admin extends AdminController
         if (!in_array($status, [0, 1], true)) {
             return $this->fail(400, 'status 无效');
         }
-        $currentId = (int) $request->admin_id;
+        $currentId = $this->auth->adminId;
         if ($id === $currentId && $status !== 1) {
             return $this->fail(400, '不能禁用当前登录账号');
         }
@@ -231,7 +231,7 @@ class Admin extends AdminController
         if ($id <= 0) {
             return $this->fail(400, 'id 无效');
         }
-        if ($id === (int) $request->admin_id) {
+        if ($id === $this->auth->adminId) {
             return $this->fail(400, '不能删除当前登录账号');
         }
         $row = AdminModel::find($id);

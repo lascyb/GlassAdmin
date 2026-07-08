@@ -24,7 +24,7 @@ const onAddChild = (row: RoleRow) => openAddChild(row.id)
 <template>
   <el-card style="min-height: max(calc(100vh - 100px), 400px)">
     <div class="mb-3">
-      <el-button type="primary" @click="openAdd">新增角色</el-button>
+      <el-button v-auth="'add'" type="primary" @click="openAdd">新增角色</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
     <ga-tree-table

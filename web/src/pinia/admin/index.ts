@@ -12,8 +12,10 @@ export type Admin = {
     nickname: string
     /** 头像相对路径（public/storage） */
     avatar?: string | null
-    /** 绑定的角色 auth_role.id 列表 */
+    /** 绑定的角色 auth_role.id 列表（当前生效） */
     role_ids?: number[]
+    /** 已分配角色（含 enabled） */
+    roles?: { id: number; name: string; enabled: number }[]
 }
 
 /**

@@ -1,0 +1,159 @@
+<script setup lang="ts">
+type LayoutContainer = 'Default' | 'Double' | 'Module'
+
+const model = defineModel<LayoutContainer>({ required: true })
+
+const layoutOptions: { value: LayoutContainer; label: string }[] = [
+    { value: 'Default', label: '左侧单层' },
+    { value: 'Double', label: '左侧双层' },
+    { value: 'Module', label: '顶侧双栏' },
+]
+
+const selectLayout = (value: LayoutContainer) => {
+    model.value = value
+}
+</script>
+
+<template>
+    <div class="layout-picker">
+        <button
+            v-for="item in layoutOptions"
+            :key="item.value"
+            type="button"
+            class="layout-picker__item"
+            :class="{ 'is-active': model === item.value }"
+            :title="item.label"
+            @click="selectLayout(item.value)"
+        >
+            <div class="layout-preview" :class="`layout-preview--${item.value.toLowerCase()}`">
+                <template v-if="item.value === 'Default'">
+                    <div class="layout-preview__aside" />
+                    <div class="layout-preview__right">
+                        <div class="layout-preview__header" />
+                        <div class="layout-preview__main" />
+                    </div>
+                </template>
+                <template v-else-if="item.value === 'Double'">
+                    <div class="layout-preview__aside layout-preview__aside--double">
+                        <div class="layout-preview__module-col" />
+                        <div class="layout-preview__sub-col" />
+                    </div>
+                    <div class="layout-preview__right">
+                        <div class="layout-preview__header" />
+                        <div class="layout-preview__main" />
+                    </div>
+                </template>
+                <template v-else>
+                    <div class="layout-preview__aside" />
+                    <div class="layout-preview__right">
+                        <div class="layout-preview__module-header">
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <div class="layout-preview__main" />
+                    </div>
+                </template>
+            </div>
+        </button>
+    </div>
+</template>
+
+<style scoped>
+.layout-picker {
+    display: flex;
+    gap: 12px;
+}
+
+.layout-picker__item {
+    display: flex;
+    padding: 6px;
+    border: 2px solid var(--el-border-color);
+    border-radius: 8px;
+    background: var(--el-bg-color);
+    cursor: pointer;
+    transition:
+        border-color var(--ga-duration) var(--ga-ease),
+        box-shadow var(--ga-duration) var(--ga-ease);
+}
+
+.layout-picker__item:hover {
+    border-color: var(--el-color-primary-light-5);
+}
+
+.layout-picker__item.is-active {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 1px var(--el-color-primary);
+}
+
+.layout-preview {
+    display: flex;
+    width: 72px;
+    height: 48px;
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--el-border-color-lighter);
+    background: var(--el-fill-color-blank);
+}
+
+.layout-preview__aside {
+    flex: 0 0 22px;
+    background: var(--el-color-primary-light-7);
+    border-right: 1px solid var(--el-border-color-lighter);
+}
+
+.layout-preview__aside--double {
+    display: flex;
+    flex: 0 0 30px;
+}
+
+.layout-preview__module-col {
+    flex: 0 0 12px;
+    background: var(--el-color-primary-light-5);
+    border-right: 1px solid var(--el-border-color-lighter);
+}
+
+.layout-preview__sub-col {
+    flex: 1;
+    background: var(--el-color-primary-light-7);
+}
+
+.layout-preview__right {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.layout-preview__header {
+    flex: 0 0 10px;
+    background: var(--el-fill-color);
+    border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.layout-preview__module-header {
+    display: flex;
+    flex: 0 0 10px;
+    align-items: center;
+    gap: 2px;
+    padding: 0 3px;
+    background: var(--el-fill-color);
+    border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.layout-preview__module-header span {
+    flex: 1;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--el-color-primary-light-5);
+}
+
+.layout-preview__module-header span:first-child {
+    background: var(--el-color-primary);
+}
+
+.layout-preview__main {
+    flex: 1;
+    background: var(--el-fill-color-light);
+}
+</style>

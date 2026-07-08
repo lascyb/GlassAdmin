@@ -12,6 +12,9 @@ use think\Response;
  */
 class Menu extends AdminController
 {
+    /** @var list<string> 动态菜单：已登录即可拉取，不校验 RBAC */
+    protected array $loginOnlyActions = ['menus'];
+
     /**
      * menus 返回当前用户可见菜单树
      *
@@ -19,10 +22,7 @@ class Menu extends AdminController
      */
     public function menus(): Response
     {
-        $roleIds = $this->request->role_ids ?? [];
-        if (!is_array($roleIds)) {
-            $roleIds = [];
-        }
+        $roleIds = $this->auth->roleIds;
         $menus   = MenuService::getMenus($roleIds);
 
         return $this->ok(['menus' => $menus]);

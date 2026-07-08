@@ -18,7 +18,7 @@ onMounted(load)
 <template>
     <div v-loading="loading" class="min-h-[360px]">
         <div class="mb-3 flex flex-wrap justify-end gap-2">
-            <el-button plain :icon="Plus" @click="openAdd(0)">新增</el-button>
+            <el-button v-auth="'add'" plain :icon="Plus" @click="openAdd(0)">新增</el-button>
             <el-button plain :icon="Refresh" @click="load">刷新</el-button>
         </div>
         <el-tree
@@ -35,11 +35,11 @@ onMounted(load)
                         >{{ data.method }} {{ data.path }}</span
                     >
                     <span class="ml-auto flex gap-1">
-                        <el-button text type="primary" :icon="Plus" @click.stop="openAdd(data.id, data.type)"
+                        <el-button v-auth="'add'" text type="primary" :icon="Plus" @click.stop="openAdd(data.id, data.type)"
                             >新增子节点</el-button
                         >
-                        <el-button text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
-                        <el-button text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>
+                        <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
+                        <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>
                     </span>
                 </span>
             </template>

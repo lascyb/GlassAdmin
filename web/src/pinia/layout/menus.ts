@@ -13,6 +13,8 @@ type FindResult = {
 export const useLayoutMenus = defineStore('layout_menus', () => {
     const menus = shallowRef<Menu[]>([])
     const module = ref<number>()
+    /** subMenus 顶栏模块布局下当前一级菜单的子菜单 */
+    const subMenus = shallowRef<Menu[]>([])
     const collapse = ref<boolean>(false)
 
     const init = (data: Menu[]) => {
@@ -41,11 +43,44 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
         return undefined
     }
 
+    /**
+     * setActiveModule 切换顶栏一级模块并更新 subMenus
+     */
+    const setActiveModule = (moduleId: number, options?: { navigate?: boolean }) => {
+        module.value = moduleId
+        const root = menus.value.find((item) => item.id === moduleId)
+        if (!root) {
+            subMenus.value = []
+            return
+        }
+        if (root.children?.length) {
+            subMenus.value = root.children
+            return
+        }
+        subMenus.value = []
+        if (options?.navigate) {
+            void router.push(root.path_full)
+        }
+    }
+
+    /**
+     * syncModuleFromPath 按当前路由同步一级模块与子菜单
+     */
+    const syncModuleFromPath = (path: string) => {
+        const result = find(path)
+        if (result?.menus[0]) {
+            setActiveModule(result.menus[0].id)
+        }
+    }
+
     return {
         menus,
         module,
+        subMenus,
         collapse,
         init,
-        find
+        find,
+        setActiveModule,
+        syncModuleFromPath,
     }
 })

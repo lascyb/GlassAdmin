@@ -13,6 +13,9 @@ use think\Response;
  */
 class OperationLog extends AdminController
 {
+    /** @var list<string> */
+    protected array $loginOnlyActions = ['*'];
+
     /** operationLogsMax 操作日志单页 limit 上限 */
     private const int OPERATION_LOGS_MAX = 100;
 
@@ -24,7 +27,7 @@ class OperationLog extends AdminController
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $adminId = (int) $request->admin_id;
+        $adminId = $this->auth->adminId;
         $page    = max(1, (int) $request->get('page', 1));
         $limit   = min(self::OPERATION_LOGS_MAX, max(1, (int) $request->get('limit', 20)));
         $q       = AdminOperationLog::where('admin_id', $adminId)->order('id', 'desc');
