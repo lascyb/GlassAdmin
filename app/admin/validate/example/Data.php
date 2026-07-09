@@ -6,7 +6,7 @@ namespace app\admin\validate\example;
 use think\Validate;
 
 /**
- * Data 示例数据校验（CRUD 模板）
+ * Data 示例数据校验（一键生成主实体范本：sceneCreate / sceneUpdate）
  */
 class Data extends Validate
 {
@@ -25,6 +25,7 @@ class Data extends Validate
         'cover'        => 'max:255',
         'publish_time' => 'integer|egt:0',
         'expire_date'  => 'date',
+        'extra'        => 'array',
         'remark'       => 'max:500',
         'sort'         => 'integer|egt:0',
         'tag_ids'      => 'array',
@@ -39,8 +40,8 @@ class Data extends Validate
         'status.in'       => '状态无效',
     ];
 
-    /** sceneSave 新建场景 */
-    public function sceneSave(): static
+    /** sceneCreate 新建场景 */
+    public function sceneCreate(): static
     {
         return $this
             ->only([

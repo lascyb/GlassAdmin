@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import * as dataApi from '@/apis/example/data'
+import { CATEGORY_LIST_URL } from '@/apis/example/category'
+import * as apis from '@/apis/example/data'
+import { TAG_LIST_URL } from '@/apis/example/tag'
 import { postFormDataData } from '@/apis/http'
-import { DATA_LEVEL_MAP, DATA_STATUS_MAP, EXTRA_OPTIONS } from '@/views/example/data/constants'
-import { Plus } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import type { UploadRequestOptions } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import GaSelectRemote from '@/components/ga-select-remote/index.vue'
 import { resolveStorageUrl } from '@/utils/storageUrl'
+import { EXTRA_OPTIONS, LEVEL_MAP, STATUS_MAP } from '@/views/example/data/constants'
+import { Plus } from '@element-plus/icons-vue'
+import type { UploadRequestOptions } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
 
-const props = defineProps<{
-    id?: number
-}>()
-
+const props = defineProps<{ id?: number }>()
 const show = defineModel<boolean>('modelValue', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
@@ -39,8 +39,9 @@ const form = reactive({
 const loading = ref(false)
 const saving = ref(false)
 const title = ref('新增示例数据')
-const categories = ref<Array<{ id: number; name: string }>>([])
-const tags = ref<Array<{ id: number; name: string }>>([])
+const categoryInit = ref<Array<{ id: number; name: string }> | undefined>()
+const tagInit = ref<Array<{ id: number; name: string }> | undefined>()
+const detailReady = ref(false)
 
 const resetForm = () => {
     Object.assign(form, {
@@ -63,20 +64,17 @@ const resetForm = () => {
         remark: '',
         sort: 0,
     })
-}
-
-const loadOptions = async () => {
-    const res = await dataApi.fetchOptions()
-    categories.value = res.categories
-    tags.value = res.tags
+    categoryInit.value = undefined
+    tagInit.value = undefined
 }
 
 const loadDetail = async () => {
+    detailReady.value = false
     if (props.id) {
         title.value = '编辑示例数据'
         loading.value = true
         try {
-            const d = await dataApi.fetchRead(props.id)
+            const d = await apis.read(props.id)
             Object.assign(form, {
                 id: d.id,
                 title: d.title,
@@ -97,6 +95,8 @@ const loadDetail = async () => {
                 remark: d.remark ?? '',
                 sort: d.sort,
             })
+            categoryInit.value = d.category ? [d.category] : undefined
+            tagInit.value = d.tags?.length ? d.tags : undefined
         } finally {
             loading.value = false
         }
@@ -104,18 +104,18 @@ const loadDetail = async () => {
         title.value = '新增示例数据'
         resetForm()
     }
+    detailReady.value = true
 }
 
-onMounted(async () => {
-    await loadOptions()
-    await loadDetail()
+onMounted(() => {
+    void loadDetail()
 })
 
 const onUploadCover = async (options: UploadRequestOptions) => {
     const fd = new FormData()
     fd.append('file', options.file)
     try {
-        const res = await postFormDataData<{ path: string }>(dataApi.UPLOAD_COVER_ACTION, fd)
+        const res = await postFormDataData<{ path: string }>(apis.UPLOAD_COVER_ACTION, fd)
         form.cover = res.path
         ElMessage.success('上传成功')
     } catch (e: unknown) {
@@ -154,9 +154,9 @@ const submit = async () => {
             sort: form.sort,
         }
         if (form.id) {
-            await dataApi.updateData(form.id, payload)
+            await apis.update(form.id, payload)
         } else {
-            await dataApi.saveData(payload)
+            await apis.create(payload)
         }
         ElMessage.success('已保存')
         emit('saved')
@@ -182,7 +182,6 @@ const submit = async () => {
     >
         <el-skeleton :loading="loading" animated :rows="8">
             <el-form :model="form" label-position="right" label-width="96px">
-                <!-- input -->
                 <el-form-item label="标题" required>
                     <el-input v-model.trim="form.title" maxlength="100" show-word-limit clearable />
                 </el-form-item>
@@ -190,73 +189,71 @@ const submit = async () => {
                     <el-input v-model.trim="form.code" maxlength="50" show-word-limit clearable />
                 </el-form-item>
 
-                <!-- select / belongs_to -->
+                <!-- remote_select / belongs_to -->
                 <el-form-item label="分类">
-                    <el-select v-model="form.category_id" clearable placeholder="请选择分类" class="w-full">
-                        <el-option v-for="c in categories" :key="c.id" :value="c.id" :label="c.name" />
-                    </el-select>
+                    <ga-select-remote
+                        v-if="detailReady"
+                        :key="`cat-${form.id ?? 'new'}`"
+                        v-model="form.category_id"
+                        :remote-url="CATEGORY_LIST_URL"
+                        :props="{ value: 'id', label: 'name' }"
+                        :init-options="categoryInit"
+                        clearable
+                        placeholder="输入关键词搜索分类"
+                        class="w-full"
+                    />
                 </el-form-item>
 
-                <!-- multi_select / belongs_to_many -->
+                <!-- remote_multi_select / belongs_to_many -->
                 <el-form-item label="标签">
-                    <el-select
+                    <ga-select-remote
+                        v-if="detailReady"
+                        :key="`tag-${form.id ?? 'new'}`"
                         v-model="form.tag_ids"
+                        :remote-url="TAG_LIST_URL"
+                        :props="{ value: 'id', label: 'name' }"
+                        :init-options="tagInit"
                         multiple
                         collapse-tags
                         collapse-tags-tooltip
                         clearable
-                        placeholder="请选择标签"
+                        placeholder="输入关键词搜索标签"
                         class="w-full"
-                    >
-                        <el-option v-for="t in tags" :key="t.id" :value="t.id" :label="t.name" />
-                    </el-select>
+                    />
                 </el-form-item>
 
-                <!-- textarea -->
                 <el-form-item label="内容">
                     <el-input v-model.trim="form.content" type="textarea" :rows="3" maxlength="2000" show-word-limit />
                 </el-form-item>
-
-                <!-- number / decimal -->
                 <el-form-item label="金额">
                     <el-input-number v-model="form.amount" :min="0" :step="0.01" :precision="2" controls-position="right" class="!w-full" />
                 </el-form-item>
                 <el-form-item label="数量">
                     <el-input-number v-model="form.quantity" :min="0" controls-position="right" class="!w-full" />
                 </el-form-item>
-
-                <!-- switch / bool -->
                 <el-form-item label="置顶">
                     <el-switch v-model="form.is_top" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-
-                <!-- radio / enum -->
                 <el-form-item label="状态">
                     <el-radio-group v-model="form.status">
-                        <el-radio v-for="(item, value) in DATA_STATUS_MAP" :key="value" :value="Number(value)">
+                        <el-radio v-for="(item, value) in STATUS_MAP" :key="value" :value="Number(value)">
                             {{ item.label }}
                         </el-radio>
                     </el-radio-group>
                 </el-form-item>
-
-                <!-- select / enum -->
                 <el-form-item label="等级">
                     <el-select v-model="form.level" class="w-full">
                         <el-option
-                            v-for="(item, value) in DATA_LEVEL_MAP"
+                            v-for="(item, value) in LEVEL_MAP"
                             :key="value"
                             :value="Number(value)"
                             :label="item.label"
                         />
                     </el-select>
                 </el-form-item>
-
-                <!-- color -->
                 <el-form-item label="颜色">
                     <el-color-picker v-model="form.color" />
                 </el-form-item>
-
-                <!-- image -->
                 <el-form-item label="封面">
                     <div class="flex items-center gap-3">
                         <el-upload :show-file-list="false" accept="image/*" :http-request="onUploadCover">
@@ -271,8 +268,6 @@ const submit = async () => {
                         <el-button v-if="form.cover" link type="danger" @click="form.cover = ''">移除</el-button>
                     </div>
                 </el-form-item>
-
-                <!-- datetime -->
                 <el-form-item label="发布时间">
                     <el-date-picker
                         v-model="form.publish_time"
@@ -282,8 +277,6 @@ const submit = async () => {
                         class="!w-full"
                     />
                 </el-form-item>
-
-                <!-- date -->
                 <el-form-item label="过期日期">
                     <el-date-picker
                         v-model="form.expire_date"
@@ -293,18 +286,14 @@ const submit = async () => {
                         class="!w-full"
                     />
                 </el-form-item>
-
-                <!-- json / multi_select 静态选项 -->
                 <el-form-item label="扩展项">
                     <el-select v-model="form.extra" multiple collapse-tags clearable placeholder="请选择" class="w-full">
                         <el-option v-for="o in EXTRA_OPTIONS" :key="o.value" :value="o.value" :label="o.label" />
                     </el-select>
                 </el-form-item>
-
                 <el-form-item label="备注">
                     <el-input v-model.trim="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit />
                 </el-form-item>
-
                 <el-form-item label="排序">
                     <el-input-number v-model="form.sort" :min="0" controls-position="right" class="!w-full" />
                 </el-form-item>

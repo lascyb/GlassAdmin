@@ -1,26 +1,16 @@
 import { delData, getData, postData, putData } from '@/apis/http'
+import type { CategoryRow } from '@/apis/example/category'
+import type { TagRow } from '@/apis/example/tag'
 
-/** DataCategoryBrief belongs_to 分类摘要 */
-export type DataCategoryBrief = {
-    id: number
-    name: string
-}
-
-/** DataTagBrief belongs_to_many 标签摘要 */
-export type DataTagBrief = {
-    id: number
-    name: string
-}
-
-/** DataRow 示例数据列表行 */
+/** DataRow 列表/详情行 */
 export type DataRow = {
     id: number
     title: string
     code: string
     category_id?: number | null
-    category?: DataCategoryBrief | null
+    category?: CategoryRow | null
     tag_ids?: number[]
-    tags?: DataTagBrief[]
+    tags?: TagRow[]
     content?: string | null
     amount: number
     quantity: number
@@ -46,8 +36,8 @@ export type DataListRes = {
     limit: number
 }
 
-/** DataSavePayload 新建/更新载荷 */
-export type DataSavePayload = {
+/** DataPayload 新建/更新载荷 */
+export type DataPayload = {
     title: string
     code: string
     category_id?: number | null
@@ -67,63 +57,37 @@ export type DataSavePayload = {
     sort: number
 }
 
-/** DataOptionsRes 表单 options */
-export type DataOptionsRes = {
-    categories: DataCategoryBrief[]
-    tags: DataTagBrief[]
-}
+/** API_BASE 控制器路径前缀 */
+const API_BASE = 'example.Data'
 
-/**
- * fetchList 分页列表
- */
-export const fetchList = async (params: {
+/** list 分页列表 */
+export const list = (params: {
     page?: number
     limit?: number
     keyword?: string
-    title?: string
     code?: string
     category_id?: number
+    tag_ids?: number[]
     status?: number
     level?: number
     is_top?: number
-}) => {
-    return getData<DataListRes>('example.Data/list', params)
-}
+}) => getData<DataListRes>(`${API_BASE}/list`, params)
 
-/**
- * fetchRead 详情
- */
-export const fetchRead = async (id: number) => {
-    return getData<DataRow>('example.Data/read', { id })
-}
+/** read 详情 */
+export const read = (id: number) => getData<DataRow>(`${API_BASE}/read`, { id })
 
-/**
- * fetchOptions 表单下拉选项
- */
-export const fetchOptions = async () => {
-    return getData<DataOptionsRes>('example.Data/options')
-}
+/** create 新建 */
+export const create = (payload: DataPayload) =>
+    postData<{ id: number }>(`${API_BASE}/create`, payload)
 
-/**
- * saveData 新建
- */
-export const saveData = async (payload: DataSavePayload) => {
-    return postData<{ id: number }>('example.Data/save', payload)
-}
+/** update 更新 */
+export const update = (id: number, payload: DataPayload) =>
+    putData<null>(`${API_BASE}/update?id=${id}`, payload)
 
-/**
- * updateData 更新
- */
-export const updateData = async (id: number, payload: DataSavePayload) => {
-    return putData<null>('example.Data/update?id=' + id, payload)
-}
+/** remove 删除（export 为 delete，因 delete 为保留字） */
+const remove = (id: number) => delData<null>(`${API_BASE}/delete`, { id })
 
-/**
- * deleteData 删除
- */
-export const deleteData = async (id: number) => {
-    return delData<null>('example.Data/delete', { id })
-}
+export { remove as delete }
 
-/** UPLOAD_COVER_ACTION 封面上传接口 path */
-export const UPLOAD_COVER_ACTION = 'example.Data/uploadCover'
+/** UPLOAD_COVER_ACTION 封面上传接口 */
+export const UPLOAD_COVER_ACTION = `${API_BASE}/uploadCover`

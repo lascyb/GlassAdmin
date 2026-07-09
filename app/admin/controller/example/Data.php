@@ -3,7 +3,6 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\example;
 
-use app\admin\model\example\Category as CategoryModel;
 use app\admin\model\example\Data as DataModel;
 use app\admin\model\example\Tag as TagModel;
 use app\common\controller\AdminController;
@@ -13,7 +12,15 @@ use think\Request;
 use think\Response;
 
 /**
- * Data 示例数据 CRUD（全字段类型 / 关联类型模板）
+ * Data 示例数据 CRUD 控制器（一键生成主实体范本）
+ *
+ * 生成文件对应：
+ * - Model: app/admin/model/example/Data.php
+ * - Validate: app/admin/validate/example/Data.php
+ * - 前端: apis/example/data.ts + views/example/data/{index,edit}.vue + constants.ts
+ *
+ * API: list / read / create / update / delete（image 字段另有 uploadCover）
+ * 关联 Category / Tag 为独立控制器，仅提供 list 供 ga-select-remote。
  */
 class Data extends AdminController
 {
@@ -34,12 +41,12 @@ class Data extends AdminController
         $page         = max(1, (int) $request->get('page', 1));
         $limit        = min(100, max(1, (int) $request->get('limit', self::LIMIT_DEFAULT)));
         $keyword      = trim((string) $request->get('keyword', ''));
-        $title        = trim((string) $request->get('title', ''));
         $code         = trim((string) $request->get('code', ''));
         $categoryId   = (int) $request->get('category_id', 0);
         $statusRaw    = $request->get('status');
         $levelRaw     = $request->get('level');
         $isTopRaw     = $request->get('is_top');
+        $tagIds       = $this->parseTagIds($request->get('tag_ids'));
 
         $q = DataModel::with([
             'category' => static function ($query): void {
@@ -50,13 +57,12 @@ class Data extends AdminController
             },
         ])->order(['sort' => 'asc', 'id' => 'desc']);
 
+        // keyword ← schema.search=keyword 字段：title|code|remark
         if ($keyword !== '') {
             $kw = addcslashes($keyword, '%_\\');
             $q->where('title|code|remark', 'like', '%' . $kw . '%');
         }
-        if ($title !== '') {
-            $q->where('title', 'like', '%' . addcslashes($title, '%_\\') . '%');
-        }
+        // 以下为 schema.search=advanced 字段
         if ($code !== '') {
             $q->where('code', 'like', '%' . addcslashes($code, '%_\\') . '%');
         }
@@ -80,6 +86,11 @@ class Data extends AdminController
             if (in_array($isTop, [0, 1], true)) {
                 $q->where('is_top', $isTop);
             }
+        }
+        if ($tagIds !== []) {
+            $q->whereIn('id', static function ($query) use ($tagIds): void {
+                $query->table('example_data_tag')->whereIn('tag_id', $tagIds)->field('data_id');
+            });
         }
 
         $paginator = $q->paginate([
@@ -133,41 +144,16 @@ class Data extends AdminController
     }
 
     /**
-     * options 表单下拉选项（belongs_to / belongs_to_many）
+     * create 新建
      */
-    public function options(Request $request): Response
-    {
-        if (!$request->isGet()) {
-            return $this->fail(405, '仅支持 GET');
-        }
-        $categories = CategoryModel::where('status', 1)
-            ->order(['sort' => 'asc', 'id' => 'asc'])
-            ->field('id,name')
-            ->select()
-            ->toArray();
-        $tags = TagModel::where('status', 1)
-            ->order(['sort' => 'asc', 'id' => 'asc'])
-            ->field('id,name')
-            ->select()
-            ->toArray();
-
-        return $this->ok([
-            'categories' => $categories,
-            'tags'       => $tags,
-        ]);
-    }
-
-    /**
-     * save 新建
-     */
-    public function save(Request $request): Response
+    public function create(Request $request): Response
     {
         if (!$request->isPost()) {
             return $this->fail(405, '仅支持 POST');
         }
         $data = $request->post();
         try {
-            $this->validate($data, \app\admin\validate\example\Data::class . '.save');
+            $this->validate($data, \app\admin\validate\example\Data::class . '.create');
         } catch (\think\exception\ValidateException $e) {
             return $this->fail(400, $e->getError() ?: $e->getMessage());
         }
@@ -337,12 +323,15 @@ class Data extends AdminController
     }
 
     /**
-     * parseTagIds 解析标签 id 列表
+     * parseTagIds 解析标签 id 列表（数组或逗号分隔）
      *
      * @return list<int>
      */
     private function parseTagIds(mixed $raw): array
     {
+        if (is_string($raw)) {
+            $raw = $raw === '' ? [] : explode(',', $raw);
+        }
         if (!is_array($raw)) {
             return [];
         }

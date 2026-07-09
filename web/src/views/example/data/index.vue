@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { CATEGORY_LIST_URL } from '@/apis/example/category'
 import type { DataRow } from '@/apis/example/data'
 import * as dataApi from '@/apis/example/data'
+import { TAG_LIST_URL } from '@/apis/example/tag'
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
+import GaSelectRemote from '@/components/ga-select-remote/index.vue'
 import GaStatusTag from '@/components/ga-status-tag/index.vue'
 import GaTablePage from '@/components/ga-table-page/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 import { formatUnixTime } from '@/utils/formatUnixTime'
 import { resolveStorageUrl } from '@/utils/storageUrl'
-import { DATA_LEVEL_MAP, DATA_STATUS_MAP, EXTRA_OPTIONS } from '@/views/example/data/constants'
+import { EXTRA_OPTIONS, LEVEL_MAP, STATUS_MAP } from '@/views/example/data/constants'
 import EditView from '@/views/example/data/edit.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { computed, reactive, ref } from 'vue'
@@ -18,6 +21,7 @@ const keyword = ref('')
 const advanced = reactive({
     code: '',
     category_id: undefined as number | undefined,
+    tag_ids: [] as number[],
     status: undefined as number | undefined,
     level: undefined as number | undefined,
     is_top: undefined as number | undefined,
@@ -27,44 +31,26 @@ const queryParams = computed(() => ({
     keyword: keyword.value.trim() || undefined,
     code: advanced.code.trim() || undefined,
     category_id: advanced.category_id,
+    tag_ids: advanced.tag_ids.length > 0 ? advanced.tag_ids : undefined,
     status: advanced.status === 0 || advanced.status === 1 ? advanced.status : undefined,
     level: [1, 2, 3].includes(Number(advanced.level)) ? advanced.level : undefined,
     is_top: advanced.is_top === 0 || advanced.is_top === 1 ? advanced.is_top : undefined,
 }))
 
 const { list, total, page, limit, loading, load, search } = usePaginatedList<DataRow>(
-    (params) => dataApi.fetchList(params),
+    (params) => dataApi.list(params),
     { params: queryParams },
 )
 
 const { confirm } = useConfirmAction({ successMsg: '已删除', onSuccess: load })
 
-const editController = reactive<{
-    show?: boolean
-    id?: number
-}>({})
+const editController = reactive<{ show?: boolean; id?: number }>({})
 
-const categories = ref<Array<{ id: number; name: string }>>([])
-
-const loadOptions = async () => {
-    const res = await dataApi.fetchOptions()
-    categories.value = res.categories
-}
-
-void loadOptions()
-
-const clickEdit = (id: number) => {
-    Object.assign(editController, { show: true, id })
-}
-
-const clickAdd = () => {
-    Object.assign(editController, { show: true, id: undefined })
-}
-
+const clickEdit = (id: number) => Object.assign(editController, { show: true, id })
+const clickAdd = () => Object.assign(editController, { show: true, id: undefined })
 const clickDel = (row: DataRow) => {
-    void confirm(`确定删除「${row.title}」？`, () => dataApi.deleteData(row.id))
+    void confirm(`确定删除「${row.title}」？`, () => dataApi.delete(row.id))
 }
-
 const onSaved = () => {
     editController.show = false
     void load()
@@ -74,6 +60,7 @@ const onSaved = () => {
 const resetAdvanced = () => {
     advanced.code = ''
     advanced.category_id = undefined
+    advanced.tag_ids = []
     advanced.status = undefined
     advanced.level = undefined
     advanced.is_top = undefined
@@ -105,14 +92,31 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                         <el-input v-model.trim="advanced.code" clearable placeholder="模糊匹配" class="!w-40" />
                     </el-form-item>
                     <el-form-item label="分类">
-                        <el-select v-model="advanced.category_id" clearable placeholder="全部" class="!w-32">
-                            <el-option v-for="c in categories" :key="c.id" :value="c.id" :label="c.name" />
-                        </el-select>
+                        <ga-select-remote
+                            v-model="advanced.category_id"
+                            :remote-url="CATEGORY_LIST_URL"
+                            :props="{ value: 'id', label: 'name' }"
+                            clearable
+                            placeholder="搜索分类"
+                            class="!w-40"
+                        />
+                    </el-form-item>
+                    <el-form-item label="标签">
+                        <ga-select-remote
+                            v-model="advanced.tag_ids"
+                            :remote-url="TAG_LIST_URL"
+                            :props="{ value: 'id', label: 'name' }"
+                            multiple
+                            collapse-tags
+                            clearable
+                            placeholder="搜索标签"
+                            class="!w-48"
+                        />
                     </el-form-item>
                     <el-form-item label="状态">
                         <el-select v-model="advanced.status" clearable placeholder="全部" class="!w-28">
                             <el-option
-                                v-for="(item, value) in DATA_STATUS_MAP"
+                                v-for="(item, value) in STATUS_MAP"
                                 :key="value"
                                 :value="Number(value)"
                                 :label="item.label"
@@ -122,7 +126,7 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                     <el-form-item label="等级">
                         <el-select v-model="advanced.level" clearable placeholder="全部" class="!w-28">
                             <el-option
-                                v-for="(item, value) in DATA_LEVEL_MAP"
+                                v-for="(item, value) in LEVEL_MAP"
                                 :key="value"
                                 :value="Number(value)"
                                 :label="item.label"
@@ -142,20 +146,15 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
             </ga-search-bar>
         </template>
 
-        <!-- pk / string -->
         <el-table-column prop="id" label="ID" width="72" />
         <el-table-column prop="title" label="标题" min-width="140" show-overflow-tooltip />
         <el-table-column prop="code" label="编码" min-width="120" show-overflow-tooltip />
-
-        <!-- belongs_to -->
         <el-table-column label="分类" width="110">
             <template #default="{ row }">
                 <el-tag v-if="row.category?.name" round>{{ row.category.name }}</el-tag>
                 <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
-
-        <!-- belongs_to_many -->
         <el-table-column label="标签" min-width="160">
             <template #default="{ row }">
                 <template v-if="row.tags?.length">
@@ -164,31 +163,23 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                 <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
-
-        <!-- decimal / int -->
         <el-table-column prop="amount" label="金额" width="100" />
         <el-table-column prop="quantity" label="数量" width="80" align="center" />
-
-        <!-- bool -->
         <el-table-column label="置顶" width="72" align="center">
             <template #default="{ row }">
                 <el-tag :type="row.is_top ? 'warning' : 'info'" round>{{ row.is_top ? '是' : '否' }}</el-tag>
             </template>
         </el-table-column>
-
-        <!-- enum / status -->
         <el-table-column label="状态" width="88">
             <template #default="{ row }">
-                <ga-status-tag :value="row.status" :map="DATA_STATUS_MAP" />
+                <ga-status-tag :value="row.status" :map="STATUS_MAP" />
             </template>
         </el-table-column>
         <el-table-column label="等级" width="88">
             <template #default="{ row }">
-                <ga-status-tag :value="row.level" :map="DATA_LEVEL_MAP" />
+                <ga-status-tag :value="row.level" :map="LEVEL_MAP" />
             </template>
         </el-table-column>
-
-        <!-- color -->
         <el-table-column label="颜色" width="72" align="center">
             <template #default="{ row }">
                 <span
@@ -199,8 +190,6 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                 <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
-
-        <!-- image -->
         <el-table-column label="封面" width="88" align="center">
             <template #default="{ row }">
                 <el-image
@@ -214,16 +203,10 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                 <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
-
-        <!-- timestamp / date -->
         <el-table-column label="发布时间" width="170">
-            <template #default="{ row }">
-                {{ formatUnixTime(row.publish_time) }}
-            </template>
+            <template #default="{ row }">{{ formatUnixTime(row.publish_time) }}</template>
         </el-table-column>
         <el-table-column prop="expire_date" label="过期日期" width="120" />
-
-        <!-- json -->
         <el-table-column label="扩展项" min-width="140">
             <template #default="{ row }">
                 <template v-if="row.extra?.length">
@@ -232,15 +215,11 @@ const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === valu
                 <span v-else class="text-gray-400">—</span>
             </template>
         </el-table-column>
-
         <el-table-column prop="remark" label="备注" min-width="140" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" width="72" align="center" />
         <el-table-column label="创建时间" width="170">
-            <template #default="{ row }">
-                {{ formatUnixTime(row.create_time) }}
-            </template>
+            <template #default="{ row }">{{ formatUnixTime(row.create_time) }}</template>
         </el-table-column>
-
         <el-table-column label="操作" fixed="right" width="140">
             <template #default="{ row }">
                 <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />

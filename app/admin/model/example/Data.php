@@ -9,18 +9,18 @@ use think\model\relation\BelongsTo;
 use think\model\relation\BelongsToMany;
 
 /**
- * Data 示例数据（CRUD 全字段类型模板实体）
+ * Data 示例数据 Model（一键生成主实体范本）
  *
- * @property int|null         $category_id
- * @property string|null      $content
- * @property float            $amount
- * @property int              $quantity
- * @property int              $is_top    {1:是,0:否}
- * @property int              $level     {1:普通,2:重要,3:紧急}
- * @property string|null      $color
- * @property string|null      $cover
- * @property int|null         $publish_time
- * @property string|null      $expire_date
+ * @property int|null          $category_id
+ * @property string|null       $content
+ * @property float             $amount
+ * @property int               $quantity
+ * @property int               $is_top    {1:是,0:否}
+ * @property int               $level     {1:普通,2:重要,3:紧急}
+ * @property string|null       $color
+ * @property string|null       $cover
+ * @property int|null          $publish_time
+ * @property string|null       $expire_date
  * @property list<string>|null $extra
  */
 class Data extends Model
