@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { getElIcon, listElIconNames } from '@components/ga-icon/elRegistry'
+import GaIcon from '@components/ga-icon/index.vue'
 import { getLocalIconUrl, listLocalIconStems } from '@components/ga-icon/localIcons'
 import { parseGaIconString } from '@components/ga-icon/parse'
-import GaIcon from '@components/ga-icon/index.vue'
 import { computed, ref, watch } from 'vue'
 
 const model = defineModel<string | null>({ default: null })
+
+/** hideName 是否隐藏触发按钮上的图标名文本 */
+const props = withDefaults(
+    defineProps<{
+        hideName?: boolean
+    }>(),
+    { hideName: false },
+)
 
 const open = ref(false)
 const keyword = ref('')
@@ -68,13 +76,21 @@ const clearIcon = () => {
 </script>
 
 <template>
-    <div class="icon-picker w-full min-w-0 max-w-70">
+    <div class="icon-picker w-full min-w-0" :class="props.hideName ? 'icon-picker--icon-only max-w-10' : 'max-w-70'">
         <el-popover v-model:visible="open" placement="right" :width="400" trigger="click" teleported>
             <template #reference>
-                <el-button class="icon-picker__btn box-border! flex! h-auto! w-full! min-w-0! max-w-full! items-center! justify-start! gap-2! overflow-hidden! px-2!">
-                    <span class="flex min-w-0 w-full max-w-full flex-1 items-center gap-2 overflow-hidden">
+                <el-button
+                    class="icon-picker__btn box-border! flex! h-auto! w-full! min-w-0! max-w-full! items-center! overflow-hidden! px-2!"
+                    :class="props.hideName ? 'justify-center! gap-0!' : 'justify-start! gap-2!'"
+                    :title="model || '未设置'"
+                >
+                    <span
+                        class="flex min-w-0 max-w-full items-center overflow-hidden"
+                        :class="props.hideName ? 'justify-center' : 'w-full flex-1 gap-2'"
+                    >
                         <span class="shrink-0"><GaIcon :icon="model" :fallback="true" /></span>
                         <span
+                            v-if="!props.hideName"
                             class="block min-w-0 flex-1 truncate text-left text-xs text-gray-500"
                             :title="model || undefined"
                             >{{ model || '未设置' }}</span
@@ -159,7 +175,18 @@ const clearIcon = () => {
     flex: 1 1 0%;
     overflow: hidden;
 }
-.el-button+.el-button{
+.icon-picker--icon-only :deep(.el-button) {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+.icon-picker--icon-only :deep(.el-button > span) {
+    flex: 0 0 auto;
+    width: auto;
+    justify-content: center;
+    align-items: center;
+}
+.el-button + .el-button {
     margin-left: 0;
 }
 </style>

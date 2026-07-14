@@ -20,7 +20,7 @@ const props = withDefaults(
         transform?: (response: unknown) => { list: Record<string, unknown>[]; total: number }
         /** limit 每页数量 */
         limit?: number
-        /** filters 额外筛选条件，合并到请求 filters 字段 */
+        /** filters 额外筛选条件，展开合并到请求参数（GET 不可嵌套 object） */
         filters?: Record<string, unknown>
         /** requestFn 自定义请求函数，提供时替代默认 getData/postData */
         requestFn?: (url: string, params: Record<string, unknown>) => Promise<unknown>
@@ -105,7 +105,9 @@ const refreshOptions = async (query?: string, page = 1, useModelValue = false) =
 
     try {
         const params: Record<string, unknown> = {
-            filters: { ...props.filters },
+            ...props.filters,
+            page,
+            limit: props.limit,
         }
 
         if (useModelValue && model.value != null) {
@@ -116,9 +118,6 @@ const refreshOptions = async (query?: string, page = 1, useModelValue = false) =
                 params.keyword = searchQuery
             }
         }
-
-        params.page = page
-        params.limit = props.limit
 
         const response = await executeRequest(params)
         const transformed = transformResponse(response)
@@ -174,6 +173,7 @@ defineExpose({ refreshOptions, cleanQuery })
         v-model="model"
         filterable
         remote
+        clearable
         :remote-method="remoteMethod"
         :loading="loading"
         :props="props.props"
@@ -193,9 +193,8 @@ defineExpose({ refreshOptions, cleanQuery })
             :value="option[valueKey]"
         />
 
-        <template #footer>
+        <template v-if="shouldShowPagination" #footer>
             <el-pagination
-                v-if="shouldShowPagination"
                 :current-page="currentPage"
                 :total="total"
                 :page-size="limit"

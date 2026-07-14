@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Refresh, Search } from '@element-plus/icons-vue';
-import { ref } from 'vue';
+import {Refresh, Search} from '@element-plus/icons-vue';
+import {ref} from 'vue';
 
-const keyword = defineModel<string>('keyword', { default: '' })
+const keyword = defineModel<string>('keyword', {default: ''})
 
 withDefaults(
     defineProps<{
@@ -41,32 +41,33 @@ const onReset = () => {
         <el-form
             v-if="expanded && $slots.advanced"
             inline
-            class="ga-search-bar__advanced flex flex-wrap p-2"
+            class="ga-search-bar__advanced flex flex-wrap "
             @submit.prevent="onSearch"
         >
-            <slot name="advanced" />
+            <slot name="advanced"/>
             <el-form-item class="!mr-0">
                 <el-button type="primary" native-type="submit">查询</el-button>
                 <el-button @click="onReset">重置</el-button>
             </el-form-item>
         </el-form>
-        <el-divider v-if="expanded && $slots.advanced" class="!my-0" />
-        <div class="ga-search-bar__main flex flex-wrap items-center justify-end gap-2 p-2">
-            <el-button :disabled="loading" :icon="Refresh" @click="onRefresh" />
-            <el-input
-                v-model="keyword"
-                :placeholder="keywordPlaceholder"
-                clearable
-                class="max-w-xs"
-                @keyup.enter="onSearch"
-            />
-            <el-button type="primary" @click="onSearch">查询</el-button>
-            <el-button
-                v-if="showToggle && $slots.advanced"
-                :icon="Search"
-                @click="expanded = !expanded"
-            />
-            <slot name="actions" />
+        <el-divider v-if="expanded && $slots.advanced" class="!my-0"/>
+        <div class="ga-search-bar__main flex items-center gap-2 py-2">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <slot name="actions"/>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+                <el-button :disabled="loading" :icon="Refresh" @click="onRefresh"/>
+                <el-input
+                    v-model="keyword"
+                    :placeholder="keywordPlaceholder"
+                    clearable
+                    class="!w-100"
+                    @keyup.enter="onSearch"
+                />
+                <el-button type="primary" @click="onSearch">查询</el-button>
+                <el-button type="primary" @click="expanded = !expanded" plain v-if="showToggle && $slots.advanced"
+                           :icon="Search"/>
+            </div>
         </div>
     </div>
 </template>
