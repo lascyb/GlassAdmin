@@ -1,0 +1,98 @@
+{
+  "table": "test_ft_file",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "file",
+      "title": "文件",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/File.php",
+    "model": "test/ft/File.php",
+    "validate": "test/ft/File.php",
+    "apis": "test/ft/file.ts",
+    "viewsDir": "test/ft/file/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "attachment",
+      "label": "附件",
+      "uiType": "file",
+      "column": {
+        "type": "varchar",
+        "length": 255,
+        "nullable": true,
+        "default": null,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "image",
+        "width": 88,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "file",
+        "enabled": true
+      }
+    }
+  ]
+}

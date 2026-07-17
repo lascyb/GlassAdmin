@@ -17,7 +17,7 @@ class ApisFile
         $rowFields = [];
         $payloadFields = [];
         $listParamFields = ['    page?: number', '    limit?: number'];
-        if ($ctx->keywordFields !== []) {
+        if ($ctx->keywordSourceFields() !== []) {
             $listParamFields[] = '    keyword?: string';
         }
 
@@ -28,7 +28,13 @@ class ApisFile
             $ts = Helper::tsType($f, Context::isRequired($f));
 
             if (Context::isPrimary($f)) {
-                $rowFields[] = "    {$prop}: number";
+                $ts = Helper::tsType($f, true);
+                $rowFields[] = "    {$prop}: {$ts}";
+                $col = Context::columnConfig($f);
+                $autoInc = !empty($col['autoIncrement']);
+                if (!$autoInc && is_array($form) && ($form['enabled'] ?? true) !== false) {
+                    $payloadFields[] = "    {$prop}: {$ts}";
+                }
                 continue;
             }
             if ($form === null) {
@@ -92,6 +98,7 @@ class ApisFile
             'payloadBlock' => implode("\n", $payloadFields),
             'listParams' => implode("\n", $listParamFields),
             'uploadExports' => $uploadExports,
+            'pkTs' => $ctx->isIntPrimary() ? 'number' : 'string',
         ]);
     }
 }

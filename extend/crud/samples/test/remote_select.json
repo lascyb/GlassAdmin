@@ -1,0 +1,108 @@
+{
+  "table": "test_ft_remote_select",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "remote_select",
+      "title": "远程下拉",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/RemoteSelect.php",
+    "model": "test/ft/RemoteSelect.php",
+    "validate": "test/ft/RemoteSelect.php",
+    "apis": "test/ft/remote_select.ts",
+    "viewsDir": "test/ft/remote_select/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "category_id",
+      "label": "分类",
+      "uiType": "remote_select",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": true,
+        "default": null,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": true
+      },
+      "list": {
+        "render": "tag",
+        "relationProp": "category.title",
+        "width": 110,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "remote_select"
+      },
+      "form": {
+        "render": "remote_select",
+        "enabled": true
+      },
+      "ext": {
+        "remote": {
+          "api": "test.ft.Text/list",
+          "valueField": "id",
+          "labelField": "title",
+          "table": "test_ft_text"
+        }
+      }
+    }
+  ]
+}

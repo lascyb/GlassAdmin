@@ -1,2 +1,2 @@
-import type { StatusMap } from '@/composables/types'
-<%mapBlock%><%optionsBlock%>
+import type { EnumOption } from '@/composables/types'
+<%optionsBlock%>

@@ -1,3 +1,3 @@
             '<%method%>' => static function ($query): void {
-                $query->field('id,name');
+                $query->field('<%fields%>');
             },

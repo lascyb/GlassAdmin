@@ -1,10 +1,10 @@
                 <el-form-item label="<%label%>"<%required%>>
-                    <el-select v-model="form.<%prop%>" class="w-full">
+                    <el-select v-model="form.<%prop%>" class="w-full" clearable placeholder="<%placeholder%>">
                         <el-option
-                            v-for="(item, value) in <%mapKey%>"
-                            :key="value"
-                            :value="Number(value)"
-                            :label="item.label"
+                            v-for="o in <%optKey%>"
+                            :key="o.value"
+                            :value="Number(o.value)"
+                            :label="o.label"
                         />
                     </el-select>
                 </el-form-item>

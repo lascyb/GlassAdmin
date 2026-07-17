@@ -7,56 +7,109 @@ use think\db\exception\DbException;
 use think\facade\Db;
 
 /**
- * SchemaInstaller 根据配置创建主表（及 belongs_to_many 中间表）
+ * SchemaInstaller 根据配置创建/同步主表（及 belongs_to_many 中间表）
  *
- * 策略：表不存在则 CREATE；已存在则跳过（不做 ALTER / DROP）
- * 方言对齐 glass_admin.sql 中 example_* 约定（InnoDB / utf8mb4_unicode_ci / Unix 秒时间戳）
- * 列定义来自 field.column（MySQL 类型 + 参数）；belongs_to_many 可无主表物理列
+ * 策略：
+ * - 表不存在 → CREATE
+ * - 表已存在 → 按字段 diff 同步：
+ *   - 无变化：保留
+ *   - 有变化：旧列 RENAME 为 `{prop}_update_{时间戳}`，再 ADD 新定义列
+ *   - 新增：ADD COLUMN
+ *   - 配置中删除：旧列 RENAME 为 `{prop}_delete_{时间戳}`（不 DROP）
+ * 已带 `_update_` / `_delete_` 后缀的归档列不参与 diff
  */
 class SchemaInstaller
 {
+    /** archiveSuffixPattern 归档列名后缀 */
+    private const string ARCHIVE_SUFFIX_PATTERN = '/_(update|delete)_\d+$/';
+
     /**
-     * install 执行建表
+     * install 执行建表/同步
      *
-     * @return array{created: list<string>, skipped: list<string>, sql: list<string>}
+     * @return list<array{table: string, exists: bool, sql: string, status: string}>
      * @throws DbException
      */
     public function install(Context $ctx): array
     {
-        $created = [];
-        $skipped = [];
-        $sqlList = [];
+        $items = [];
+        $ts = time();
 
         foreach ($this->buildPlans($ctx) as $plan) {
-            $sqlList[] = $plan['sql'];
-            if ($this->tableExists($plan['table'])) {
-                $skipped[] = $plan['table'];
+            $exists = $this->tableExists($plan['table']);
+            if (!$exists) {
+                Db::execute($plan['sql']);
+                $items[] = [
+                    'table'  => $plan['table'],
+                    'exists' => false,
+                    'sql'    => $plan['sql'],
+                    'status' => 'created',
+                ];
                 continue;
             }
-            Db::execute($plan['sql']);
-            $created[] = $plan['table'];
+
+            $alter = $this->buildAlterPlan($ctx, $plan['table'], $plan['kind'], $plan['field'] ?? null, $ts);
+            if ($alter['statements'] === []) {
+                $items[] = [
+                    'table'  => $plan['table'],
+                    'exists' => true,
+                    'sql'    => '',
+                    'status' => 'unchanged',
+                ];
+                continue;
+            }
+
+            foreach ($alter['statements'] as $sql) {
+                Db::execute($sql);
+            }
+            $items[] = [
+                'table'  => $plan['table'],
+                'exists' => true,
+                'sql'    => implode(";\n", $alter['statements']),
+                'status' => 'altered',
+            ];
         }
 
-        return [
-            'created' => $created,
-            'skipped' => $skipped,
-            'sql'     => $sqlList,
-        ];
+        return $items;
     }
 
     /**
-     * preview 干跑预览建表计划
+     * preview 干跑预览建表/同步计划
      *
-     * @return list<array{table: string, exists: bool, sql: string}>
+     * @return list<array{table: string, exists: bool, sql: string, status: string}>
      */
     public function preview(Context $ctx): array
     {
         $items = [];
+        $ts = time();
+
         foreach ($this->buildPlans($ctx) as $plan) {
+            $exists = $this->tableExists($plan['table']);
+            if (!$exists) {
+                $items[] = [
+                    'table'  => $plan['table'],
+                    'exists' => false,
+                    'sql'    => $plan['sql'],
+                    'status' => 'pending',
+                ];
+                continue;
+            }
+
+            $alter = $this->buildAlterPlan($ctx, $plan['table'], $plan['kind'], $plan['field'] ?? null, $ts);
+            if ($alter['statements'] === []) {
+                $items[] = [
+                    'table'  => $plan['table'],
+                    'exists' => true,
+                    'sql'    => '',
+                    'status' => 'unchanged',
+                ];
+                continue;
+            }
+
             $items[] = [
                 'table'  => $plan['table'],
-                'exists' => $this->tableExists($plan['table']),
-                'sql'    => $plan['sql'],
+                'exists' => true,
+                'sql'    => implode(";\n", $alter['statements']),
+                'status' => 'will_alter',
             ];
         }
 
@@ -66,7 +119,7 @@ class SchemaInstaller
     /**
      * buildPlans 生成主表 + 中间表建表计划
      *
-     * @return list<array{table: string, sql: string}>
+     * @return list<array{table: string, sql: string, kind: string, field?: array<string, mixed>}>
      */
     private function buildPlans(Context $ctx): array
     {
@@ -74,6 +127,7 @@ class SchemaInstaller
             [
                 'table' => $ctx->table,
                 'sql'   => $this->buildMainTableSql($ctx),
+                'kind'  => 'main',
             ],
         ];
         foreach ($ctx->belongsToManyFields as $f) {
@@ -81,10 +135,345 @@ class SchemaInstaller
             $plans[] = [
                 'table' => $pivot,
                 'sql'   => $this->buildPivotTableSql($ctx, $f, $pivot),
+                'kind'  => 'pivot',
+                'field' => $f,
             ];
         }
 
         return $plans;
+    }
+
+    /**
+     * buildAlterPlan 对已存在表生成同步 SQL
+     *
+     * @param array<string, mixed>|null $pivotField
+     * @return array{statements: list<string>}
+     */
+    private function buildAlterPlan(
+        Context $ctx,
+        string $table,
+        string $kind,
+        ?array $pivotField,
+        int $ts,
+    ): array {
+        $existing = $this->fetchActiveColumns($table);
+        $desired = $kind === 'pivot' && $pivotField !== null
+            ? $this->desiredPivotColumns($ctx, $pivotField)
+            : $this->desiredMainColumns($ctx);
+
+        $statements = [];
+        $tableSql = $this->quoteIdent($table);
+
+        // 删除：库中有、配置无 → rename _delete_
+        foreach ($existing as $name => $row) {
+            if (isset($desired[$name])) {
+                continue;
+            }
+            if (!empty($row['primary'])) {
+                throw new \InvalidArgumentException("不能删除主键列: {$table}.{$name}");
+            }
+            $archived = $this->archiveName($name, 'delete', $ts);
+            $statements[] = "ALTER TABLE {$tableSql} RENAME COLUMN `{$name}` TO `{$archived}`";
+        }
+
+        // 新增 / 变更
+        foreach ($desired as $name => $spec) {
+            if (!isset($existing[$name])) {
+                $colDef = $spec['definition'];
+                $statements[] = "ALTER TABLE {$tableSql} ADD COLUMN {$colDef}";
+                foreach ($spec['indexes'] as $idxSql) {
+                    if (preg_match('/\b(?:UNIQUE\s+)?INDEX\s+`([^`]+)`/i', $idxSql, $m)
+                        && $this->indexExists($table, $m[1])) {
+                        $statements[] = "ALTER TABLE {$tableSql} DROP INDEX `{$m[1]}`";
+                    }
+                    $statements[] = "ALTER TABLE {$tableSql} ADD {$idxSql}";
+                }
+                continue;
+            }
+
+            $oldFp = $this->existingFingerprint($existing[$name]);
+            $newFp = $spec['fingerprint'];
+            if ($oldFp === $newFp) {
+                continue;
+            }
+
+            if (!empty($existing[$name]['primary']) || !empty($spec['primary'])) {
+                throw new \InvalidArgumentException("不支持变更主键列定义: {$table}.{$name}");
+            }
+
+            $archived = $this->archiveName($name, 'update', $ts);
+            // RENAME 后索引名仍占用，需先删掉本列常用索引名，再为新列重建
+            foreach ($this->columnIndexNames($name, $spec['indexes']) as $idxName) {
+                if ($this->indexExists($table, $idxName)) {
+                    $statements[] = "ALTER TABLE {$tableSql} DROP INDEX `{$idxName}`";
+                }
+            }
+            $statements[] = "ALTER TABLE {$tableSql} RENAME COLUMN `{$name}` TO `{$archived}`";
+            $statements[] = "ALTER TABLE {$tableSql} ADD COLUMN {$spec['definition']}";
+            foreach ($spec['indexes'] as $idxSql) {
+                $statements[] = "ALTER TABLE {$tableSql} ADD {$idxSql}";
+            }
+        }
+
+        return ['statements' => $statements];
+    }
+
+    /**
+     * desiredMainColumns 主表期望列
+     *
+     * @return array<string, array{definition: string, fingerprint: string, primary: bool, indexes: list<string>}>
+     */
+    private function desiredMainColumns(Context $ctx): array
+    {
+        $out = [];
+        foreach ($ctx->fields as $f) {
+            $col = Context::columnConfig($f);
+            if ($col === null) {
+                continue;
+            }
+            $prop = (string) ($f['prop'] ?? '');
+            if ($prop === '' || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $prop)) {
+                throw new \InvalidArgumentException("非法字段名: {$prop}");
+            }
+            $indexes = [];
+            if (!empty($col['unique'])) {
+                $indexes[] = "UNIQUE INDEX `uk_{$prop}`(`{$prop}` ASC) USING BTREE";
+            }
+            if (Context::relationType($f) === 'belongs_to') {
+                $indexes[] = "INDEX `idx_{$prop}`(`{$prop}` ASC) USING BTREE";
+            }
+            $out[$prop] = [
+                'definition'  => $this->columnDefinition($ctx, $f),
+                'fingerprint' => $this->desiredFingerprint($ctx, $f),
+                'primary'     => !empty($col['primary']),
+                'indexes'     => $indexes,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * desiredPivotColumns 中间表期望列
+     *
+     * @param array<string, mixed> $field
+     * @return array<string, array{definition: string, fingerprint: string, primary: bool, indexes: list<string>}>
+     */
+    private function desiredPivotColumns(Context $ctx, array $field): array
+    {
+        $method = Context::relationMethodName($field);
+        $rel = Context::relationConfig($field) ?? [];
+        $remote = Context::parseRemoteApi(Context::remoteApi($field) ?: null);
+        $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
+        $fk = (string) ($rel['foreignKey'] ?? (strtolower($ctx->entity) . '_id'));
+        $rk = (string) ($rel['relatedKey'] ?? (strtolower($relatedEntity) . '_id'));
+        foreach ([$fk, $rk] as $col) {
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                throw new \InvalidArgumentException("非法中间表字段名: {$col}");
+            }
+        }
+
+        $fkDef = "`{$fk}` bigint UNSIGNED NOT NULL COMMENT " . $this->quoteComment("{$ctx->table}.id");
+        $rkDef = "`{$rk}` bigint UNSIGNED NOT NULL COMMENT " . $this->quoteComment('关联 id');
+
+        return [
+            $fk => [
+                'definition'  => $fkDef,
+                'fingerprint' => $this->normalizeFingerprint('bigint unsigned', false, null, false, "{$ctx->table}.id"),
+                'primary'     => true,
+                'indexes'     => [],
+            ],
+            $rk => [
+                'definition'  => $rkDef,
+                'fingerprint' => $this->normalizeFingerprint('bigint unsigned', false, null, false, '关联 id'),
+                'primary'     => true,
+                'indexes'     => ["INDEX `idx_{$rk}`(`{$rk}` ASC) USING BTREE"],
+            ],
+        ];
+    }
+
+    /**
+     * fetchActiveColumns 读取表中未归档列
+     *
+     * @return array<string, array{name: string, type: string, null: bool, default: mixed, autoIncrement: bool, primary: bool, comment: string}>
+     */
+    private function fetchActiveColumns(string $table): array
+    {
+        $prefix = (string) Db::getConfig('prefix');
+        $full = $prefix . $table;
+        $quoted = '`' . str_replace('`', '``', $full) . '`';
+        $rows = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+        $out = [];
+        foreach ($rows as $row) {
+            $name = (string) ($row['Field'] ?? '');
+            if ($name === '' || preg_match(self::ARCHIVE_SUFFIX_PATTERN, $name)) {
+                continue;
+            }
+            $extra = strtolower((string) ($row['Extra'] ?? ''));
+            $out[$name] = [
+                'name'          => $name,
+                'type'          => strtolower((string) ($row['Type'] ?? '')),
+                'null'          => strtoupper((string) ($row['Null'] ?? '')) === 'YES',
+                'default'       => $row['Default'] ?? null,
+                'autoIncrement' => str_contains($extra, 'auto_increment'),
+                'primary'       => strtoupper((string) ($row['Key'] ?? '')) === 'PRI',
+                'comment'       => (string) ($row['Comment'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * existingFingerprint 已有列指纹
+     *
+     * @param array{type: string, null: bool, default: mixed, autoIncrement: bool, comment: string} $col
+     */
+    private function existingFingerprint(array $col): string
+    {
+        return $this->normalizeFingerprint(
+            $col['type'],
+            $col['null'],
+            $col['default'],
+            $col['autoIncrement'],
+            $col['comment'],
+        );
+    }
+
+    /**
+     * desiredFingerprint 配置列指纹
+     *
+     * @param array<string, mixed> $field
+     */
+    private function desiredFingerprint(Context $ctx, array $field): string
+    {
+        $col = Context::columnConfig($field);
+        if ($col === null) {
+            throw new \InvalidArgumentException('缺少 column');
+        }
+        $type = (string) ($col['type'] ?? '');
+        $typeSql = strtolower($this->mysqlTypeSql($col));
+        // 去掉字符集片段，与 SHOW COLUMNS 的 Type 对齐
+        $typeSql = preg_replace('/\s+character set\s+\w+/i', '', $typeSql) ?? $typeSql;
+        $typeSql = preg_replace('/\s+collate\s+\w+/i', '', $typeSql) ?? $typeSql;
+        $typeSql = trim(preg_replace('/\s+/', ' ', $typeSql) ?? $typeSql);
+
+        $hasNullable = array_key_exists('nullable', $col);
+        $nullable = $hasNullable ? (bool) $col['nullable'] : $this->defaultNullable($type);
+
+        $default = null;
+        $hasDefault = array_key_exists('default', $col);
+        if ($hasDefault) {
+            $default = $col['default'];
+        } elseif (empty($col['autoIncrement']) && empty($col['primary'])) {
+            if ($nullable) {
+                $default = null;
+            } elseif (in_array($type, ['bigint', 'int', 'tinyint', 'decimal'], true)) {
+                $default = 0;
+            }
+        }
+        // json/text 无默认
+        if (in_array($type, ['json', 'text', 'mediumtext', 'longtext'], true) && !$hasDefault) {
+            $default = null;
+        }
+
+        $label = (string) ($field['label'] ?? $field['prop']);
+        $comment = !empty($col['comment'])
+            ? (string) $col['comment']
+            : $this->fieldCommentRaw($ctx, $field, $label, $col);
+
+        return $this->normalizeFingerprint(
+            $typeSql,
+            $nullable,
+            $default,
+            !empty($col['autoIncrement']),
+            $comment,
+        );
+    }
+
+    /**
+     * normalizeFingerprint 统一指纹
+     */
+    private function normalizeFingerprint(
+        string $type,
+        bool $nullable,
+        mixed $default,
+        bool $autoIncrement,
+        string $comment,
+    ): string {
+        $type = strtolower(trim($type));
+        $type = preg_replace('/\s+character set\s+\w+/i', '', $type) ?? $type;
+        $type = preg_replace('/\s+collate\s+\w+/i', '', $type) ?? $type;
+        $type = trim(preg_replace('/\s+/', ' ', $type) ?? $type);
+
+        if ($default === null) {
+            $def = 'NULL';
+        } elseif (is_bool($default)) {
+            $def = $default ? '1' : '0';
+        } elseif (is_int($default) || is_float($default)) {
+            $def = (string) $default;
+        } else {
+            $def = (string) $default;
+        }
+
+        return implode('|', [
+            $type,
+            $nullable ? '1' : '0',
+            $def,
+            $autoIncrement ? '1' : '0',
+            trim($comment),
+        ]);
+    }
+
+    /** archiveName 生成归档列名 */
+    private function archiveName(string $prop, string $action, int $ts): string
+    {
+        $name = "{$prop}_{$action}_{$ts}";
+        if (strlen($name) > 64) {
+            $keep = 64 - strlen("_{$action}_{$ts}");
+            $name = substr($prop, 0, max(1, $keep)) . "_{$action}_{$ts}";
+        }
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
+            throw new \InvalidArgumentException("非法归档列名: {$name}");
+        }
+
+        return $name;
+    }
+
+    /**
+     * columnIndexNames 本列可能占用的索引名（uk_/idx_ + 计划索引）
+     *
+     * @param list<string> $indexSqls
+     * @return list<string>
+     */
+    private function columnIndexNames(string $prop, array $indexSqls): array
+    {
+        $names = ["uk_{$prop}", "idx_{$prop}"];
+        foreach ($indexSqls as $sql) {
+            if (preg_match('/\b(?:UNIQUE\s+)?INDEX\s+`([^`]+)`/i', $sql, $m)) {
+                $names[] = $m[1];
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /** indexExists 索引是否存在 */
+    private function indexExists(string $table, string $indexName): bool
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $indexName)) {
+            return false;
+        }
+        $prefix = (string) Db::getConfig('prefix');
+        $full = $prefix . $table;
+        $dbName = (string) Db::query('SELECT DATABASE() AS db')[0]['db'];
+        $rows = Db::query(
+            'SELECT 1 AS ok FROM information_schema.statistics'
+            . ' WHERE table_schema = ? AND table_name = ? AND index_name = ? LIMIT 1',
+            [$dbName, $full, $indexName],
+        );
+
+        return $rows !== [];
     }
 
     /** buildMainTableSql 生成主表 CREATE TABLE */
@@ -97,7 +486,6 @@ class SchemaInstaller
         foreach ($ctx->fields as $f) {
             $col = Context::columnConfig($f);
             if ($col === null) {
-                // belongs_to_many 等无主表物理列
                 continue;
             }
             $prop = (string) ($f['prop'] ?? '');
@@ -145,7 +533,7 @@ class SchemaInstaller
     {
         $method = Context::relationMethodName($field);
         $rel = Context::relationConfig($field) ?? [];
-        $remote = Context::parseRemoteApi(Context::optionsKey($field) ?: null);
+        $remote = Context::parseRemoteApi(Context::remoteApi($field) ?: null);
         $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
         $fk = (string) ($rel['foreignKey'] ?? (strtolower($ctx->entity) . '_id'));
         $rk = (string) ($rel['relatedKey'] ?? (strtolower($relatedEntity) . '_id'));
@@ -275,7 +663,6 @@ class SchemaInstaller
         $hasDefault = array_key_exists('default', $col);
         $nullable = $hasNullable ? (bool) $col['nullable'] : $this->defaultNullable($type);
 
-        // json / text 类通常不写 DEFAULT（除显式）
         if (in_array($type, ['json', 'text', 'mediumtext', 'longtext'], true)) {
             if ($nullable) {
                 return ' NULL';
@@ -289,7 +676,6 @@ class SchemaInstaller
             if (!empty($col['autoIncrement']) || !empty($col['primary'])) {
                 return $nullPart;
             }
-            // 无显式 default 时：可空给 DEFAULT NULL，不可空整型给 0
             if ($nullable) {
                 return $nullPart . ' DEFAULT NULL';
             }
@@ -302,7 +688,14 @@ class SchemaInstaller
 
         $def = $col['default'];
         if ($def === null) {
-            return $nullPart . ' DEFAULT NULL';
+            if ($nullable) {
+                return $nullPart . ' DEFAULT NULL';
+            }
+            if (in_array($type, ['bigint', 'int', 'tinyint', 'decimal'], true)) {
+                return $nullPart . ' DEFAULT 0';
+            }
+
+            return $nullPart;
         }
         if (is_int($def) || is_float($def) || (is_string($def) && is_numeric($def) && !preg_match('/^0\d/', $def))) {
             return $nullPart . ' DEFAULT ' . $def;
@@ -318,43 +711,58 @@ class SchemaInstaller
     }
 
     /**
-     * fieldComment 字段注释
+     * fieldComment 字段注释（带引号）
      *
      * @param array<string, mixed> $field
      * @param array<string, mixed> $col
      */
     private function fieldComment(Context $ctx, array $field, string $label, array $col): string
     {
+        return $this->quoteComment($this->fieldCommentRaw($ctx, $field, $label, $col));
+    }
+
+    /**
+     * fieldCommentRaw 字段注释原文
+     *
+     * @param array<string, mixed> $field
+     * @param array<string, mixed> $col
+     */
+    private function fieldCommentRaw(Context $ctx, array $field, string $label, array $col): string
+    {
         if (!empty($col['comment'])) {
-            return $this->quoteComment((string) $col['comment']);
+            return (string) $col['comment'];
         }
         if (Context::isBoolField($field)) {
-            return $this->quoteComment('{1:是,0:否}');
+            return '{1:是,0:否}';
         }
         if (Context::isEnumField($field)) {
-            $key = Context::statusMapKey($field);
-            if ($key !== '' && isset($ctx->maps[$key]) && is_array($ctx->maps[$key])) {
+            $key = Context::enumKey($field);
+            if ($key !== '' && isset($ctx->options[$key]) && is_array($ctx->options[$key])) {
                 $parts = [];
-                foreach ($ctx->maps[$key] as $k => $entry) {
-                    $lab = is_array($entry) ? (string) ($entry['label'] ?? $k) : (string) $entry;
+                foreach ($ctx->options[$key] as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $k = $item['value'] ?? '';
+                    $lab = (string) ($item['label'] ?? $k);
                     $parts[] = "{$k}:{$lab}";
                 }
                 if ($parts !== []) {
-                    return $this->quoteComment('{' . implode(',', $parts) . '}');
+                    return '{' . implode(',', $parts) . '}';
                 }
             }
         }
         if (Context::isUnixDatetime($field)) {
-            return $this->quoteComment($label . '（Unix 秒）');
+            return $label . '（Unix 秒）';
         }
         if (Context::formRender($field) === 'image') {
-            return $this->quoteComment($label . '相对路径');
+            return $label . '相对路径';
         }
         if (!empty($col['unique'])) {
-            return $this->quoteComment($label . '（唯一）');
+            return $label . '（唯一）';
         }
 
-        return $this->quoteComment($label);
+        return $label;
     }
 
     /**
@@ -382,7 +790,6 @@ class SchemaInstaller
         }
         $prefix = (string) Db::getConfig('prefix');
         $full = $prefix . $table;
-        // SHOW TABLES LIKE 不支持预处理占位符
         $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
         $like = str_replace("'", "''", $like);
         $rows = Db::query("SHOW TABLES LIKE '{$like}'");

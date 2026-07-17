@@ -130,17 +130,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <ga-page title="系统使用情况" padding="md" min-height="calc(100vh - 120px)">
-        <div v-loading="loading" class="space-y-4">
-            <div class="flex flex-wrap items-center justify-end gap-2">
-                <span class="text-sm text-gray-500">趋势范围</span>
-                <el-radio-group v-model="trendDays" @change="load">
-                    <el-radio-button :value="7">近 7 日</el-radio-button>
-                    <el-radio-button :value="30">近 30 日</el-radio-button>
-                </el-radio-group>
-                <el-button @click="load">刷新</el-button>
+    <ga-page padding="md" min-height="calc(100vh - 120px)">
+        <template #header>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span>系统使用情况</span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-normal text-gray-500">趋势范围</span>
+                    <el-radio-group v-model="trendDays" @change="load">
+                        <el-radio-button :value="7">近 7 日</el-radio-button>
+                        <el-radio-button :value="30">近 30 日</el-radio-button>
+                    </el-radio-group>
+                    <el-button @click="load">刷新</el-button>
+                </div>
             </div>
-
+        </template>
+        <div v-loading="loading" class="space-y-4">
             <div class="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 <div
                     v-for="item in kpiCards"

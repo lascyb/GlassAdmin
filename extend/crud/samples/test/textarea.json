@@ -1,0 +1,96 @@
+{
+  "table": "test_ft_textarea",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "textarea",
+      "title": "多行文本",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/Textarea.php",
+    "model": "test/ft/Textarea.php",
+    "validate": "test/ft/Textarea.php",
+    "apis": "test/ft/textarea.ts",
+    "viewsDir": "test/ft/textarea/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "content",
+      "label": "内容",
+      "uiType": "textarea",
+      "column": {
+        "type": "text",
+        "nullable": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "text",
+        "enabled": false
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "textarea",
+        "maxLength": 2000,
+        "enabled": true
+      }
+    }
+  ]
+}

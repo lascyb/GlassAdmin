@@ -1,0 +1,100 @@
+{
+  "table": "test_ft_number",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "number",
+      "title": "数字",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/Number.php",
+    "model": "test/ft/Number.php",
+    "validate": "test/ft/Number.php",
+    "apis": "test/ft/number.ts",
+    "viewsDir": "test/ft/number/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "quantity",
+      "label": "数量",
+      "uiType": "number",
+      "column": {
+        "type": "int",
+        "nullable": false,
+        "default": 0,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "number_range"
+      },
+      "form": {
+        "render": "number",
+        "numberMin": 0,
+        "numberMax": 99999,
+        "enabled": true
+      }
+    }
+  ]
+}

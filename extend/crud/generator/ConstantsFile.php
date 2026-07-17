@@ -14,20 +14,6 @@ class ConstantsFile
     /** render 渲染 constants 内容 */
     public function render(Context $ctx): string
     {
-        $mapBlock = '';
-        foreach ($ctx->maps as $name => $map) {
-            $entries = [];
-            foreach ($map as $k => $item) {
-                $label = addslashes((string) ($item['label'] ?? ''));
-                $type = isset($item['type']) ? ", type: '" . addslashes((string) $item['type']) . "'" : '';
-                $entries[] = "    {$k}: { label: '{$label}'{$type} },";
-            }
-            $mapBlock .= Template::render('constants/map.ts.tpl', [
-                'name' => $name,
-                'entries' => implode("\n", $entries),
-            ]);
-        }
-
         $optionsBlock = '';
         foreach ($ctx->options as $name => $opts) {
             $entries = [];
@@ -35,7 +21,8 @@ class ConstantsFile
                 $v = $o['value'];
                 $vPhp = is_string($v) ? "'" . addslashes($v) . "'" : (string) $v;
                 $label = addslashes((string) $o['label']);
-                $entries[] = "    { value: {$vPhp}, label: '{$label}' },";
+                $type = isset($o['type']) ? ", type: '" . addslashes((string) $o['type']) . "'" : '';
+                $entries[] = "    { value: {$vPhp}, label: '{$label}'{$type} },";
             }
             $optionsBlock .= Template::render('constants/options.ts.tpl', [
                 'name' => $name,
@@ -44,7 +31,6 @@ class ConstantsFile
         }
 
         return Template::render('constants/constants.ts.tpl', [
-            'mapBlock' => $mapBlock,
             'optionsBlock' => $optionsBlock,
         ]);
     }

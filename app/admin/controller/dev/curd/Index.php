@@ -106,8 +106,8 @@ class Index extends AdminController
             return $this->fail(405, '仅支持 GET');
         }
         $table = trim((string) $request->get('table', ''));
-        if ($table === '' || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
-            return $this->fail(400, 'table 无效');
+        if ($table === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
+            return $this->fail(400, 'table 无效，须为小写 snake_case');
         }
         if ($this->isSystemTable($table)) {
             return $this->fail(400, '系统表不可用于生成');
@@ -176,6 +176,9 @@ class Index extends AdminController
                 $config['generateAuth'] = false;
             }
             $ctx = Context::fromConfig($config);
+            if ($ctx->generateAuth) {
+                (new AuthInstaller())->validate($ctx);
+            }
             $files = (new Generator())->build($ctx);
         } catch (\Throwable $e) {
             return $this->fail(400, $e->getMessage());
@@ -184,31 +187,29 @@ class Index extends AdminController
         $filePlan = [];
         foreach ($files as $file) {
             $filePlan[] = [
-                'path'  => $file['path'],
-                'bytes' => strlen($file['content']),
+                'path'   => $file['path'],
+                'bytes'  => strlen($file['content']),
+                'status' => 'planned',
             ];
         }
 
         $schemaPreview = (new SchemaInstaller())->preview($ctx);
-        $authPreview = $ctx->generateAuth ? (new AuthInstaller())->preview($ctx) : [];
+        $authInstaller = new AuthInstaller();
+        $authPreview = $ctx->generateAuth ? $authInstaller->preview($ctx) : [];
 
         $result = [
-            'dryRun'         => $dryRun,
-            'module'         => $ctx->module,
-            'entity'         => $ctx->entity,
-            'table'          => $ctx->table,
-            'title'          => $ctx->title,
-            'writeMode'      => $config['writeMode'],
-            'generateAuth'   => $ctx->generateAuth,
-            'files'          => $filePlan,
-            'schema'         => $schemaPreview,
-            'auth'           => $authPreview,
-            'written'        => [],
-            'skipped'        => [],
-            'tablesCreated'  => [],
-            'tablesSkipped'  => [],
-            'authResult'     => null,
-            'historyId'      => null,
+            'dryRun'       => $dryRun,
+            'module'       => $ctx->module,
+            'entity'       => $ctx->entity,
+            'table'        => $ctx->table,
+            'title'        => $ctx->title,
+            'writeMode'    => $config['writeMode'],
+            'generateAuth' => $ctx->generateAuth,
+            'files'        => $filePlan,
+            'schema'       => $schemaPreview,
+            'auth'         => $authPreview,
+            'authMeta'     => null,
+            'historyId'    => null,
         ];
 
         if ($dryRun) {
@@ -217,31 +218,25 @@ class Index extends AdminController
 
         $root = rtrim(str_replace('\\', '/', root_path()), '/');
         try {
-            $write = (new Writer())->write($root, $files, (string) $config['writeMode']);
+            $result['files'] = (new Writer())->write($root, $files, (string) $config['writeMode']);
         } catch (\Throwable $e) {
             return $this->fail(500, '写盘失败: ' . $e->getMessage(), $result);
         }
-        $result['written'] = $write['written'];
-        $result['skipped'] = $write['skipped'];
 
         try {
-            $schema = (new SchemaInstaller())->install($ctx);
+            $result['schema'] = (new SchemaInstaller())->install($ctx);
         } catch (\Throwable $e) {
             return $this->fail(500, '建表失败: ' . $e->getMessage(), $result);
         }
-        $result['tablesCreated'] = $schema['created'];
-        $result['tablesSkipped'] = $schema['skipped'];
 
         if ($ctx->generateAuth) {
             try {
-                $auth = (new AuthInstaller())->install($ctx);
+                $auth = $authInstaller->install($ctx);
             } catch (\Throwable $e) {
                 return $this->fail(500, '权限写入失败: ' . $e->getMessage(), $result);
             }
-            $result['authResult'] = [
-                'created'          => $auth['created'],
-                'updated'          => $auth['updated'],
-                'reused'           => $auth['reused'],
+            $result['auth'] = $authInstaller->applyInstallStatus($authPreview, $auth);
+            $result['authMeta'] = [
                 'bindings'         => $auth['bindings'],
                 'bindingsCleared'  => $auth['bindingsCleared'],
                 'viewOverwritten'  => $auth['viewOverwritten'] ?? false,
@@ -333,9 +328,6 @@ class Index extends AdminController
             'title'        => $meta['title'],
             'module'       => $meta['module'],
             'entity'       => $meta['entity'],
-            'moduleTitle'  => $meta['moduleTitle'],
-            'menuIcon'     => $meta['menus'][0]['icon'] ?? 'el:Document',
-            'menuSort'     => $meta['menus'][0]['sort'] ?? 0,
             'menus'        => $meta['menus'],
             'paths'        => $meta['paths'],
             'generateAuth' => true,
@@ -347,7 +339,7 @@ class Index extends AdminController
     /**
      * guessMetaFromTable 从表名粗推 menus/paths 及派生字段
      *
-     * @return array{module: string, entity: string, title: string, moduleTitle: string, menus: list<array<string, mixed>>, paths: array<string, string>}
+     * @return array{module: string, entity: string, title: string, menus: list<array<string, mixed>>, paths: array<string, string>}
      */
     private function guessMetaFromTable(string $table): array
     {
@@ -359,12 +351,11 @@ class Index extends AdminController
         $title = (string) ($leaf['title'] ?? ($table !== '' ? $table : 'Item'));
 
         return [
-            'module'      => $parsed['module'],
-            'entity'      => $parsed['entity'],
-            'title'       => $title,
-            'moduleTitle' => (string) ($menus[0]['title'] ?? $title),
-            'menus'       => $menus,
-            'paths'       => $paths,
+            'module' => $parsed['module'],
+            'entity' => $parsed['entity'],
+            'title'  => $title,
+            'menus'  => $menus,
+            'paths'  => $paths,
         ];
     }
 
@@ -405,10 +396,10 @@ class Index extends AdminController
                 'type'    => 'menu',
                 'path'    => strtolower($p),
                 'title'   => ucfirst(strtolower($p)),
+                'icon'    => 'el:Folder',
                 'enabled' => true,
             ];
             if ($i === 0) {
-                $row['icon'] = 'el:Document';
                 $row['sort'] = 0;
             }
             $menus[] = $row;
@@ -418,6 +409,7 @@ class Index extends AdminController
             'type'    => 'view',
             'path'    => strtolower($last),
             'title'   => ucfirst(strtolower($last)),
+            'icon'    => 'el:Document',
             'enabled' => true,
         ];
 
@@ -442,7 +434,7 @@ class Index extends AdminController
             ];
         }
         $last = $parts[count($parts) - 1];
-        $entity = ucfirst(strtolower($last));
+        $entity = \crud\Config::safeEntityClassName(ucfirst(strtolower($last)));
         $file = strtolower($last);
         $dirs = array_map(static fn ($p) => strtolower($p), array_slice($parts, 0, -1));
         $prefix = $dirs === [] ? '' : implode('/', $dirs) . '/';
@@ -457,7 +449,7 @@ class Index extends AdminController
     }
 
     /**
-     * mapColumnToField SHOW FULL COLUMNS 行 → CrudFieldSchema
+     * mapColumnToField SHOW FULL COLUMNS 行 → CrudFieldSchema（对齐前端层结构）
      *
      * @param array<string, mixed> $col
      * @return array<string, mixed>
@@ -474,6 +466,7 @@ class Index extends AdminController
 
         $parsed = $this->parseMysqlType($typeRaw);
         $column = [
+            'enabled'  => true,
             'type'     => $parsed['type'],
             'nullable' => $null,
         ];
@@ -508,32 +501,52 @@ class Index extends AdminController
         }
 
         $label = $comment !== '' ? $this->labelFromComment($comment, $prop) : $prop;
-        $field = [
-            'prop'   => $prop,
-            'label'  => $label,
-            'column' => $column,
-        ];
-
         $isPk = !empty($column['primary']);
         $isTimeMeta = in_array($prop, ['create_time', 'update_time', 'delete_time'], true);
 
-        if ($isPk || $isTimeMeta) {
-            $field['form'] = false;
-            if ($isPk) {
-                $field['list'] = ['render' => 'text', 'width' => 72];
-            } elseif ($parsed['type'] === 'bigint' || $parsed['type'] === 'datetime' || $parsed['type'] === 'timestamp') {
-                $field['list'] = ['render' => 'datetime', 'width' => 170];
+        if ($isPk) {
+            return [
+                'prop'     => $prop,
+                'label'    => $label,
+                'uiType'   => 'primary_key',
+                'column'   => $column,
+                'relation' => ['type' => 'belongs_to', 'enabled' => false],
+                'list'     => ['enabled' => true, 'render' => 'text', 'width' => 72],
+                'search'   => ['enabled' => false, 'keyword' => false, 'advanced' => false],
+                'form'     => ['enabled' => false, 'render' => 'input'],
+            ];
+        }
+
+        if ($isTimeMeta) {
+            $list = ['enabled' => true, 'render' => 'text', 'minWidth' => 120];
+            if (in_array($parsed['type'], ['bigint', 'datetime', 'timestamp'], true)) {
+                $list = ['enabled' => true, 'render' => 'datetime', 'width' => 170];
             }
 
-            return $field;
+            return [
+                'prop'     => $prop,
+                'label'    => $label,
+                'column'   => $column,
+                'relation' => ['type' => 'belongs_to', 'enabled' => false],
+                'list'     => $list,
+                'search'   => ['enabled' => false, 'keyword' => false, 'advanced' => false],
+                'form'     => ['enabled' => false, 'render' => 'input'],
+            ];
         }
 
         $inferred = $this->inferUiFromColumn($prop, $parsed['type'], $comment);
-        $field['list'] = $inferred['list'];
-        if ($inferred['search'] !== null) {
-            $field['search'] = $inferred['search'];
+        $field = [
+            'prop'     => $prop,
+            'label'    => $label,
+            'column'   => $column,
+            'relation' => ['type' => 'belongs_to', 'enabled' => false],
+            'list'     => $inferred['list'],
+            'search'   => $inferred['search'],
+            'form'     => $inferred['form'],
+        ];
+        if (!empty($inferred['ext'])) {
+            $field['ext'] = $inferred['ext'];
         }
-        $field['form'] = $inferred['form'];
 
         return $field;
     }
@@ -598,67 +611,76 @@ class Index extends AdminController
     }
 
     /**
-     * inferUiFromColumn 按列类型推断 list/search/form
+     * inferUiFromColumn 按列类型推断 list/search/form（新层结构）
      *
-     * @return array{list: array<string, mixed>, search: array<string, mixed>|null, form: array<string, mixed>|false}
+     * @return array{list: array<string, mixed>, search: array<string, mixed>, form: array<string, mixed>, ext: array<string, mixed>|null}
      */
     private function inferUiFromColumn(string $prop, string $type, string $comment): array
     {
-        $list = ['render' => 'text', 'minWidth' => 120];
-        $search = null;
-        $form = ['render' => 'input'];
+        $list = ['enabled' => true, 'render' => 'text', 'minWidth' => 120];
+        $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
+        $form = ['enabled' => true, 'render' => 'input'];
+        $ext = null;
 
         if ($type === 'tinyint') {
-            $list = ['render' => 'bool', 'width' => 90];
-            $search = ['mode' => 'advanced', 'render' => 'bool'];
-            $form = ['render' => 'switch'];
+            $list = ['enabled' => true, 'render' => 'bool', 'width' => 90];
+            $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'bool'];
+            $form = ['enabled' => true, 'render' => 'switch'];
             if ($this->commentLooksLikeEnum($comment)) {
-                $list = ['render' => 'status', 'width' => 100, 'statusMapKey' => 'STATUS_MAP'];
-                $search = ['mode' => 'advanced', 'render' => 'select', 'statusMapKey' => 'STATUS_MAP'];
-                $form = ['render' => 'radio', 'statusMapKey' => 'STATUS_MAP'];
+                $list = ['enabled' => true, 'render' => 'status', 'width' => 100];
+                $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'select'];
+                $form = ['enabled' => true, 'render' => 'radio'];
+                $ext = ['enum' => ['key' => 'STATUS_MAP']];
             }
         } elseif (in_array($type, ['int', 'bigint', 'decimal'], true)) {
-            $list = ['render' => 'number', 'width' => 100];
-            $search = ['mode' => 'advanced', 'render' => 'number_range'];
-            $form = ['render' => 'number'];
+            $list = ['enabled' => true, 'render' => 'number', 'width' => 100];
+            $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'number_range'];
+            $form = ['enabled' => true, 'render' => 'number'];
             if (str_ends_with($prop, '_id')) {
-                $list = ['render' => 'text', 'width' => 100];
-                $search = ['mode' => 'advanced', 'render' => 'remote_select'];
-                $form = ['render' => 'remote_select'];
+                $list = ['enabled' => true, 'render' => 'text', 'width' => 100];
+                $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'remote_select'];
+                $form = ['enabled' => true, 'render' => 'remote_select'];
+                $ext = [
+                    'remote' => [
+                        'api'         => '',
+                        'valueField'  => 'id',
+                        'labelField'  => 'name',
+                    ],
+                ];
             } elseif ($type === 'bigint' && (str_ends_with($prop, '_time') || str_contains($prop, 'time'))) {
-                $list = ['render' => 'datetime', 'width' => 170];
-                $search = ['mode' => 'advanced', 'render' => 'datetime_range'];
-                $form = ['render' => 'datetime'];
+                $list = ['enabled' => true, 'render' => 'datetime', 'width' => 170];
+                $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'datetime_range'];
+                $form = ['enabled' => true, 'render' => 'datetime'];
             }
         } elseif ($type === 'date') {
-            $list = ['render' => 'datetime', 'width' => 120];
-            $search = ['mode' => 'advanced', 'render' => 'date_range'];
-            $form = ['render' => 'date'];
+            $list = ['enabled' => true, 'render' => 'text', 'width' => 120];
+            $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'date_range'];
+            $form = ['enabled' => true, 'render' => 'date'];
         } elseif (in_array($type, ['datetime', 'timestamp'], true)) {
-            $list = ['render' => 'datetime', 'width' => 170];
-            $search = ['mode' => 'advanced', 'render' => 'datetime_range'];
-            $form = ['render' => 'datetime'];
+            $list = ['enabled' => true, 'render' => 'datetime', 'width' => 170];
+            $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'datetime_range'];
+            $form = ['enabled' => true, 'render' => 'datetime'];
         } elseif (in_array($type, ['text', 'mediumtext', 'longtext'], true)) {
-            $list = ['render' => 'text', 'minWidth' => 160];
-            $search = null;
-            $form = ['render' => 'textarea'];
+            $list = ['enabled' => true, 'render' => 'text', 'minWidth' => 160];
+            $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
+            $form = ['enabled' => true, 'render' => 'textarea'];
         } elseif ($type === 'json') {
-            $list = ['render' => 'tags', 'minWidth' => 140];
-            $search = null;
-            $form = ['render' => 'multi_select'];
+            $list = ['enabled' => true, 'render' => 'tags', 'minWidth' => 140];
+            $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
+            $form = ['enabled' => true, 'render' => 'multi_select'];
         } elseif ($type === 'varchar' || $type === 'char') {
             if (str_contains($prop, 'image') || str_contains($prop, 'cover') || str_contains($prop, 'avatar') || str_contains($prop, 'logo')) {
-                $list = ['render' => 'image', 'width' => 80];
-                $search = null;
-                $form = ['render' => 'image'];
+                $list = ['enabled' => true, 'render' => 'image', 'width' => 80];
+                $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
+                $form = ['enabled' => true, 'render' => 'image'];
             } elseif (str_contains($prop, 'color')) {
-                $list = ['render' => 'color', 'width' => 90];
-                $search = null;
-                $form = ['render' => 'color'];
+                $list = ['enabled' => true, 'render' => 'color', 'width' => 90];
+                $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
+                $form = ['enabled' => true, 'render' => 'color'];
             } else {
-                $list = ['render' => 'text', 'minWidth' => 120];
-                $search = ['mode' => 'keyword'];
-                $form = ['render' => 'input'];
+                $list = ['enabled' => true, 'render' => 'text', 'minWidth' => 120];
+                $search = ['enabled' => true, 'keyword' => true, 'advanced' => false, 'match' => 'fuzzy'];
+                $form = ['enabled' => true, 'render' => 'input'];
             }
         }
 
@@ -666,6 +688,7 @@ class Index extends AdminController
             'list'   => $list,
             'search' => $search,
             'form'   => $form,
+            'ext'    => $ext,
         ];
     }
 

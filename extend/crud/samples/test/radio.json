@@ -1,0 +1,117 @@
+{
+  "table": "test_ft_radio",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "radio",
+      "title": "单选",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/Radio.php",
+    "model": "test/ft/Radio.php",
+    "validate": "test/ft/Radio.php",
+    "apis": "test/ft/radio.ts",
+    "viewsDir": "test/ft/radio/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "status",
+      "label": "状态",
+      "uiType": "radio",
+      "column": {
+        "type": "tinyint",
+        "nullable": false,
+        "default": 1,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "status",
+        "width": 88,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "select"
+      },
+      "form": {
+        "render": "radio",
+        "enabled": true
+      },
+      "ext": {
+        "enum": {
+          "key": "STATUS_MAP"
+        }
+      }
+    }
+  ],
+  "options": {
+    "STATUS_MAP": [
+      {
+        "value": 1,
+        "label": "启用",
+        "type": "success"
+      },
+      {
+        "value": 0,
+        "label": "禁用",
+        "type": "info"
+      }
+    ]
+  }
+}

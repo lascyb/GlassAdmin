@@ -33,8 +33,15 @@ class ValidateFile
                 $parts[] = 'require';
                 $messages[] = "        '{$prop}.require' => '{$f['label']}不能为空',";
             }
-            if ($relation === 'belongs_to_many' || $ct === 'json' || $render === 'multi_select') {
+            if ($relation === 'belongs_to_many' || $ct === 'json' || $render === 'multi_select' || $render === 'remote_multi_select') {
                 $parts[] = 'array';
+            } elseif ($relation === 'belongs_to' || $render === 'remote_select') {
+                $parts[] = 'integer';
+                if (isset($form['numberMin'])) {
+                    $parts[] = 'egt:' . (int) $form['numberMin'];
+                } else {
+                    $parts[] = 'gt:0';
+                }
             } elseif (Context::isBoolField($f)) {
                 $parts = ['in:0,1'];
             } elseif (Context::isEnumField($f)) {
@@ -49,12 +56,10 @@ class ValidateFile
             } elseif (Context::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime')) {
                 $parts[] = 'integer';
                 $parts[] = 'egt:0';
-            } elseif (in_array($ct, ['bigint', 'int', 'tinyint'], true) || $render === 'number' || $relation === 'belongs_to') {
+            } elseif (in_array($ct, ['bigint', 'int', 'tinyint'], true) || $render === 'number') {
                 $parts[] = 'integer';
                 if (isset($form['numberMin'])) {
                     $parts[] = 'egt:' . (int) $form['numberMin'];
-                } elseif ($relation === 'belongs_to') {
-                    $parts[] = 'gt:0';
                 }
             } elseif ($ct === 'date' || $render === 'date') {
                 $parts[] = 'date';

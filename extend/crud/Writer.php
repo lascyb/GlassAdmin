@@ -9,22 +9,26 @@ namespace crud;
 class Writer
 {
     /**
-     * write 写盘
+     * write 写盘，返回带 status 的文件计划
      *
      * @param list<array{path: string, content: string}> $files
-     * @return array{written: list<string>, skipped: list<string>}
+     * @return list<array{path: string, bytes: int, status: string}>
      */
     public function write(string $root, array $files, string $writeMode): array
     {
         $root = rtrim(str_replace('\\', '/', $root), '/');
-        $written = [];
-        $skipped = [];
+        $out = [];
 
         foreach ($files as $file) {
             $rel = ltrim(str_replace('\\', '/', $file['path']), '/');
+            $bytes = strlen($file['content']);
             $abs = $root . '/' . $rel;
             if (is_file($abs) && $writeMode === 'skip') {
-                $skipped[] = $rel;
+                $out[] = [
+                    'path'   => $rel,
+                    'bytes'  => $bytes,
+                    'status' => 'skipped',
+                ];
                 continue;
             }
             $dir = dirname($abs);
@@ -34,9 +38,13 @@ class Writer
             if (file_put_contents($abs, $file['content']) === false) {
                 throw new \RuntimeException('写入失败: ' . $rel);
             }
-            $written[] = $rel;
+            $out[] = [
+                'path'   => $rel,
+                'bytes'  => $bytes,
+                'status' => 'written',
+            ];
         }
 
-        return ['written' => $written, 'skipped' => $skipped];
+        return $out;
     }
 }

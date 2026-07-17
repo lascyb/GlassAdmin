@@ -21,6 +21,13 @@ export type StatusMapItem = {
 /** StatusMap 状态值 → 展示配置 */
 export type StatusMap = Record<string | number, StatusMapItem>
 
+/** EnumOption 静态枚举选项（供 ga-status-tag :options 与生成页 constants） */
+export type EnumOption = {
+    value: string | number
+    label: string
+    type?: 'primary' | 'success' | 'warning' | 'info' | 'danger'
+}
+
 /** TreeEditController 树形 CRUD 编辑弹窗控制器 */
 export type TreeEditController = {
     show?: boolean

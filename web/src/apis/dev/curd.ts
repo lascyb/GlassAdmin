@@ -1,5 +1,5 @@
 import { getData, postData } from '@/apis/http'
-import type { CrudGenerateConfig } from '@/crud/types'
+import type { CrudGenerateConfig } from '@/views/dev/curd/types'
 
 /** GenerateOptions 生成开关 */
 export type GenerateOptions = {
@@ -13,6 +13,7 @@ export type GenerateOptions = {
 export type GenerateFilePlan = {
     path: string
     bytes: number
+    status: 'planned' | 'written' | 'skipped'
 }
 
 /** GenerateSchemaPlan 建表计划项 */
@@ -20,13 +21,18 @@ export type GenerateSchemaPlan = {
     table: string
     exists: boolean
     sql: string
+    /** status 建表/同步状态 */
+    status: 'pending' | 'will_alter' | 'unchanged' | 'created' | 'altered' | 'exists' | 'skipped'
 }
 
-/** GenerateAuthResult 权限写入结果 */
-export type GenerateAuthResult = {
-    created: string[]
-    updated: string[]
-    reused: string[]
+/** GenerateAuthPlan 权限计划项 */
+export type GenerateAuthPlan = {
+    name: string
+    status: 'planned' | 'created' | 'updated' | 'reused'
+}
+
+/** GenerateAuthMeta 权限写入汇总（不含分项列表） */
+export type GenerateAuthMeta = {
     bindings: number
     bindingsCleared: number
     viewOverwritten: boolean
@@ -43,12 +49,8 @@ export type GenerateResult = {
     generateAuth: boolean
     files: GenerateFilePlan[]
     schema: GenerateSchemaPlan[]
-    auth: string[]
-    written: string[]
-    skipped: string[]
-    tablesCreated: string[]
-    tablesSkipped: string[]
-    authResult: GenerateAuthResult | null
+    auth: GenerateAuthPlan[]
+    authMeta: GenerateAuthMeta | null
     historyId: number | null
     historyError?: string
 }
@@ -78,16 +80,51 @@ export type HistoryDetail = {
     configParsed: CrudGenerateConfig | null
 }
 
+/** RemoteControllerItem 远程数据源控制器项 */
+export type RemoteControllerItem = {
+    key: string
+    controller: string
+    listUrl: string
+    model: string | null
+    table: string | null
+    pk: string | null
+}
+
+/** RemoteTableColumn 远程表字段项 */
+export type RemoteTableColumn = {
+    name: string
+    type: string
+    comment: string
+}
+
+/** RemoteTableColumnsRes 表字段响应 */
+export type RemoteTableColumnsRes = {
+    table: string
+    pk: string | null
+    fields: RemoteTableColumn[]
+}
+
+/** PivotTableItem 中间表候选项 */
+export type PivotTableItem = {
+    table: string
+    foreignKey: string
+    relatedKey: string
+    comment: string
+    suggested: boolean
+}
+
+/** PivotTablesRes 中间表匹配响应 */
+export type PivotTablesRes = {
+    mainTable: string
+    relatedTable: string
+    expectedName: string
+    items: PivotTableItem[]
+}
+
 /** API_BASE 控制器路径前缀 */
 const API_BASE = 'dev.curd.Index'
 const HISTORY_BASE = 'dev.curd.History'
-
-/** listSamples 列出样例名 */
-export const listSamples = () => getData<string[]>(`${API_BASE}/samples`)
-
-/** loadSample 加载样例配置 */
-export const loadSample = (name: string) =>
-    getData<CrudGenerateConfig>(`${API_BASE}/sample`, { name })
+const REMOTE_BASE = 'dev.curd.Remote'
 
 /** listTables 列出当前库业务表名 */
 export const listTables = () => getData<string[]>(`${API_BASE}/tables`)
@@ -113,3 +150,15 @@ export const listHistory = (params?: { page?: number; limit?: number }) =>
 /** readHistory 历史详情 */
 export const readHistory = (id: number) =>
     getData<HistoryDetail>(`${HISTORY_BASE}/read`, { id })
+
+/** listRemoteControllers 远程下拉可选控制器列表 */
+export const listRemoteControllers = () =>
+    getData<RemoteControllerItem[]>(`${REMOTE_BASE}/controllers`)
+
+/** getRemoteTableColumns 按表名取字段列表 */
+export const getRemoteTableColumns = (table: string) =>
+    getData<RemoteTableColumnsRes>(`${REMOTE_BASE}/tableColumns`, { table })
+
+/** listPivotTables 按主表 + 关联表匹配中间表 */
+export const listPivotTables = (mainTable: string, relatedTable: string) =>
+    getData<PivotTablesRes>(`${REMOTE_BASE}/pivotTables`, { mainTable, relatedTable })

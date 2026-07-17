@@ -163,7 +163,7 @@ class Rule extends AdminController
     }
 
     /**
-     * delete 删除（有子节点禁止）
+     * delete 删除（有子节点禁止）；兼容单 id 与 ids 批量
      *
      * @return Response
      */
@@ -172,29 +172,109 @@ class Rule extends AdminController
         if (!$request->isDelete()) {
             return $this->fail(405, '仅支持 DELETE');
         }
-        $id = (int) $request->get('id', 0);
-        if ($id <= 0) {
+        $ids = $this->parseDeleteIds($request);
+        if ($ids === []) {
             return $this->fail(400, 'id 无效');
         }
-        $row = RuleModel::find($id);
-        if (!$row) {
-            return $this->fail(404, '不存在');
+
+        $rows = RuleModel::whereIn('id', $ids)->select();
+        if (count($rows) !== count($ids)) {
+            return $this->fail(404, '部分规则不存在');
         }
-        $wasFrontend = ((string) $row->getAttr('scope')) === 'frontend';
-        $hasChild = RuleModel::where('pid', $id)->count() > 0;
-        if ($hasChild) {
-            return $this->fail(400, '存在子节点，禁止删除');
+
+        foreach ($rows as $row) {
+            $id = (int) $row->getAttr('id');
+            $hasChild = RuleModel::where('pid', $id)->whereNotIn('id', $ids)->count() > 0;
+            if ($hasChild) {
+                return $this->fail(400, '「' . (string) $row->getAttr('name') . '」存在子节点，禁止删除');
+            }
         }
-        Db::name('auth_rule_frontend_api')->where('frontend_rule_id', $id)->delete();
-        Db::name('auth_rule_frontend_api')->where('backend_rule_id', $id)->delete();
-        Db::name('auth_role_rule')->where('rule_id', $id)->delete();
-        RuleModel::destroy($id);
-        if ($wasFrontend) {
+
+        $sortedIds = $this->sortDeleteIds($ids);
+        $forgetFrontendMenu = false;
+        try {
+            Db::transaction(function () use ($sortedIds, $rows, &$forgetFrontendMenu) {
+                foreach ($rows as $row) {
+                    if ((string) $row->getAttr('scope') === 'frontend') {
+                        $forgetFrontendMenu = true;
+                    }
+                }
+                foreach ($sortedIds as $id) {
+                    $this->destroyRule($id);
+                }
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+
+        if ($forgetFrontendMenu) {
             MenuService::forgetAllRoleMenuCaches();
         }
         AdminRbacService::forgetAllRoleRbacCaches();
 
-        return $this->ok();
+        return $this->ok(['deleted' => count($sortedIds)]);
+    }
+
+    /**
+     * parseDeleteIds 解析删除 id（id 单条或 ids 批量，ids 支持数组与逗号分隔）
+     *
+     * @return list<int>
+     */
+    private function parseDeleteIds(Request $request): array
+    {
+        $raw = $request->param('ids');
+        if (is_array($raw)) {
+            $ids = array_values(array_unique(array_filter(array_map('intval', $raw), static fn (int $x): bool => $x > 0)));
+            if ($ids !== []) {
+                return $ids;
+            }
+        }
+        if (is_string($raw) && $raw !== '') {
+            $ids = array_values(array_unique(array_filter(array_map('intval', explode(',', $raw)), static fn (int $x): bool => $x > 0)));
+            if ($ids !== []) {
+                return $ids;
+            }
+        }
+        $id = (int) $request->param('id', 0);
+
+        return $id > 0 ? [$id] : [];
+    }
+
+    /**
+     * sortDeleteIds 子节点优先排序，便于同一批内删父子
+     *
+     * @param list<int> $ids
+     * @return list<int>
+     */
+    private function sortDeleteIds(array $ids): array
+    {
+        $remaining = array_fill_keys($ids, true);
+        $sorted    = [];
+        while ($remaining !== []) {
+            $progress = false;
+            foreach (array_keys($remaining) as $id) {
+                $hasChildInBatch = RuleModel::where('pid', $id)->whereIn('id', array_keys($remaining))->count() > 0;
+                if (!$hasChildInBatch) {
+                    $sorted[] = $id;
+                    unset($remaining[$id]);
+                    $progress = true;
+                }
+            }
+            if (!$progress) {
+                break;
+            }
+        }
+
+        return $sorted !== [] ? $sorted : $ids;
+    }
+
+    /** destroyRule 删除单条规则及关联 */
+    private function destroyRule(int $id): void
+    {
+        Db::name('auth_rule_frontend_api')->where('frontend_rule_id', $id)->delete();
+        Db::name('auth_rule_frontend_api')->where('backend_rule_id', $id)->delete();
+        Db::name('auth_role_rule')->where('rule_id', $id)->delete();
+        RuleModel::destroy($id);
     }
 
     /**

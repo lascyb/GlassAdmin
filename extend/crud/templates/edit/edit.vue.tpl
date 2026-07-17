@@ -1,11 +1,11 @@
 <script setup lang="ts">
 <%importBlock%>
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ id?: <%pkTs%> }>()
 const show = defineModel<boolean>('modelValue', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
 const form = reactive({
-    id: undefined as number | undefined,
+    id: undefined as <%pkTs%> | undefined,
 <%formLines%>
 })
 
@@ -27,7 +27,7 @@ const loadDetail = async () => {
         try {
             const d = await apis.read(props.id)
             Object.assign(form, {
-                id: d.id,
+                id: d.<%pk%>,
 <%assignLines%>
             })
 <%initAssignBlock%>        } finally {
@@ -77,7 +77,7 @@ const submit = async () => {
         :close-on-click-modal="false"
     >
         <el-skeleton :loading="loading" animated :rows="8">
-            <el-form :model="form" label-position="right" label-width="96px">
+            <el-form :model="form" label-position="right" label-width="96px" @submit.prevent="submit">
 <%formItems%>            </el-form>
         </el-skeleton>
         <template #footer>

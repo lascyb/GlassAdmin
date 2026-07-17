@@ -1,0 +1,98 @@
+{
+  "table": "test_ft_date",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "date",
+      "title": "日期",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/Date.php",
+    "model": "test/ft/Date.php",
+    "validate": "test/ft/Date.php",
+    "apis": "test/ft/date.ts",
+    "viewsDir": "test/ft/date/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "biz_date",
+      "label": "业务日期",
+      "uiType": "date",
+      "column": {
+        "type": "date",
+        "nullable": true,
+        "default": null,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "text",
+        "width": 120,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "date_range"
+      },
+      "form": {
+        "render": "date",
+        "enabled": true
+      }
+    }
+  ]
+}

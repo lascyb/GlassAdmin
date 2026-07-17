@@ -1,0 +1,98 @@
+{
+  "table": "test_ft_update_time",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "update_time",
+      "title": "更新时间",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/UpdateTime.php",
+    "model": "test/ft/UpdateTime.php",
+    "validate": "test/ft/UpdateTime.php",
+    "apis": "test/ft/update_time.ts",
+    "viewsDir": "test/ft/update_time/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "update_time",
+      "label": "更新时间",
+      "uiType": "update_time",
+      "column": {
+        "type": "bigint",
+        "nullable": false,
+        "default": null,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "datetime",
+        "width": 170,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "datetime_range"
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    }
+  ]
+}

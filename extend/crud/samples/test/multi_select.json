@@ -1,0 +1,117 @@
+{
+  "table": "test_ft_multi_select",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "multi_select",
+      "title": "下拉多选",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/MultiSelect.php",
+    "model": "test/ft/MultiSelect.php",
+    "validate": "test/ft/MultiSelect.php",
+    "apis": "test/ft/multi_select.ts",
+    "viewsDir": "test/ft/multi_select/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "extra",
+      "label": "附加项",
+      "uiType": "multi_select",
+      "column": {
+        "type": "json",
+        "nullable": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "tags",
+        "minWidth": 160,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true
+      },
+      "form": {
+        "render": "multi_select",
+        "enabled": true
+      },
+      "ext": {
+        "enum": {
+          "key": "EXTRA_OPTIONS"
+        }
+      }
+    }
+  ],
+  "options": {
+    "EXTRA_OPTIONS": [
+      {
+        "value": "a",
+        "label": "选项 A"
+      },
+      {
+        "value": "b",
+        "label": "选项 B"
+      },
+      {
+        "value": "c",
+        "label": "选项 C"
+      }
+    ]
+  }
+}

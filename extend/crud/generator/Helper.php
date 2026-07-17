@@ -20,12 +20,32 @@ class Helper
         return Context::toCamel($prop) . 'IdsFor';
     }
 
+    /** phpLiteral PHP 字面量（字符串自动加引号） */
+    public static function phpLiteral(mixed $value): string
+    {
+        if (is_int($value)) {
+            return (string) $value;
+        }
+
+        return "'" . addslashes((string) $value) . "'";
+    }
+
+    /** phpLiteralList 枚举值列表转 PHP 数组字面量 */
+    public static function phpLiteralList(array $values): string
+    {
+        return implode(', ', array_map([self::class, 'phpLiteral'], $values));
+    }
+
     /** enumPayloadFn enum 字段 payload 闭包 */
     public static function enumPayloadFn(Context $ctx, array $f): string
     {
         $vals = $ctx->enumValues($f);
-        $valsPhp = implode(', ', $vals);
-        $default = $vals[0] ?? 1;
+        $valsPhp = self::phpLiteralList($vals);
+        $default = self::phpLiteral($vals[0] ?? 1);
+        $isString = $vals !== [] && !is_int($vals[0]);
+        if ($isString) {
+            return "static fn (mixed \$v): string => in_array((string) \$v, [{$valsPhp}], true) ? (string) \$v : {$default}";
+        }
 
         return "static fn (mixed \$v): int => in_array((int) \$v, [{$valsPhp}], true) ? (int) \$v : {$default}";
     }
@@ -42,7 +62,6 @@ class Helper
         if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal'], true)
             || in_array($render, ['number', 'switch', 'radio', 'select', 'datetime', 'remote_select'], true)
             || Context::isUnixDatetime($f)
-            || Context::isPrimary($f)
         ) {
             return 'number';
         }
@@ -84,10 +103,10 @@ class Helper
         return 'id';
     }
 
-    /** constantsImport maps/options 的 import 行 */
+    /** constantsImport options 的 import 行 */
     public static function constantsImport(Context $ctx): string
     {
-        $names = array_merge(array_keys($ctx->maps), array_keys($ctx->options));
+        $names = array_keys($ctx->options);
         if ($names === []) {
             return '';
         }

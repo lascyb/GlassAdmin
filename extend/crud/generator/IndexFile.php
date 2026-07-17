@@ -13,7 +13,7 @@ class IndexFile
 {
     public function render(Context $ctx): string
     {
-        $constImports = array_merge(array_keys($ctx->maps), array_keys($ctx->options));
+        $constImports = array_keys($ctx->options);
         $constImport = $constImports === []
             ? ''
             : 'import { ' . implode(', ', $constImports) . " } from '@/views/{$ctx->module}/{$ctx->entityFile}/constants'\n";
@@ -26,7 +26,7 @@ class IndexFile
         foreach ($ctx->listFields as $f) {
             $lr = Context::listRender($f);
             $list = Context::listConfig($f) ?? [];
-            if ($lr === 'status' || ($lr === 'tag' && !empty($list['statusMapKey']))) {
+            if ($lr === 'status' || ($lr === 'tag' && Context::enumKey($f) !== '')) {
                 $needStatus = true;
             }
             if ($lr === 'datetime') {
@@ -68,7 +68,8 @@ class IndexFile
         $advLines = [];
         $resetLines = [];
         $queryLines = [];
-        if ($ctx->keywordFields !== []) {
+        $keywordSources = $ctx->keywordSourceFields();
+        if ($keywordSources !== []) {
             $queryLines[] = '    keyword: keyword.value.trim() || undefined,';
         }
         foreach ($ctx->advancedFields as $f) {
@@ -122,8 +123,8 @@ class IndexFile
         $titleProp = Helper::titleProp($ctx);
 
         $keywordPlaceholder = '搜索';
-        if ($ctx->keywordFields !== []) {
-            $keywordPlaceholder = implode(' / ', array_map(static fn ($f) => (string) $f['label'], $ctx->keywordFields));
+        if ($keywordSources !== []) {
+            $keywordPlaceholder = implode(' / ', array_map(static fn ($f) => (string) $f['label'], $keywordSources));
         }
 
         $advancedTpl = '';
@@ -143,7 +144,9 @@ class IndexFile
             'importBlock' => implode("\n", $imports) . "\n" . $constImport,
             'entity' => $ctx->entity,
             'titleProp' => $titleProp,
-            'keywordRef' => $ctx->keywordFields !== [] ? "const keyword = ref('')\n\n" : '',
+            'pk' => $ctx->primaryKey(),
+            'pkTs' => $ctx->isIntPrimary() ? 'number' : 'string',
+            'keywordRef' => $keywordSources !== [] ? "const keyword = ref('')\n\n" : '',
             'advBlock' => $advLines === [] ? '' : "const advanced = reactive({\n" . implode("\n", $advLines) . "\n})\n\n",
             'queryBlock' => "const queryParams = computed(() => ({\n" . implode("\n", $queryLines) . "\n}))\n",
             'resetFn' => $resetLines === []
@@ -152,7 +155,8 @@ class IndexFile
                     'resetLines' => implode("\n", $resetLines),
                 ]),
             'extraLabelFn' => $needExtraLabel ? Template::render('index/extra_label.ts.tpl') : '',
-            'searchBarKeyword' => $ctx->keywordFields !== [] ? "\n                v-model:keyword=\"keyword\"" : '',
+            'searchBarKeyword' => $keywordSources !== [] ? "\n                v-model:keyword=\"keyword\"" : '',
+            'searchBarShowKeyword' => $keywordSources !== [] ? '' : "\n                :show-keyword=\"false\"",
             'keywordPlaceholder' => $keywordPlaceholder,
             'searchBarReset' => $resetLines === [] ? '' : "\n                @reset=\"resetAdvanced\"",
             'advancedSlot' => $advancedSlot,
@@ -166,9 +170,8 @@ class IndexFile
         $prop = (string) $f['prop'];
         $label = (string) $f['label'];
         $sr = Context::searchRender($f);
-        $mapKey = Context::statusMapKey($f);
-        $url = Context::optionsKey($f);
-        $ph = (string) ((Context::searchConfig($f) ?? [])['placeholder'] ?? '');
+        $optKey = Context::enumKey($f);
+        $url = Context::remoteApi($f);
 
         if ($sr === 'remote_select' || $sr === 'remote_multi_select') {
             return Template::render('index/search/remote.vue.tpl', [
@@ -176,7 +179,7 @@ class IndexFile
                 'prop' => $prop,
                 'url' => $url,
                 'multiAttrs' => $sr === 'remote_multi_select' ? "\n                            multiple\n                            collapse-tags" : '',
-                'placeholder' => $ph !== '' ? $ph : "搜索{$label}",
+                'placeholder' => Context::searchPlaceholder($f, $sr),
                 'className' => $sr === 'remote_multi_select' ? '!w-48' : '!w-40',
             ]) . "\n";
         }
@@ -202,7 +205,7 @@ class IndexFile
             return Template::render('index/search/input.vue.tpl', [
                 'label' => $label,
                 'prop' => $prop,
-                'placeholder' => $ph !== '' ? $ph : '模糊匹配',
+                'placeholder' => Context::searchPlaceholder($f, $sr),
             ]) . "\n";
         }
         if ($sr === 'bool') {
@@ -211,11 +214,11 @@ class IndexFile
                 'prop' => $prop,
             ]) . "\n";
         }
-        if (($sr === 'select' || $sr === 'radio') && $mapKey !== '') {
+        if (($sr === 'select' || $sr === 'radio') && $optKey !== '') {
             return Template::render('index/search/select.vue.tpl', [
                 'label' => $label,
                 'prop' => $prop,
-                'mapKey' => $mapKey,
+                'optKey' => $optKey,
             ]) . "\n";
         }
 
@@ -232,7 +235,7 @@ class IndexFile
         $width = isset($list['width']) ? " width=\"{$list['width']}\"" : '';
         $minWidth = isset($list['minWidth']) ? " min-width=\"{$list['minWidth']}\"" : '';
         $relation = Context::relationType($f);
-        $mapKey = (string) ($list['statusMapKey'] ?? Context::statusMapKey($f));
+        $optKey = Context::enumKey($f);
         $base = ['label' => $label, 'width' => $width, 'minWidth' => $minWidth, 'prop' => $prop];
 
         if ($relation === 'belongs_to') {
@@ -248,8 +251,8 @@ class IndexFile
 
         return match ($lr) {
             'bool' => Template::render('index/col/bool.vue.tpl', $base) . "\n",
-            'status', 'tag' => $mapKey !== ''
-                ? Template::render('index/col/status.vue.tpl', array_merge($base, ['mapKey' => $mapKey])) . "\n"
+            'status', 'tag' => $optKey !== ''
+                ? Template::render('index/col/status.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n"
                 : Template::render('index/col/prop.vue.tpl', array_merge($base, ['overflow' => ''])) . "\n",
             'color' => Template::render('index/col/color.vue.tpl', $base) . "\n",
             'image' => Template::render('index/col/image.vue.tpl', $base) . "\n",

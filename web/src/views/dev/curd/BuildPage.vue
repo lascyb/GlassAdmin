@@ -8,9 +8,11 @@ const store = useDevCurd()
 </script>
 
 <template>
-    <div v-loading="store.loading" class="flex flex-col gap-3 min-h-[max(calc(100vh-140px),400px)]">
-        <GlobalConfigPanel />
-        <FieldWorkspace />
-        <GenerateResultDialog />
-    </div>
+    <el-scrollbar>
+        <div v-loading="store.loading" class="flex flex-col gap-3 min-h-[max(calc(100vh-140px),400px)]">
+            <GlobalConfigPanel />
+            <FieldWorkspace />
+            <GenerateResultDialog />
+        </div>
+    </el-scrollbar>
 </template>

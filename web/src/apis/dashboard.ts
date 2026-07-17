@@ -77,3 +77,60 @@ export type DashboardOverview = {
 export const fetchUsageOverview = async (days = 7) => {
     return getData<DashboardOverview>('dashboard.Usage/index', { days })
 }
+
+/** ServerCpu CPU 指标 */
+export type ServerCpu = {
+    usage_percent: number | null
+    load_1: number | null
+    load_5: number | null
+    load_15: number | null
+    cores: number
+}
+
+/** ServerMemory 内存指标 */
+export type ServerMemory = {
+    total: number
+    used: number
+    free: number
+    available: number
+    usage_percent: number | null
+}
+
+/** ServerDisk 磁盘分区 */
+export type ServerDisk = {
+    mount: string
+    total: number
+    used: number
+    free: number
+    usage_percent: number | null
+}
+
+/** ServerRuntime 运行时信息 */
+export type ServerRuntime = {
+    php_version: string
+    sapi: string
+    os: string
+    uname: string
+    hostname: string
+    uptime_seconds: number | null
+    php_memory: number
+    php_memory_peak: number
+    php_memory_limit: number
+    server_software: string
+}
+
+/** ServerOverview 服务器性能快照 */
+export type ServerOverview = {
+    timestamp: number
+    cpu: ServerCpu
+    memory: ServerMemory
+    disks: ServerDisk[]
+    runtime: ServerRuntime
+}
+
+/**
+ * fetchServerOverview 服务器性能仪表盘数据
+ */
+export const fetchServerOverview = async () => {
+    return getData<ServerOverview>('dashboard.Server/index')
+}

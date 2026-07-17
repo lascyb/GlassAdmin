@@ -63,10 +63,17 @@ export const updateRule = async (id: number, payload: RulePayload) => {
 }
 
 /**
- * deleteRule 删除规则
+ * deleteRule 删除规则（单条）
  */
 export const deleteRule = async (id: number) => {
-    return delData<null>('auth.Rule/delete', { id })
+    return delData<{ deleted?: number }>('auth.Rule/delete', { id })
+}
+
+/**
+ * deleteRules 批量删除规则
+ */
+export const deleteRules = async (ids: number[]) => {
+    return delData<{ deleted: number }>('auth.Rule/delete', { ids: ids.join(',') })
 }
 
 /**

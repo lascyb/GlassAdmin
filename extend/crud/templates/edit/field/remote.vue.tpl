@@ -4,10 +4,10 @@
                         :key="`<%key%>-${form.id ?? 'new'}`"
                         v-model="form.<%prop%>"
                         :remote-url="'<%url%>'"
-                        :props="{ value: 'id', label: 'name' }"
+                        :props="{ value: '<%valueField%>', label: '<%labelField%>' }"
                         :init-options="<%initVar%>"<%multiAttrs%>
                         clearable
-                        placeholder="输入关键词搜索<%label%>"
+                        placeholder="<%placeholder%>"
                         class="w-full"
                     />
                 </el-form-item>

@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 /**
  * CLI 独立入口（不依赖 think 控制台）
- * 用法: php extend/crud/cli.php extend/crud/samples/demo-item.json [--dry-run] [--force] [--no-auth]
+ * 用法: php extend/crud/cli.php extend/crud/samples/test/text.json [--dry-run] [--force] [--no-auth]
  *
  * 注意：权限写库依赖 ThinkPHP Db，独立入口仅生成文件；写库请用 php think crud:generate
  */
@@ -70,10 +70,15 @@ try {
     exit(1);
 }
 
-foreach ($result['written'] as $path) {
-    echo "写入 {$path}\n";
+$written = 0;
+$skipped = 0;
+foreach ($result as $item) {
+    if ($item['status'] === 'written') {
+        echo "写入 {$item['path']}\n";
+        $written++;
+    } else {
+        echo "跳过 {$item['path']}\n";
+        $skipped++;
+    }
 }
-foreach ($result['skipped'] as $path) {
-    echo "跳过 {$path}\n";
-}
-echo '完成 written=' . count($result['written']) . ' skipped=' . count($result['skipped']) . "\n";
+echo "完成 written={$written} skipped={$skipped}\n";

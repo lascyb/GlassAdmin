@@ -11,7 +11,7 @@ use think\facade\Db;
  * AuthInstaller 将权限/菜单直接写入数据库（不挂角色、不生成 SQL 文件）
  *
  * 对齐 example 金样：
- * - backend menu 组（pid=1）+ api：list/read/create/update/delete（+upload）
+ * - backend menu 链（与 menus 同级，view 对应接口权限组）+ api：list/read/create/update/delete（+upload）
  * - frontend menu 链（menus 按 enabled 过滤，pid 逐级挂接）+ view + btn(add/edit/del)
  * - auth_rule_frontend_api 绑定
  *
@@ -33,34 +33,82 @@ class AuthInstaller
         $reused = [];
         $now = date('Y-m-d H:i:s');
 
-        $backendMenuName = $ctx->moduleTitle . '接口';
-        $backendMenuId = $this->ensureRule(
-            [
-                'scope' => 'backend',
-                'type'  => 'menu',
-                'pid'   => 1,
-                'name'  => $backendMenuName,
-            ],
-            [
-                'scope'       => 'backend',
-                'type'        => 'menu',
-                'pid'         => 1,
-                'name'        => $backendMenuName,
-                'path'        => null,
-                'method'      => null,
-                'component'   => null,
-                'icon'        => null,
-                'sort'        => $ctx->menuSort,
-                'status'      => 1,
-                'create_time' => $now,
-                'update_time' => $now,
-            ],
-            "backend.menu:{$backendMenuName}",
-            $created,
-            $updated,
-            $reused,
-            true
-        );
+        $backMenuId = 0;
+        $menuChain = $ctx->resolvedMenuChain();
+        $pathTrail = [];
+        $apiGroupId = 0;
+
+        foreach ($menuChain as $i => $menu) {
+            $path = (string) $menu['path'];
+            $pathTrail[] = $path;
+            $pid = $backMenuId > 0 ? $backMenuId : 1;
+            $type = (string) ($menu['type'] ?? 'menu');
+            $sort = isset($menu['sort']) ? (int) $menu['sort'] : 0;
+
+            if ($type === 'view') {
+                $apiGroupName = $ctx->title . '接口';
+                $apiGroupId = $this->ensureRule(
+                    [
+                        'scope' => 'backend',
+                        'type'  => 'menu',
+                        'pid'   => $pid,
+                        'name'  => $apiGroupName,
+                    ],
+                    [
+                        'scope'       => 'backend',
+                        'type'        => 'menu',
+                        'pid'         => $pid,
+                        'name'        => $apiGroupName,
+                        'path'        => null,
+                        'method'      => null,
+                        'component'   => null,
+                        'icon'        => null,
+                        'sort'        => $sort,
+                        'status'      => 1,
+                        'create_time' => $now,
+                        'update_time' => $now,
+                    ],
+                    'backend.menu:' . implode('/', $pathTrail) . '/api',
+                    $created,
+                    $updated,
+                    $reused,
+                    true
+                );
+            } else {
+                $icon = $this->resolveMenuIcon($menu, false);
+                $backMenuId = $this->ensureRule(
+                    [
+                        'scope' => 'backend',
+                        'type'  => 'menu',
+                        'pid'   => $pid,
+                        'path'  => $path,
+                    ],
+                    [
+                        'scope'       => 'backend',
+                        'type'        => 'menu',
+                        'pid'         => $pid,
+                        'name'        => (string) $menu['title'],
+                        'path'        => $path,
+                        'method'      => null,
+                        'component'   => null,
+                        'icon'        => $icon,
+                        'sort'        => $sort,
+                        'status'      => 1,
+                        'create_time' => $now,
+                        'update_time' => $now,
+                    ],
+                    'backend.menu:' . implode('/', $pathTrail),
+                    $created,
+                    $updated,
+                    $reused,
+                    true
+                );
+            }
+        }
+
+        if ($apiGroupId <= 0) {
+            throw new \RuntimeException('menus 中缺少启用的页面(view)，无法生成后端接口权限组');
+        }
 
         $apis = [
             ['list', 'GET', "{$ctx->title}列表", 0],
@@ -90,7 +138,7 @@ class AuthInstaller
                 [
                     'scope'       => 'backend',
                     'type'        => 'api',
-                    'pid'         => $backendMenuId,
+                    'pid'         => $apiGroupId,
                     'name'        => $name,
                     'path'        => $path,
                     'method'      => $method,
@@ -110,23 +158,19 @@ class AuthInstaller
         }
 
         $frontMenuId = 0;
-        $menuChain = $ctx->resolvedMenuChain();
-        $pathTrail = [];
+        $frontPathTrail = [];
         $frontViewId = 0;
         $viewExisted = false;
 
         foreach ($menuChain as $i => $menu) {
             $path = (string) $menu['path'];
-            $pathTrail[] = $path;
+            $frontPathTrail[] = $path;
             $pid = $frontMenuId;
             $type = (string) ($menu['type'] ?? 'menu');
-            $icon = trim((string) ($menu['icon'] ?? ''));
-            if ($icon === '' && $i === 0) {
-                $icon = $ctx->menuIcon;
-            }
-            $sort = isset($menu['sort']) ? (int) $menu['sort'] : ($i === 0 ? $ctx->menuSort : 0);
+            $sort = isset($menu['sort']) ? (int) $menu['sort'] : 0;
 
             if ($type === 'view') {
+                $icon = $this->resolveMenuIcon($menu, true);
                 $viewWhere = [
                     'scope' => 'frontend',
                     'type'  => 'view',
@@ -134,7 +178,7 @@ class AuthInstaller
                     'path'  => $path,
                 ];
                 $viewExisted = $this->findRuleId($viewWhere) > 0;
-                $viewPathLabel = implode('/', $pathTrail);
+                $viewPathLabel = implode('/', $frontPathTrail);
                 $component = $ctx->viewComponent();
                 $frontViewId = $this->ensureRule(
                     $viewWhere,
@@ -146,7 +190,7 @@ class AuthInstaller
                         'path'        => $path,
                         'method'      => null,
                         'component'   => $component,
-                        'icon'        => $icon !== '' ? $icon : 'el:Document',
+                        'icon'        => $icon,
                         'sort'        => $sort,
                         'status'      => 1,
                         'create_time' => $now,
@@ -160,6 +204,7 @@ class AuthInstaller
                 );
                 $frontMenuId = $frontViewId;
             } else {
+                $icon = $this->resolveMenuIcon($menu, false);
                 $frontMenuId = $this->ensureRule(
                     [
                         'scope' => 'frontend',
@@ -175,13 +220,13 @@ class AuthInstaller
                         'path'        => $path,
                         'method'      => null,
                         'component'   => null,
-                        'icon'        => $icon !== '' ? $icon : null,
+                        'icon'        => $icon,
                         'sort'        => $sort,
                         'status'      => 1,
                         'create_time' => $now,
                         'update_time' => $now,
                     ],
-                    'frontend.menu:' . implode('/', $pathTrail),
+                    'frontend.menu:' . implode('/', $frontPathTrail),
                     $created,
                     $updated,
                     $reused,
@@ -244,7 +289,7 @@ class AuthInstaller
 
         $remoteSort = $sort;
         foreach (array_merge($ctx->belongsToFields, $ctx->belongsToManyFields) as $f) {
-            $remote = Context::parseRemoteApi(Context::optionsKey($f) ?: null);
+            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
             if ($remote === null) {
                 continue;
             }
@@ -259,7 +304,7 @@ class AuthInstaller
                 [
                     'scope'       => 'backend',
                     'type'        => 'api',
-                    'pid'         => $backendMenuId,
+                    'pid'         => $apiGroupId,
                     'name'        => ((string) ($f['label'] ?? $remote['entity'])) . '列表',
                     'path'        => $rPath,
                     'method'      => 'GET',
@@ -326,45 +371,153 @@ class AuthInstaller
     }
 
     /**
+     * validate 生成前校验：frontend 同 pid+path 下 menu/view 类型冲突则抛错
+     *
+     * @throws DbException
+     */
+    public function validate(Context $ctx): void
+    {
+        $menuChain = $ctx->resolvedMenuChain();
+        if ($menuChain === []) {
+            throw new \RuntimeException('menus 中缺少启用的页面(view)，无法生成权限');
+        }
+
+        $frontMenuId = 0;
+        $pathTrail = [];
+
+        foreach ($menuChain as $menu) {
+            $path = (string) $menu['path'];
+            $pathTrail[] = $path;
+            $label = implode('/', $pathTrail);
+            $expectedType = ((string) ($menu['type'] ?? 'menu')) === 'view' ? 'view' : 'menu';
+            $pid = $frontMenuId;
+
+            $conflict = Db::name('auth_rule')
+                ->where('scope', 'frontend')
+                ->where('pid', $pid)
+                ->where('path', $path)
+                ->where('type', '<>', $expectedType)
+                ->whereIn('type', ['menu', 'view'])
+                ->find();
+
+            if (is_array($conflict) && $conflict !== []) {
+                throw new \RuntimeException(sprintf(
+                    '前端菜单冲突：路径「%s」在 pid=%d 下已存在 %s「%s」(id=%d)，'
+                    . '当前生成需要 %s「%s」。'
+                    . '请调整 menus 路径、手动合并权限规则，或取消「生成权限规则」后仅生成代码。',
+                    $label,
+                    $pid,
+                    (string) $conflict['type'],
+                    (string) $conflict['name'],
+                    (int) $conflict['id'],
+                    $expectedType,
+                    (string) ($menu['title'] ?? $path),
+                ));
+            }
+
+            $id = $this->findRuleId([
+                'scope' => 'frontend',
+                'type'  => $expectedType,
+                'pid'   => $pid,
+                'path'  => $path,
+            ]);
+
+            if ($id <= 0) {
+                break;
+            }
+            $frontMenuId = $id;
+        }
+    }
+
+    /**
      * preview 干跑预览将写入的规则标识
      *
-     * @return list<string>
+     * @return list<array{name: string, status: string}>
      */
     public function preview(Context $ctx): array
     {
-        $items = [
-            "backend.menu:{$ctx->moduleTitle}接口",
-            "backend.api:{$ctx->apiBase}/list GET",
-            "backend.api:{$ctx->apiBase}/read GET",
-            "backend.api:{$ctx->apiBase}/create POST",
-            "backend.api:{$ctx->apiBase}/update PUT",
-            "backend.api:{$ctx->apiBase}/delete DELETE",
-        ];
-        foreach ($ctx->imageFields as $f) {
-            $action = Context::uploadActionName((string) $f['prop']);
-            $items[] = "backend.api:{$ctx->apiBase}/{$action} POST";
-        }
+        $items = [];
         $pathTrail = [];
         foreach ($ctx->resolvedMenuChain() as $menu) {
             $pathTrail[] = (string) $menu['path'];
             $type = (string) ($menu['type'] ?? 'menu');
             $label = implode('/', $pathTrail);
-            $items[] = $type === 'view' ? "frontend.view:{$label}" : "frontend.menu:{$label}";
+            if ($type === 'view') {
+                $items[] = ['name' => 'backend.menu:' . $label . '/api', 'status' => 'planned'];
+                $items[] = ['name' => "frontend.view:{$label}", 'status' => 'planned'];
+            } else {
+                $items[] = ['name' => "backend.menu:{$label}", 'status' => 'planned'];
+                $items[] = ['name' => "frontend.menu:{$label}", 'status' => 'planned'];
+            }
         }
         if ($pathTrail === []) {
-            $items[] = 'frontend.view:(missing)';
+            $items[] = ['name' => 'backend.menu:(missing)', 'status' => 'planned'];
+            $items[] = ['name' => 'frontend.view:(missing)', 'status' => 'planned'];
         }
-        $items[] = 'frontend.btn:add';
-        $items[] = 'frontend.btn:edit';
-        $items[] = 'frontend.btn:del';
+        $items[] = ['name' => "backend.api:{$ctx->apiBase}/list GET", 'status' => 'planned'];
+        $items[] = ['name' => "backend.api:{$ctx->apiBase}/read GET", 'status' => 'planned'];
+        $items[] = ['name' => "backend.api:{$ctx->apiBase}/create POST", 'status' => 'planned'];
+        $items[] = ['name' => "backend.api:{$ctx->apiBase}/update PUT", 'status' => 'planned'];
+        $items[] = ['name' => "backend.api:{$ctx->apiBase}/delete DELETE", 'status' => 'planned'];
+        foreach ($ctx->imageFields as $f) {
+            $action = Context::uploadActionName((string) $f['prop']);
+            $items[] = ['name' => "backend.api:{$ctx->apiBase}/{$action} POST", 'status' => 'planned'];
+        }
+        $items[] = ['name' => 'frontend.btn:add', 'status' => 'planned'];
+        $items[] = ['name' => 'frontend.btn:edit', 'status' => 'planned'];
+        $items[] = ['name' => 'frontend.btn:del', 'status' => 'planned'];
         foreach (array_merge($ctx->belongsToFields, $ctx->belongsToManyFields) as $f) {
-            $remote = Context::parseRemoteApi(Context::optionsKey($f) ?: null);
+            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
             if ($remote !== null) {
-                $items[] = "backend.api:{$remote['url']} GET";
+                $items[] = ['name' => "backend.api:{$remote['url']} GET", 'status' => 'planned'];
             }
         }
 
         return $items;
+    }
+
+    /**
+     * applyInstallStatus 将 install 结果写回 preview 项的 status
+     *
+     * @param list<array{name: string, status: string}> $preview
+     * @param array{created: list<string>, updated: list<string>, reused: list<string>} $install
+     * @return list<array{name: string, status: string}>
+     */
+    public function applyInstallStatus(array $preview, array $install): array
+    {
+        $created = array_fill_keys($install['created'], true);
+        $updated = array_fill_keys($install['updated'], true);
+        $reused = array_fill_keys($install['reused'], true);
+        $out = [];
+        foreach ($preview as $item) {
+            $name = (string) ($item['name'] ?? '');
+            $status = 'planned';
+            if (isset($created[$name])) {
+                $status = 'created';
+            } elseif (isset($updated[$name])) {
+                $status = 'updated';
+            } elseif (isset($reused[$name])) {
+                $status = 'reused';
+            }
+            $out[] = ['name' => $name, 'status' => $status];
+        }
+
+        return $out;
+    }
+
+    /**
+     * resolveMenuIcon 解析菜单/页面默认图标 {menu:Folder, view:Document}
+     *
+     * @param array<string, mixed> $menu
+     */
+    private function resolveMenuIcon(array $menu, bool $isView): string
+    {
+        $icon = trim((string) ($menu['icon'] ?? ''));
+        if ($icon !== '') {
+            return $icon;
+        }
+
+        return $isView ? 'el:Document' : 'el:Folder';
     }
 
     /**

@@ -1,0 +1,122 @@
+{
+  "table": "test_ft_select",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "select",
+      "title": "下拉单选",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/Select.php",
+    "model": "test/ft/Select.php",
+    "validate": "test/ft/Select.php",
+    "apis": "test/ft/select.ts",
+    "viewsDir": "test/ft/select/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "level",
+      "label": "等级",
+      "uiType": "select",
+      "column": {
+        "type": "tinyint",
+        "nullable": false,
+        "default": 1,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "tag",
+        "width": 88,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "select"
+      },
+      "form": {
+        "render": "select",
+        "enabled": true
+      },
+      "ext": {
+        "enum": {
+          "key": "LEVEL_MAP"
+        }
+      }
+    }
+  ],
+  "options": {
+    "LEVEL_MAP": [
+      {
+        "value": 1,
+        "label": "选项一",
+        "type": "info"
+      },
+      {
+        "value": 2,
+        "label": "选项二",
+        "type": "warning"
+      },
+      {
+        "value": 3,
+        "label": "选项三",
+        "type": "danger"
+      }
+    ]
+  }
+}

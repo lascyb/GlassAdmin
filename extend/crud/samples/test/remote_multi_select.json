@@ -1,0 +1,109 @@
+{
+  "table": "test_ft_remote_multi_select",
+  "menus": [
+    {
+      "type": "menu",
+      "path": "test",
+      "title": "字段类型测试",
+      "icon": "el:Experiment",
+      "sort": 90,
+      "enabled": true
+    },
+    {
+      "type": "menu",
+      "path": "ft",
+      "title": "字段类型",
+      "enabled": true
+    },
+    {
+      "type": "view",
+      "path": "remote_multi_select",
+      "title": "远程多选",
+      "icon": "el:Document",
+      "enabled": true
+    }
+  ],
+  "paths": {
+    "controller": "test/ft/RemoteMultiSelect.php",
+    "model": "test/ft/RemoteMultiSelect.php",
+    "validate": "test/ft/RemoteMultiSelect.php",
+    "apis": "test/ft/remote_multi_select.ts",
+    "viewsDir": "test/ft/remote_multi_select/"
+  },
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "fields": [
+    {
+      "prop": "id",
+      "label": "ID",
+      "uiType": "primary_key",
+      "column": {
+        "type": "bigint",
+        "unsigned": true,
+        "nullable": false,
+        "autoIncrement": true,
+        "primary": true,
+        "enabled": true
+      },
+      "relation": {
+        "type": "belongs_to",
+        "enabled": false
+      },
+      "list": {
+        "render": "number",
+        "width": 80,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": false,
+        "enabled": false
+      },
+      "form": {
+        "render": "input",
+        "enabled": false
+      }
+    },
+    {
+      "prop": "tag_ids",
+      "label": "标签",
+      "uiType": "remote_multi_select",
+      "column": {
+        "type": "varchar",
+        "length": 255,
+        "enabled": false
+      },
+      "relation": {
+        "type": "belongs_to_many",
+        "enabled": true,
+        "pivotTable": "test_ft_remote_multi_select_tag",
+        "foreignKey": "remote_multi_select_id",
+        "relatedKey": "tag_id"
+      },
+      "list": {
+        "render": "tags",
+        "relationProp": "tags",
+        "minWidth": 160,
+        "enabled": true
+      },
+      "search": {
+        "keyword": false,
+        "advanced": true,
+        "enabled": true,
+        "render": "remote_multi_select"
+      },
+      "form": {
+        "render": "remote_multi_select",
+        "enabled": true
+      },
+      "ext": {
+        "remote": {
+          "api": "test.ft.Text/list",
+          "valueField": "id",
+          "labelField": "title",
+          "table": "test_ft_text"
+        }
+      }
+    }
+  ]
+}

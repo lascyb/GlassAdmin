@@ -10,12 +10,15 @@ withDefaults(
         loading?: boolean
         /** keywordPlaceholder 关键词占位 */
         keywordPlaceholder?: string
+        /** showKeyword 是否显示关键词输入框 */
+        showKeyword?: boolean
         /** showToggle 是否显示展开/收起高级搜索 */
         showToggle?: boolean
     }>(),
     {
         loading: false,
         keywordPlaceholder: '关键词',
+        showKeyword: true,
         showToggle: true,
     },
 )
@@ -58,6 +61,7 @@ const onReset = () => {
             <div class="flex shrink-0 items-center gap-2">
                 <el-button :disabled="loading" :icon="Refresh" @click="onRefresh"/>
                 <el-input
+                    v-if="showKeyword"
                     v-model="keyword"
                     :placeholder="keywordPlaceholder"
                     clearable

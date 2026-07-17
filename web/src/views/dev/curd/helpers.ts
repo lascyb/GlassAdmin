@@ -1,90 +1,66 @@
+import {
+    FIELD_TYPE_LIST,
+    fieldTypeDefOf,
+    SEARCH_RENDER,
+    SEARCH_RENDER_TYPE_LABEL,
+} from '@/views/dev/curd/constants'
+import { applyRenderExt, relatedNameFromProp } from '@/views/dev/curd/fieldExt'
 import type {
     CrudFieldSchema,
     CrudGenerateConfig,
     CrudMenuLevel,
     CrudOutputPaths,
+    FieldInference,
+    FieldInferenceList,
     FieldType,
     FormRenderType,
-    ListRenderType,
-    SearchMode,
     SearchRenderType,
-} from '@/crud/types'
-import {
-    FORM_RENDER_TYPE_LABEL,
-    FORM_TO_SEARCH_RENDER,
-    LIST_RENDER_TYPE_LABEL,
-    SEARCH_RENDER_TYPE_LABEL,
-} from '@/crud/types'
-import {defaultPivot} from './fieldIntent'
+} from '@/views/dev/curd/types'
+import { isLayerEnabled } from '@/views/dev/curd/types'
 
 /** FIELD_TYPES MySQL 列类型选项 */
-export const FIELD_TYPES: FieldType[] = [
-    'bigint',
-    'int',
-    'tinyint',
-    'decimal',
-    'varchar',
-    'char',
-    'text',
-    'mediumtext',
-    'longtext',
-    'date',
-    'datetime',
-    'timestamp',
-    'json',
-]
+export const FIELD_TYPES: FieldType[] = [...FIELD_TYPE_LIST]
 
-/** FORM_RENDER_OPTIONS 表单控件选项 */
-export const FORM_RENDER_OPTIONS = Object.entries(FORM_RENDER_TYPE_LABEL).map(([value, label]) => ({
-    value: value as FormRenderType,
-    label,
-}))
-
-/** LIST_RENDER_OPTIONS 列表渲染选项 */
-export const LIST_RENDER_OPTIONS = Object.entries(LIST_RENDER_TYPE_LABEL).map(([value, label]) => ({
-    value: value as ListRenderType,
-    label,
-}))
-
-/** SEARCH_RENDER_OPTIONS 搜索控件选项 */
-export const SEARCH_RENDER_OPTIONS = Object.entries(SEARCH_RENDER_TYPE_LABEL).map(([value, label]) => ({
-    value,
-    label,
-}))
-
-/** SEARCH_MODE_OPTIONS 搜索方式 */
-export const SEARCH_MODE_OPTIONS = [
-    {value: 'keyword', label: '关键词'},
-    {value: 'advanced', label: '高级筛选'},
-] as const
-
-/** RELATION_TYPE_OPTIONS 关联类型(thinkphp8支持的关联类型) */
-export const RELATION_TYPE_OPTIONS = [
-    {value: "has_one", label: "一对一"},
-    {value: "belongs_to", label: "一对一"},
-    {value: "has_many", label: "一对多"},
-    {value: "has_one_through", label: "远程一对一"},
-    {value: "has_many_through", label: "远程一对多"},
-    {value: "belongs_to_many", label: "多对多"},
-    {value: "morph_many", label: "多态一对多"},
-    {value: "morph_one", label: "多态一对一"},
-    {value: "morph_to", label: "多态"}
-] as const
-
-/** PATH_PREFIXES 生成路径固定前缀 */
-export const PATH_PREFIXES = {
-    controller: 'app/admin/controller/',
-    model: 'app/admin/model/',
-    validate: 'app/admin/validate/',
-    apis: 'web/src/apis/',
-    viewsDir: 'web/src/views/',
-} as const
+/** defaultPivot 多对多中间表默认（relatedTable 优先于 prop 推断关联名） */
+export const defaultPivot = (
+    mainTable: string,
+    prop: string,
+    relatedTable?: string,
+): { pivotTable: string; foreignKey: string; relatedKey: string } => {
+    const related = relatedTable?.trim()
+        ? relatedTable.trim().split('_').filter(Boolean).pop() || relatedTable.trim()
+        : relatedNameFromProp(prop)
+    const entitySeg = mainTable.split('_').filter(Boolean).pop() || 'item'
+    return {
+        pivotTable: `${mainTable}_${related}`,
+        foreignKey: `${entitySeg}_id`,
+        relatedKey: `${related}_id`,
+    }
+}
 
 /** capitalizePart 表名片段首字母大写 */
 const capitalizePart = (p: string): string => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
 
+/** PHP 不可用作 class 名的保留字（大小写不敏感） */
+const PHP_RESERVED_CLASS = new Set([
+    'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone',
+    'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty',
+    'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'enum', 'eval',
+    'exit', 'extends', 'final', 'finally', 'fn', 'for', 'foreach', 'function', 'global', 'goto',
+    'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface',
+    'isset', 'list', 'match', 'namespace', 'new', 'or', 'print', 'private', 'protected',
+    'public', 'readonly', 'require', 'require_once', 'return', 'static', 'switch', 'throw',
+    'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'yield', 'from',
+    'int', 'float', 'bool', 'string', 'true', 'false', 'null', 'void', 'iterable', 'object',
+    'mixed', 'never', 'self', 'parent',
+])
+
+/** safeEntityClassName 保留字时追加 Entity 后缀 */
+export const safeEntityClassName = (entity: string): string =>
+    PHP_RESERVED_CLASS.has(entity.toLowerCase()) ? `${entity}Entity` : entity
+
 /** defaultPaths 空相对路径占位 */
-export const defaultPaths = (): CrudOutputPaths => ({
+const defaultPaths = (): CrudOutputPaths => ({
     controller: 'Item.php',
     model: 'Item.php',
     validate: 'Item.php',
@@ -96,7 +72,7 @@ export const defaultPaths = (): CrudOutputPaths => ({
 export const guessPathsFromParts = (parts: string[]): CrudOutputPaths => {
     if (parts.length === 0) return defaultPaths()
     const last = parts[parts.length - 1] ?? 'item'
-    const entity = capitalizePart(last)
+    const entity = safeEntityClassName(capitalizePart(last))
     const file = last.toLowerCase()
     const dirs = parts.slice(0, -1).map((p) => p.toLowerCase())
     const prefix = dirs.length ? `${dirs.join('/')}/` : ''
@@ -109,47 +85,53 @@ export const guessPathsFromParts = (parts: string[]): CrudOutputPaths => {
     }
 }
 
+/** fillMenuLevelIcons 补全 menus 默认图标（menu→Folder，view→Document） */
+export const fillMenuLevelIcons = (menus: CrudMenuLevel[]): void => {
+    menus.forEach((m, i) => {
+        if (!m.icon?.trim()) {
+            m.icon = m.type === 'view' ? 'el:Document' : 'el:Folder'
+        }
+        if (m.type !== 'view' && i === 0 && m.sort == null) {
+            m.sort = 0
+        }
+    })
+}
+
 /** guessMenusFromParts 末段为 view，前面为 menu；单段仅 view */
-export const guessMenusFromParts = (parts: string[]): CrudMenuLevel[] => {
+const guessMenusFromParts = (parts: string[]): CrudMenuLevel[] => {
+    let menus: CrudMenuLevel[]
     if (parts.length === 0) {
-        return [{type: 'view', path: 'item', title: 'Item', icon: 'el:Document', sort: 0, enabled: true}]
-    }
-    const first = parts[0] ?? 'item'
-    if (parts.length === 1) {
-        const p = first.toLowerCase()
-        return [
+        menus = [{ type: 'view', path: 'item', title: 'Item', sort: 0, enabled: true }]
+    } else if (parts.length === 1) {
+        const p = parts[0]!.toLowerCase()
+        menus = [
             {
                 type: 'view',
                 path: p,
-                title: capitalizePart(first),
-                icon: 'el:Document',
+                title: capitalizePart(parts[0]!),
                 sort: 0,
                 enabled: true,
             },
         ]
-    }
-    const menus: CrudMenuLevel[] = []
-    parts.slice(0, -1).forEach((raw, i) => {
-        const path = raw.toLowerCase()
-        const level: CrudMenuLevel = {
-            type: 'menu',
-            path,
-            title: capitalizePart(raw),
+    } else {
+        menus = []
+        parts.slice(0, -1).forEach((raw) => {
+            menus.push({
+                type: 'menu',
+                path: raw.toLowerCase(),
+                title: capitalizePart(raw),
+                enabled: true,
+            })
+        })
+        const last = parts[parts.length - 1] ?? 'item'
+        menus.push({
+            type: 'view',
+            path: last.toLowerCase(),
+            title: capitalizePart(last),
             enabled: true,
-        }
-        if (i === 0) {
-            level.icon = 'el:Document'
-            level.sort = 0
-        }
-        menus.push(level)
-    })
-    const last = parts[parts.length - 1] ?? 'item'
-    menus.push({
-        type: 'view',
-        path: last.toLowerCase(),
-        title: capitalizePart(last),
-        enabled: true,
-    })
+        })
+    }
+    fillMenuLevelIcons(menus)
     return menus
 }
 
@@ -161,7 +143,7 @@ export const leafView = (menus: CrudMenuLevel[]): CrudMenuLevel | null => {
 }
 
 /** parseControllerPath 从 controller 相对路径解析 moduleDir + entity */
-export const parseControllerPath = (
+const parseControllerPath = (
     controller: string,
 ): { module: string; entity: string } => {
     const cleaned = controller.replace(/^\/+/, '').replace(/\.php$/i, '')
@@ -185,7 +167,7 @@ export const syncDerivedFields = (cfg: CrudGenerateConfig): void => {
         if (first.icon) cfg.menuIcon = first.icon
         if (first.sort != null) cfg.menuSort = first.sort
     }
-    if (!cfg.menuIcon) cfg.menuIcon = 'el:Document'
+    if (!cfg.menuIcon) cfg.menuIcon = 'el:Folder'
     if (cfg.menuSort == null) cfg.menuSort = 0
     const parsed = parseControllerPath(cfg.paths?.controller ?? '')
     cfg.module = parsed.module
@@ -197,6 +179,8 @@ export const guessMetaFromTable = (
     table: string,
 ): Pick<CrudGenerateConfig, 'menus' | 'paths' | 'title'> => {
     const parts = table
+        .trim()
+        .toLowerCase()
         .split('_')
         .map((p) => p.trim())
         .filter(Boolean)
@@ -213,6 +197,7 @@ export const guessMetaFromTable = (
 const defaultPrimaryField = (): CrudFieldSchema => ({
     prop: 'id',
     label: 'ID',
+    uiType: 'primary_key',
     column: {
         type: 'bigint',
         unsigned: true,
@@ -220,8 +205,10 @@ const defaultPrimaryField = (): CrudFieldSchema => ({
         autoIncrement: true,
         primary: true,
     },
-    list: {render: 'text', width: 72},
-    form: false,
+    relation: { type: 'belongs_to', enabled: false },
+    list: { render: 'text', width: 72 },
+    search: { keyword: true, enabled: false },
+    form: { render: 'input', enabled: false },
 })
 
 /** emptyConfig 从零开始的空配置（含 id 主键） */
@@ -235,119 +222,283 @@ export const emptyConfig = (): CrudGenerateConfig => {
         fields: [defaultPrimaryField()],
         generateAuth: true,
         writeMode: 'skip',
-        menuIcon: 'el:Document',
+        menuIcon: 'el:Folder',
         menuSort: 0,
     }
     syncDerivedFields(cfg)
     return cfg
 }
 
-/** defaultField 新增空白字段 */
-export const defaultField = (index = 0): CrudFieldSchema => ({
-    prop: `field_${index + 1}`,
-    label: `字段${index + 1}`,
-    column: {
-        type: 'varchar',
-        length: 255,
-        nullable: true,
-    },
-    list: {render: 'text', minWidth: 120},
-    search: {mode: 'keyword'},
-    form: {render: 'input'},
-})
-
 /** cloneConfig 深拷贝配置 */
 export const cloneConfig = (cfg: CrudGenerateConfig): CrudGenerateConfig =>
     JSON.parse(JSON.stringify(cfg)) as CrudGenerateConfig
 
-/** fieldTypeSummary 字段类型摘要（列表展示） */
-export const fieldTypeSummary = (field: CrudFieldSchema): string => {
-    const parts: string[] = []
-    if (field.column?.type) {
-        let t: string = field.column.type
-        if (field.column.length) t += `(${field.column.length})`
-        if (field.column.precision != null) {
-            t = `${field.column.type}(${field.column.precision},${field.column.scale ?? 0})`
-        }
-        parts.push(t)
-    } else if (field.relation?.type) {
-        parts.push(field.relation.type)
-    } else {
-        parts.push('-')
-    }
-    if (field.form === false) {
-        parts.push('无表单')
-    } else if (field.form?.render) {
-        parts.push(FORM_RENDER_TYPE_LABEL[field.form.render] ?? field.form.render)
-    }
-    if (!field.list) parts.push('无列')
-    if (field.search) parts.push(field.search.mode === 'keyword' ? '关键词' : '筛选')
-    return parts.join(' · ')
-}
-
-/** ensureColumn 保证 column 对象存在 */
+/** ensureColumn 保证 column 启用并补默认类型 */
 export const ensureColumn = (field: CrudFieldSchema): void => {
-    if (!field.column) {
-        field.column = {type: 'varchar', length: 255}
+    field.column.enabled = true
+    if (!field.column.type) {
+        field.column.type = 'varchar'
+        field.column.length = 255
     }
 }
 
-/** fillPivotDefaults 多对多中间表空值自动填充 */
-export const fillPivotDefaults = (field: CrudFieldSchema, cfg: CrudGenerateConfig): void => {
-    if (!field.relation) field.relation = {type: 'belongs_to_many'}
-    const pivot = defaultPivot(cfg.table || 'item', field.prop)
-    if (!field.relation.pivotTable) field.relation.pivotTable = pivot.pivotTable
-    if (!field.relation.foreignKey) field.relation.foreignKey = pivot.foreignKey
-    if (!field.relation.relatedKey) field.relation.relatedKey = pivot.relatedKey
+/** ParsedMysqlType SHOW COLUMNS Type 解析结果 */
+export type ParsedMysqlType = {
+    type: string
+    length?: number
+    precision?: number
+    scale?: number
+    unsigned: boolean
 }
 
-/** defaultSearchRenderHint 按 form 推断默认 search.render 文案 */
-export const defaultSearchRenderHint = (field: CrudFieldSchema): string => {
-    if (field.form === false || field.form == null) return '无'
-    const mapped = FORM_TO_SEARCH_RENDER[field.form.render]
-    return mapped ? SEARCH_RENDER_TYPE_LABEL[mapped] : '无默认'
-}
-
-/** ListRenderGuess 列表渲染推测出的 form/search 默认 */
-type ListRenderGuess = {
-    form: FormRenderType
-    search?: { mode: SearchMode; render?: SearchRenderType } // 无 search 表示不参与搜索
-}
-
-/**
- * LIST_TO_RENDER_GUESS 列表渲染 → 表单/搜索默认
- * 用途：字段详情切换 list.render 时同步填充
- */
-const LIST_TO_RENDER_GUESS: Record<ListRenderType, ListRenderGuess> = {
-    text: {form: 'input', search: {mode: 'keyword'}},
-    number: {form: 'number', search: {mode: 'advanced', render: 'number_range'}},
-    status: {form: 'radio', search: {mode: 'advanced', render: 'select'}},
-    tag: {form: 'select', search: {mode: 'advanced', render: 'select'}},
-    tags: {form: 'multi_select', search: {mode: 'advanced'}},
-    color: {form: 'color'},
-    image: {form: 'image'},
-    datetime: {form: 'datetime', search: {mode: 'advanced', render: 'datetime_range'}},
-    bool: {form: 'switch', search: {mode: 'advanced', render: 'bool'}},
-}
-
-/** applyListRenderGuess 按列表渲染推测填充 form/search */
-export const applyListRenderGuess = (field: CrudFieldSchema, render: ListRenderType): void => {
-    const guess = LIST_TO_RENDER_GUESS[render]
-    if (typeof field.form === 'object' && field.form) {
-        field.form.render = guess.form
-    } else {
-        field.form = {render: guess.form}
-    }
-    if (guess.search) {
-        const prev = field.search
-        field.search = {
-            mode: guess.search.mode,
-            ...(guess.search.render ? {render: guess.search.render} : {}),
-            ...(prev?.placeholder ? {placeholder: prev.placeholder} : {}),
-            ...(prev?.optionsKey ? {optionsKey: prev.optionsKey} : {}),
-            ...(prev?.statusMapKey ? {statusMapKey: prev.statusMapKey} : {}),
+/** parseMysqlType 解析 SHOW COLUMNS 的 Type 字符串（如 bigint unsigned、varchar(100)） */
+export const parseMysqlType = (typeRaw: string): ParsedMysqlType => {
+    const raw = typeRaw.trim().toLowerCase()
+    const unsigned = raw.includes('unsigned')
+    const base = raw.replace(/\s+unsigned.*/, '').trim()
+    let name = base
+    let length: number | undefined
+    let precision: number | undefined
+    let scale: number | undefined
+    const m = /^([a-z]+)\((.+)\)$/.exec(base)
+    if (m) {
+        name = m[1]!
+        const args = m[2]!
+        if (name === 'decimal' || name === 'numeric') {
+            const parts = args.split(',').map((s) => s.trim())
+            precision = Number(parts[0] ?? 12) || 12
+            scale = Number(parts[1] ?? 2) || 0
+        } else if (/^\d+$/.test(args)) {
+            length = Number(args)
         }
-    } else {
-        delete field.search
     }
+
+    const type = ((): string => {
+        switch (name) {
+            case 'bigint':
+                return 'bigint'
+            case 'int':
+            case 'integer':
+            case 'mediumint':
+            case 'smallint':
+                return 'int'
+            case 'tinyint':
+            case 'bool':
+            case 'boolean':
+                return 'tinyint'
+            case 'decimal':
+            case 'numeric':
+            case 'float':
+            case 'double':
+            case 'real':
+                return 'decimal'
+            case 'varchar':
+                return 'varchar'
+            case 'char':
+                return 'char'
+            case 'text':
+            case 'tinytext':
+                return 'text'
+            case 'mediumtext':
+                return 'mediumtext'
+            case 'longtext':
+                return 'longtext'
+            case 'date':
+                return 'date'
+            case 'datetime':
+                return 'datetime'
+            case 'timestamp':
+                return 'timestamp'
+            case 'json':
+                return 'json'
+            case 'enum':
+            case 'set':
+                return 'varchar'
+            default:
+                return name || 'varchar'
+        }
+    })()
+
+    if (type === 'varchar' && length == null && (name === 'enum' || name === 'set')) {
+        length = 50
+    }
+    if (type === 'varchar' && length == null) {
+        length = 255
+    }
+
+    return {
+        type,
+        ...(length != null ? { length } : {}),
+        ...(precision != null ? { precision } : {}),
+        ...(scale != null ? { scale } : {}),
+        unsigned,
+    }
+}
+
+/** applyParsedColumnType 将解析结果写回 column 类型相关字段（保留 enabled/nullable 等由调用方决定） */
+export const applyParsedColumnType = (
+    field: CrudFieldSchema,
+    parsed: ParsedMysqlType,
+    extras?: Partial<CrudFieldSchema['column']>,
+): void => {
+    ensureColumn(field)
+    field.column.type = parsed.type
+    field.column.unsigned = parsed.unsigned
+    if (parsed.length != null) field.column.length = parsed.length
+    else delete field.column.length
+    if (parsed.precision != null) field.column.precision = parsed.precision
+    else delete field.column.precision
+    if (parsed.scale != null) field.column.scale = parsed.scale
+    else delete field.column.scale
+    if (extras) Object.assign(field.column, extras)
+}
+
+/** fillPivotDefaults 多对多中间表自动填充（relatedTable 来自远程关联表；force 覆盖已有值） */
+export const fillPivotDefaults = (
+    field: CrudFieldSchema,
+    cfg: CrudGenerateConfig,
+    relatedTable?: string,
+    force = false,
+): void => {
+    field.relation.enabled = true
+    if (!field.relation.type) field.relation.type = 'belongs_to_many'
+    const pivot = defaultPivot(cfg.table || 'item', field.prop, relatedTable)
+    if (force || !field.relation.pivotTable) field.relation.pivotTable = pivot.pivotTable
+    if (force || !field.relation.foreignKey) field.relation.foreignKey = pivot.foreignKey
+    if (force || !field.relation.relatedKey) field.relation.relatedKey = pivot.relatedKey
+}
+
+/** inferSearchRenderFromColumn 按 column.type 推断 search.render */
+const inferSearchRenderFromColumn = (field: CrudFieldSchema): SearchRenderType => {
+    const ct = isLayerEnabled(field.column) ? field.column.type : undefined
+    switch (ct) {
+        case 'tinyint':
+            return SEARCH_RENDER.BOOL
+        case 'int':
+        case 'bigint':
+        case 'decimal':
+            return SEARCH_RENDER.NUMBER_RANGE
+        case 'date':
+            return SEARCH_RENDER.DATE_RANGE
+        case 'datetime':
+        case 'timestamp':
+            return SEARCH_RENDER.DATETIME_RANGE
+        default:
+            return SEARCH_RENDER.INPUT
+    }
+}
+
+/** defaultSearchRenderHint 推断默认 search.render 文案（显式 render → column） */
+export const defaultSearchRenderHint = (field: CrudFieldSchema): string => {
+    const render = inferSearchRender(field)
+    return SEARCH_RENDER_TYPE_LABEL[render] ?? render
+}
+
+/** inferSearchRender 推断 search.render（显式 render → column） */
+export const inferSearchRender = (field: CrudFieldSchema): SearchRenderType => {
+    if (field.search.render) {
+        return field.search.render
+    }
+    return inferSearchRenderFromColumn(field)
+}
+
+/** applyListInference 写回 list 层 */
+const applyListInference = (field: CrudFieldSchema, list: FieldInferenceList | undefined): void => {
+    if (list === false) {
+        field.list = { render: 'text', enabled: false }
+        return
+    }
+    if (!list) return
+    const cfg = typeof list === 'string' ? { render: list, minWidth: 120 } : { minWidth: 120, ...list }
+    field.list = { enabled: true, ...cfg }
+}
+
+/** applySearchInference 写回 search 层 */
+const applySearchInference = (
+    field: CrudFieldSchema,
+    search: FieldInference['search'],
+): void => {
+    if (search === false) {
+        field.search = { keyword: false, advanced: false, enabled: false }
+        return
+    }
+    if (!search) return
+    field.search = {
+        enabled: true,
+        keyword: search.keyword === true,
+        advanced: search.advanced === true,
+        ...(search.render ? { render: search.render } : {}),
+    }
+}
+
+/** applyLayerInference 按 inference 写回 column/relation/list/search/form */
+const applyLayerInference = (
+    field: CrudFieldSchema,
+    inference: FieldInference | undefined,
+    cfg?: CrudGenerateConfig,
+    ext?: { needEnum?: boolean; needRemote?: boolean; defaultRender?: FormRenderType },
+): FormRenderType | undefined => {
+    if (!inference) return undefined
+
+    let formRender: FormRenderType | undefined
+
+    if (inference.form === false) {
+        field.form = { render: ext?.defaultRender ?? 'input', enabled: false }
+    } else if (inference.form) {
+        const { render, ...params } = inference.form
+        formRender = render
+        field.form = {
+            enabled: true,
+            render,
+            ...params,
+        }
+    } else if (ext?.defaultRender) {
+        formRender = ext.defaultRender
+        field.form = { enabled: true, render: ext.defaultRender }
+    }
+
+    if (inference.column === false) {
+        field.column = { type: 'varchar', length: 255, enabled: false }
+    } else if (inference.column) {
+        field.column = { ...inference.column, enabled: true }
+    }
+
+    if (inference.relation === false || !inference.relation) {
+        field.relation = { type: 'belongs_to', enabled: false }
+    } else {
+        field.relation = { type: inference.relation.type, enabled: true }
+        if (inference.relation.needPivot && cfg) {
+            const pivot = defaultPivot(cfg.table || 'item', field.prop)
+            field.relation.pivotTable = field.relation.pivotTable || pivot.pivotTable
+            field.relation.foreignKey = field.relation.foreignKey || pivot.foreignKey
+            field.relation.relatedKey = field.relation.relatedKey || pivot.relatedKey
+        }
+    }
+
+    applyListInference(field, inference.list)
+    applySearchInference(field, inference.search)
+
+    if (cfg && formRender) {
+        applyRenderExt(field, formRender, cfg, {
+            needEnum: ext?.needEnum,
+            needRemote: ext?.needRemote,
+        })
+    }
+
+    return formRender
+}
+
+/** applyFieldType 字段列表切换模板：直接应用 field.ts inference */
+export const applyFieldType = (
+    field: CrudFieldSchema,
+    type: string,
+    cfg: CrudGenerateConfig,
+): void => {
+    const def = fieldTypeDefOf(type)
+    if (!def) return
+    field.uiType = type
+    applyLayerInference(field, def.inference, cfg, {
+        needEnum: def.needEnum,
+        needRemote: def.needRemote,
+    })
 }

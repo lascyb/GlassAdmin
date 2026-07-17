@@ -50,7 +50,7 @@ class ModelFile
 
         foreach ($ctx->belongsToFields as $f) {
             $method = Context::relationMethodName($f);
-            $remote = Context::parseRemoteApi(Context::optionsKey($f) ?: null);
+            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
             $relatedEntity = $remote['entity'] ?? ucfirst($method);
             $relatedModule = $remote['module'] ?? $ctx->module;
             if ($relatedModule !== $ctx->module) {
@@ -66,7 +66,7 @@ class ModelFile
 
         foreach ($ctx->belongsToManyFields as $f) {
             $method = Context::relationMethodName($f);
-            $remote = Context::parseRemoteApi(Context::optionsKey($f) ?: null);
+            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
             $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
             $relatedModule = $remote['module'] ?? $ctx->module;
             $rel = Context::relationConfig($f) ?? [];
@@ -97,12 +97,20 @@ class ModelFile
         $uses = array_unique($uses);
         sort($uses);
 
+        $pk = $ctx->primaryKey();
+        $pkBlock = $pk === 'id'
+            ? ''
+            : "\n    /** @var string 主键 */\n    protected \$pk = '{$pk}';\n";
+        $autoWriteTimestamp = $ctx->hasTimestampFields() ? 'true' : 'false';
+
         return Template::render('model/model.php.tpl', [
             'nsModel' => $ctx->nsModel,
             'useBlock' => implode("\n", $uses),
             'entity' => $ctx->entity,
             'title' => $ctx->title,
             'table' => $ctx->table,
+            'pkBlock' => $pkBlock,
+            'autoWriteTimestamp' => $autoWriteTimestamp,
             'typeBlock' => implode("\n", $typeLines),
             'rels' => $rels,
             'helpers' => $helpers,

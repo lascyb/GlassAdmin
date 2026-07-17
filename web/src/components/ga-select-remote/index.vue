@@ -173,6 +173,7 @@ defineExpose({ refreshOptions, cleanQuery })
         v-model="model"
         filterable
         remote
+        remote-show-suffix
         clearable
         :remote-method="remoteMethod"
         :loading="loading"

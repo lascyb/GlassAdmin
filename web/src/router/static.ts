@@ -1,4 +1,4 @@
-import {type RouteLocationNormalizedGeneric, type RouteRecordRaw} from 'vue-router'
+import { type RouteLocationNormalizedGeneric, type RouteRecordRaw } from 'vue-router'
 
 import { useAdmin } from '@/pinia/admin'
 
@@ -8,9 +8,11 @@ export const routes: RouteRecordRaw[] = [
         name: "root",
         path: '/',
         component: () => import("@/layouts/index.vue"), //全部走layout布局模板
-        beforeEnter: (_to, from:RouteLocationNormalizedGeneric, next) => {
+        beforeEnter: async (_to, from:RouteLocationNormalizedGeneric, next) => {
             console.log("to root",from.fullPath)
             const admin = useAdmin()
+            // access 过期但 refresh 仍有效时先续期，避免「记住我」被误清
+            await admin.tryRefreshAccessTokenIfNeeded()
             if (admin.loggedIn) {
                 next()
             } else {

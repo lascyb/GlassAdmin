@@ -6,7 +6,7 @@ namespace crud;
 /**
  * Context 由配置派生命名与字段分组，供 Generator 使用
  *
- * 字段契约：column / relation / list / search / form（见 web/src/crud/types.ts）
+ * 字段契约：column / relation / list / search / form / ext（见 web/src/views/dev/curd/types）
  */
 class Context
 {
@@ -19,11 +19,7 @@ class Context
     public string $nsModel;
     public string $nsController;
     public string $nsValidate;
-    public string $writeMode;
-    public string $moduleTitle;
     public bool $generateAuth;
-    public string $menuIcon;
-    public int $menuSort;
 
     /** @var array{controller: string, model: string, validate: string, apis: string, viewsDir: string} */
     public array $paths;
@@ -34,10 +30,7 @@ class Context
     /** @var list<array<string, mixed>> */
     public array $fields;
 
-    /** @var array<string, array<string, array{label: string, type?: string}>> */
-    public array $maps;
-
-    /** @var array<string, list<array{value: string|int, label: string}>> */
+    /** @var array<string, list<array{value: string|int, label: string, type?: string}>> */
     public array $options;
 
     /** @var list<array<string, mixed>> */
@@ -74,7 +67,6 @@ class Context
         $ctx = new self();
         $ctx->module       = (string) $config['module'];
         $ctx->entity       = (string) $config['entity'];
-        $ctx->entityFile   = strtolower($ctx->entity);
         $ctx->table        = (string) $config['table'];
         $ctx->title        = (string) $config['title'];
         $moduleNs          = $ctx->module === '' ? '' : str_replace('/', '\\', $ctx->module);
@@ -84,22 +76,21 @@ class Context
         $ctx->nsModel      = $moduleNs === '' ? 'app\\admin\\model' : 'app\\admin\\model\\' . $moduleNs;
         $ctx->nsController = $moduleNs === '' ? 'app\\admin\\controller' : 'app\\admin\\controller\\' . $moduleNs;
         $ctx->nsValidate   = $moduleNs === '' ? 'app\\admin\\validate' : 'app\\admin\\validate\\' . $moduleNs;
-        $ctx->writeMode    = (string) $config['writeMode'];
-        $ctx->moduleTitle  = (string) $config['moduleTitle'];
         $ctx->generateAuth = (bool) $config['generateAuth'];
-        $ctx->menuIcon     = (string) $config['menuIcon'];
-        $ctx->menuSort     = (int) $config['menuSort'];
         $ctx->menus        = is_array($config['menus'] ?? null) ? $config['menus'] : [];
-        $ctx->paths        = is_array($config['paths'] ?? null) ? $config['paths'] : [
-            'controller' => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
-            'model'      => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
-            'validate'   => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
-            'apis'       => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entityFile . '.ts',
-            'viewsDir'   => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entityFile . '/',
-        ];
+        $ctx->paths        = is_array($config['paths'] ?? null) ? $config['paths'] : [];
+        $ctx->entityFile   = self::resolveEntityFile($ctx->entity, $ctx->paths);
+        if ($ctx->paths === []) {
+            $ctx->paths = [
+                'controller' => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
+                'model'      => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
+                'validate'   => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entity . '.php',
+                'apis'       => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entityFile . '.ts',
+                'viewsDir'   => ($ctx->module !== '' ? $ctx->module . '/' : '') . $ctx->entityFile . '/',
+            ];
+        }
         $ctx->fields       = $config['fields'];
-        $ctx->maps         = $config['maps'];
-        $ctx->options      = $config['options'];
+        $ctx->options      = is_array($config['options'] ?? null) ? $config['options'] : [];
 
         foreach ($ctx->fields as $f) {
             $prop = (string) ($f['prop'] ?? '');
@@ -111,21 +102,20 @@ class Context
             $form     = $f['form'] ?? null;
             $list     = $f['list'] ?? null;
 
-            if (is_array($list)) {
+            if (is_array($list) && ($list['enabled'] ?? true) !== false) {
                 $ctx->listFields[] = $f;
             }
-            if (is_array($form)) {
+            if (is_array($form) && ($form['enabled'] ?? true) !== false) {
                 $ctx->formFields[] = $f;
-                if (self::formRender($f) === 'image') {
+                if (in_array(self::formRender($f), ['image', 'file'], true)) {
                     $ctx->imageFields[] = $f;
                 }
             }
-            if (is_array($search)) {
-                $mode = (string) ($search['mode'] ?? '');
-                if ($mode === 'keyword') {
+            if (is_array($search) && ($search['enabled'] ?? true) !== false) {
+                if (($search['keyword'] ?? false) === true) {
                     $ctx->keywordFields[] = $f;
                 }
-                if ($mode === 'advanced') {
+                if (($search['advanced'] ?? false) === true) {
                     $ctx->advancedFields[] = $f;
                 }
             }
@@ -136,7 +126,7 @@ class Context
                 $ctx->belongsToManyFields[] = $f;
             }
             // writable：进表单且非多对多（多对多走 sync）
-            if (is_array($form) && $relation !== 'belongs_to_many') {
+            if (is_array($form) && ($form['enabled'] ?? true) !== false && $relation !== 'belongs_to_many') {
                 $ctx->writableFields[] = $f;
             }
         }
@@ -159,6 +149,16 @@ class Context
         }
 
         return $chain;
+    }
+
+    /**
+     * keywordSourceFields 参与顶部关键词搜索的字段（search.keyword=true）
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function keywordSourceFields(): array
+    {
+        return $this->keywordFields;
     }
 
     /** viewComponent 前端 view 组件路径 */
@@ -209,36 +209,45 @@ class Context
         return 'web/src/views/' . rtrim($this->paths['viewsDir'], '/') . '/constants.ts';
     }
 
-    /** columnType 取 column.type */
+    /** columnType 取 column.type；enabled=false 返回空 */
     public static function columnType(array $field): string
     {
-        $col = $field['column'] ?? null;
+        $col = self::columnConfig($field);
 
         return is_array($col) ? (string) ($col['type'] ?? '') : '';
     }
 
-    /** columnConfig 取 column 对象 */
+    /** columnConfig 取 column 对象；enabled=false 返回 null */
     public static function columnConfig(array $field): ?array
     {
         $col = $field['column'] ?? null;
+        if (!is_array($col) || (($col['enabled'] ?? true) === false)) {
+            return null;
+        }
 
-        return is_array($col) ? $col : null;
+        return $col;
     }
 
-    /** relationType 取 relation.type */
+    /** relationType 取 relation.type；enabled=false 返回空 */
     public static function relationType(array $field): string
     {
         $rel = $field['relation'] ?? null;
+        if (!is_array($rel) || (($rel['enabled'] ?? true) === false)) {
+            return '';
+        }
 
-        return is_array($rel) ? (string) ($rel['type'] ?? '') : '';
+        return (string) ($rel['type'] ?? '');
     }
 
-    /** relationConfig 取 relation 对象 */
+    /** relationConfig 取 relation 对象；enabled=false 返回 null */
     public static function relationConfig(array $field): ?array
     {
         $rel = $field['relation'] ?? null;
+        if (!is_array($rel) || (($rel['enabled'] ?? true) === false)) {
+            return null;
+        }
 
-        return is_array($rel) ? $rel : null;
+        return $rel;
     }
 
     /** formConfig 取 form 对象；false/省略返回 null */
@@ -288,12 +297,15 @@ class Context
         if ($search !== null && !empty($search['render'])) {
             return (string) $search['render'];
         }
-        $formRender = self::formRender($field);
-        $mapped = self::formToSearchRender($formRender);
-        if ($mapped !== '') {
-            return $mapped;
+        $form = self::formConfig($field);
+        if ($form !== null && ($form['enabled'] ?? true) !== false) {
+            $mapped = self::formToSearchRender((string) ($form['render'] ?? ''));
+            if ($mapped !== '') {
+                return $mapped;
+            }
         }
-        $ct = self::columnType($field);
+        $col = self::columnConfig($field);
+        $ct = is_array($col) ? (string) ($col['type'] ?? '') : '';
 
         return match ($ct) {
             'tinyint' => 'bool',
@@ -305,20 +317,20 @@ class Context
     }
 
     /**
-     * formToSearchRender 表单控件 → 默认搜索控件
+     * formToSearchRender 表单控件 → 默认搜索控件（与 web form-render.ts inference.search.render 对齐）
      * {number:number_range, date:date_range, datetime:datetime_range, switch:bool, radio:select}
      */
     public static function formToSearchRender(string $formRender): string
     {
         return match ($formRender) {
-            'input' => 'input',
+            'input', 'password' => 'input',
             'number' => 'number_range',
             'switch' => 'bool',
             'radio', 'select' => 'select',
             'remote_select' => 'remote_select',
             'remote_multi_select' => 'remote_multi_select',
             'date' => 'date_range',
-            'datetime' => 'datetime_range',
+            'datetime', 'time' => 'datetime_range',
             default => '',
         };
     }
@@ -329,6 +341,46 @@ class Context
         $col = self::columnConfig($field);
 
         return $col !== null && !empty($col['primary']);
+    }
+
+    /** primaryKey 主键列名（无则 id） */
+    public function primaryKey(): string
+    {
+        foreach ($this->fields as $f) {
+            if (self::isPrimary($f)) {
+                return (string) $f['prop'];
+            }
+        }
+
+        return 'id';
+    }
+
+    /** isIntPrimary 主键是否整型列 */
+    public function isIntPrimary(): bool
+    {
+        foreach ($this->fields as $f) {
+            if (!self::isPrimary($f)) {
+                continue;
+            }
+            $ct = self::columnType($f);
+
+            return in_array($ct, ['bigint', 'int', 'tinyint'], true);
+        }
+
+        return true;
+    }
+
+    /** hasTimestampFields 是否含 create_time / update_time 列 */
+    public function hasTimestampFields(): bool
+    {
+        foreach ($this->fields as $f) {
+            $prop = (string) ($f['prop'] ?? '');
+            if ($prop === 'create_time' || $prop === 'update_time') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** isRequired 表单是否必填 */
@@ -355,10 +407,14 @@ class Context
             || self::searchRender($field) === 'bool';
     }
 
-    /** isEnumField 带 statusMapKey 的枚举语义 */
+    /** isEnumField 带 enumKey 的枚举语义（远程关联字段排除） */
     public static function isEnumField(array $field): bool
     {
-        return self::statusMapKey($field) !== '';
+        if (self::isRemoteField($field)) {
+            return false;
+        }
+
+        return self::enumKey($field) !== '';
     }
 
     /** isUnixDatetime bigint + datetime 渲染（Unix 秒） */
@@ -387,31 +443,95 @@ class Context
     }
 
     /**
-     * statusMapKey 取 statusMapKey（form → list → search）
+     * fieldExt 取字段扩展参数
      */
-    public static function statusMapKey(array $field): string
+    public static function fieldExt(array $field): array
     {
-        foreach ([self::formConfig($field), self::listConfig($field), self::searchConfig($field)] as $cfg) {
-            if ($cfg !== null && !empty($cfg['statusMapKey'])) {
-                return (string) $cfg['statusMapKey'];
-            }
+        return is_array($field['ext'] ?? null) ? $field['ext'] : [];
+    }
+
+    /**
+     * enumExt 取枚举扩展参数
+     */
+    public static function enumExt(array $field): ?array
+    {
+        $ext = self::fieldExt($field);
+
+        return is_array($ext['enum'] ?? null) ? $ext['enum'] : null;
+    }
+
+    /**
+     * remoteExt 取远程扩展参数
+     */
+    public static function remoteExt(array $field): ?array
+    {
+        $ext = self::fieldExt($field);
+
+        return is_array($ext['remote'] ?? null) ? $ext['remote'] : null;
+    }
+
+    /** isRemoteField 远程关联/远程下拉字段 */
+    public static function isRemoteField(array $field): bool
+    {
+        if (in_array(self::formRender($field), ['remote_select', 'remote_multi_select'], true)) {
+            return true;
+        }
+        $search = self::searchConfig($field);
+        if ($search !== null && in_array((string) ($search['render'] ?? ''), ['remote_select', 'remote_multi_select'], true)) {
+            return true;
+        }
+        if (self::remoteApi($field) !== '') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * enumKey 取 options 键名（ext.enum.key；远程字段不使用枚举）
+     */
+    public static function enumKey(array $field): string
+    {
+        if (self::isRemoteField($field)) {
+            return '';
+        }
+        $enum = self::enumExt($field);
+        if ($enum !== null && !empty($enum['key'])) {
+            return (string) $enum['key'];
         }
 
         return '';
     }
 
     /**
-     * optionsKey 取 optionsKey（form → search → list）
+     * remoteApi 取远程 api（ext.remote.api）
      */
-    public static function optionsKey(array $field): string
+    public static function remoteApi(array $field): string
     {
-        foreach ([self::formConfig($field), self::searchConfig($field), self::listConfig($field)] as $cfg) {
-            if ($cfg !== null && !empty($cfg['optionsKey'])) {
-                return (string) $cfg['optionsKey'];
-            }
+        $remote = self::remoteExt($field);
+        if ($remote !== null && !empty($remote['api'])) {
+            return (string) $remote['api'];
         }
 
         return '';
+    }
+
+    /** remoteValueField 远程选项 value 字段 */
+    public static function remoteValueField(array $field): string
+    {
+        $remote = self::remoteExt($field);
+        $v = $remote['valueField'] ?? 'id';
+
+        return $v === '' ? 'id' : (string) $v;
+    }
+
+    /** remoteLabelField 远程选项 label 字段 */
+    public static function remoteLabelField(array $field): string
+    {
+        $remote = self::remoteExt($field);
+        $v = $remote['labelField'] ?? 'name';
+
+        return $v === '' ? 'name' : (string) $v;
     }
 
     /**
@@ -439,6 +559,34 @@ class Context
         return null;
     }
 
+    /** formPlaceholder 按 form.render + label 生成占位符 */
+    public static function formPlaceholder(array $field): string
+    {
+        $label = trim((string) ($field['label'] ?? ''));
+        $render = self::formRender($field);
+
+        return match ($render) {
+            'input', 'password', 'textarea', 'number', 'readonly' => $label !== '' ? "请输入{$label}" : '请输入',
+            'select', 'multi_select', 'checkbox', 'radio' => '请选择',
+            'remote_select', 'remote_multi_select' => $label !== '' ? "输入关键词搜索{$label}" : '输入关键词搜索',
+            'date' => '选择日期',
+            'datetime', 'time' => '选择日期时间',
+            default => '',
+        };
+    }
+
+    /** searchPlaceholder 按 search.render + label 生成占位符 */
+    public static function searchPlaceholder(array $field, string $searchRender): string
+    {
+        $label = trim((string) ($field['label'] ?? ''));
+
+        return match ($searchRender) {
+            'remote_select', 'remote_multi_select' => $label !== '' ? "搜索{$label}" : '搜索',
+            'input' => '模糊匹配',
+            default => '',
+        };
+    }
+
     /** decimalScale decimal 小数位 */
     public static function decimalScale(array $field): int
     {
@@ -453,11 +601,11 @@ class Context
     /** needConstants 是否需要生成 constants.ts */
     public function needConstants(): bool
     {
-        return $this->maps !== [] || $this->options !== [];
+        return $this->options !== [];
     }
 
     /**
-     * parseRemoteApi 解析 optionsKey 为 Module.Entity
+     * parseRemoteApi 解析 remoteApi 为 Module.Entity（支持嵌套模块 test.ft.Text/list）
      *
      * @return array{module: string, entity: string, url: string}|null
      */
@@ -466,11 +614,16 @@ class Context
         if ($optionsKey === null || $optionsKey === '') {
             return null;
         }
-        if (!preg_match('/^([a-z][a-z0-9_]*)\.([A-Z][A-Za-z0-9]*)\/list$/', $optionsKey, $m)) {
+        // module 为点分小写路径（可多级），entity 为 PascalCase
+        if (!preg_match('/^((?:[a-z][a-z0-9_]*)(?:\.[a-z][a-z0-9_]*)*)\.([A-Z][A-Za-z0-9]*)\/list$/', $optionsKey, $m)) {
             return null;
         }
 
-        return ['module' => $m[1], 'entity' => $m[2], 'url' => $optionsKey];
+        return [
+            'module' => str_replace('.', '/', $m[1]),
+            'entity' => $m[2],
+            'url'    => $optionsKey,
+        ];
     }
 
     /**
@@ -509,6 +662,42 @@ class Context
     }
 
     /**
+     * resolveEntityFile 前端文件名：优先 paths.apis 基名，否则 PascalCase → snake_case
+     *
+     * @param array<string, mixed> $paths
+     */
+    public static function resolveEntityFile(string $entity, array $paths): string
+    {
+        $apis = trim(str_replace('\\', '/', (string) ($paths['apis'] ?? '')));
+        if ($apis !== '') {
+            $base = basename(preg_replace('/\.ts$/i', '', $apis) ?? $apis);
+            if ($base !== '') {
+                return $base;
+            }
+        }
+        $views = trim(str_replace('\\', '/', (string) ($paths['viewsDir'] ?? '')));
+        if ($views !== '') {
+            $base = basename(rtrim($views, '/'));
+            if ($base !== '') {
+                return $base;
+            }
+        }
+
+        return self::toSnake($entity);
+    }
+
+    /**
+     * toSnake PascalCase/camelCase → snake_case（MultiSelect → multi_select）
+     */
+    public static function toSnake(string $name): string
+    {
+        $s = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name) ?? $name;
+        $s = preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $s) ?? $s;
+
+        return strtolower($s);
+    }
+
+    /**
      * toCamel snake → camel（category_id → categoryId）
      */
     public static function toCamel(string $snake): string
@@ -517,19 +706,28 @@ class Context
     }
 
     /**
-     * enumValues 从 maps 取枚举合法值列表
+     * enumValues 从 options 取枚举合法值列表
      *
      * @return list<int|string>
      */
     public function enumValues(array $field): array
     {
-        $key = self::statusMapKey($field);
-        if ($key === '' || !isset($this->maps[$key])) {
+        $key = self::enumKey($field);
+        if ($key === '' || !isset($this->options[$key]) || !is_array($this->options[$key])) {
             return [0, 1];
         }
+        $vals = [];
+        foreach ($this->options[$key] as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $v = $item['value'] ?? null;
+            if ($v === null || $v === '') {
+                continue;
+            }
+            $vals[] = is_numeric($v) ? (int) $v : $v;
+        }
 
-        return array_map(static function ($k) {
-            return is_numeric($k) ? (int) $k : $k;
-        }, array_keys($this->maps[$key]));
+        return $vals !== [] ? $vals : [0, 1];
     }
 }

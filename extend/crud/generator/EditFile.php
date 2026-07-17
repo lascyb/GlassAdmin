@@ -13,7 +13,7 @@ class EditFile
 {
     public function render(Context $ctx): string
     {
-        $constImports = array_merge(array_keys($ctx->maps), array_keys($ctx->options));
+        $constImports = array_keys($ctx->options);
         $constImport = $constImports === []
             ? ''
             : 'import { ' . implode(', ', $constImports) . " } from '@/views/{$ctx->module}/{$ctx->entityFile}/constants'\n";
@@ -73,20 +73,20 @@ class EditFile
                 $assignLines[] = "                {$prop}: d.{$prop} ?? d.{$method}?.map((t) => t.id) ?? [],";
                 $initAssign[] = "            {$initVar}.value = d.{$method}?.length ? d.{$method} : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
-            } elseif (Context::isStringColumn($f) && in_array($render, ['input', 'textarea', 'color'], true)) {
+            } elseif (Context::isStringColumn($f) && in_array($render, ['input', 'password', 'textarea', 'color'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? '',";
                 $payloadLines[] = $render === 'color'
                     ? "            {$prop}: form.{$prop},"
                     : "            {$prop}: form.{$prop}.trim(),";
-            } elseif ($ct === 'date' || $render === 'date' || $render === 'image') {
+            } elseif ($ct === 'date' || $render === 'date' || in_array($render, ['image', 'file'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? '',";
                 $payloadLines[] = $render === 'date'
                     ? "            {$prop}: form.{$prop} || undefined,"
                     : "            {$prop}: form.{$prop},";
-            } elseif (Context::isUnixDatetime($f) || $render === 'datetime') {
+            } elseif (Context::isUnixDatetime($f) || in_array($render, ['datetime', 'time'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? null,";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
-            } elseif ($ct === 'json' || $render === 'multi_select') {
+            } elseif ($ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? [],";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
             } else {
@@ -123,6 +123,8 @@ class EditFile
         return Template::render('edit/edit.vue.tpl', [
             'importBlock' => implode("\n", $imports) . "\n" . $constImport,
             'title' => $ctx->title,
+            'pk' => $ctx->primaryKey(),
+            'pkTs' => $ctx->isIntPrimary() ? 'number' : 'string',
             'formLines' => implode("\n", $formLines),
             'resetLines' => implode("\n", $resetLines),
             'assignLines' => implode("\n", $assignLines),
@@ -148,8 +150,8 @@ class EditFile
         if ($relation === 'belongs_to') {
             return 'undefined as number | undefined';
         }
-        if ($relation === 'belongs_to_many' || $ct === 'json' || $render === 'multi_select') {
-            return '[] as ' . (($ct === 'json' || $render === 'multi_select') ? 'string[]' : 'number[]');
+        if ($relation === 'belongs_to_many' || $ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) {
+            return '[] as ' . (($ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) ? 'string[]' : 'number[]');
         }
         if ($render === 'color') {
             return "'#409EFF'";
@@ -165,7 +167,7 @@ class EditFile
         if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint'], true)) {
             return '0';
         }
-        if (Context::isUnixDatetime($f) || $render === 'datetime') {
+        if (Context::isUnixDatetime($f) || in_array($render, ['datetime', 'time'], true)) {
             return 'null as number | null';
         }
 
@@ -182,10 +184,16 @@ class EditFile
         $required = !empty($form['required']) ? ' required' : '';
         $maxLen = Context::formMaxLength($f);
         $max = $maxLen !== null ? " maxlength=\"{$maxLen}\" show-word-limit" : '';
-        $mapKey = (string) ($form['statusMapKey'] ?? Context::statusMapKey($f));
-        $optKey = (string) ($form['optionsKey'] ?? Context::optionsKey($f));
+        $mapKey = Context::enumKey($f);
+        $optKey = Context::enumKey($f);
+        $remoteUrl = Context::remoteApi($f);
         $relation = Context::relationType($f);
-        $base = ['label' => $label, 'prop' => $prop, 'required' => $required];
+        $base = [
+            'label' => $label,
+            'prop' => $prop,
+            'required' => $required,
+            'placeholder' => Context::formPlaceholder($f),
+        ];
 
         if ($relation === 'belongs_to' || $relation === 'belongs_to_many'
             || in_array($render, ['remote_select', 'remote_multi_select'], true)
@@ -193,9 +201,14 @@ class EditFile
             $method = Context::relationMethodName($f);
             $multi = ($relation === 'belongs_to_many' || $render === 'remote_multi_select');
 
+            $valueField = Context::remoteValueField($f);
+            $labelField = Context::remoteLabelField($f);
+
             return Template::render('edit/field/remote.vue.tpl', array_merge($base, [
                 'key' => $multi ? 'tag' : 'rel',
-                'url' => $optKey,
+                'url' => $remoteUrl,
+                'valueField' => $valueField,
+                'labelField' => $labelField,
                 'initVar' => Context::toCamel($method) . 'Init',
                 'multiAttrs' => $multi
                     ? "\n                        multiple\n                        collapse-tags\n                        collapse-tags-tooltip"
@@ -207,12 +220,12 @@ class EditFile
             'textarea' => Template::render('edit/field/textarea.vue.tpl', array_merge($base, ['max' => $max])) . "\n",
             'number' => $this->renderNumberItem($f),
             'switch' => Template::render('edit/field/switch.vue.tpl', $base) . "\n",
-            'radio' => Template::render('edit/field/radio.vue.tpl', array_merge($base, ['mapKey' => $mapKey])) . "\n",
-            'select' => Template::render('edit/field/select.vue.tpl', array_merge($base, ['mapKey' => $mapKey])) . "\n",
-            'multi_select' => Template::render('edit/field/multi_select.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
+            'radio' => Template::render('edit/field/radio.vue.tpl', array_merge($base, ['optKey' => $mapKey])) . "\n",
+            'select' => Template::render('edit/field/select.vue.tpl', array_merge($base, ['optKey' => $mapKey])) . "\n",
+            'multi_select', 'checkbox' => Template::render('edit/field/multi_select.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
             'color' => Template::render('edit/field/color.vue.tpl', $base) . "\n",
-            'image' => $this->renderImageItem($f),
-            'datetime' => Template::render('edit/field/datetime.vue.tpl', $base) . "\n",
+            'image', 'file' => $this->renderImageItem($f),
+            'datetime', 'time' => Template::render('edit/field/datetime.vue.tpl', $base) . "\n",
             'date' => Template::render('edit/field/date.vue.tpl', $base) . "\n",
             default => Template::render('edit/field/input.vue.tpl', array_merge($base, ['max' => $max])) . "\n",
         };
@@ -241,6 +254,7 @@ class EditFile
             'prop' => (string) $f['prop'],
             'required' => !empty($form['required']) ? ' required' : '',
             'attrs' => $attrs,
+            'placeholder' => Context::formPlaceholder($f),
         ]) . "\n";
     }
 

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import type {
+    GenerateAuthPlan,
+    GenerateFilePlan,
+    GenerateSchemaPlan,
+} from '@/apis/dev/curd'
 import { useDevCurd } from '@/pinia/dev/curd'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
@@ -7,6 +12,75 @@ const store = useDevCurd()
 const { resultVisible, result, resultError } = storeToRefs(store)
 
 const resultJson = computed(() => (result.value ? JSON.stringify(result.value, null, 2) : ''))
+
+type TagType = 'success' | 'warning' | 'info'
+type StatusView = { label: string; type: TagType }
+
+/** fileStatusView 文件计划状态展示 */
+const fileStatusView = (status: GenerateFilePlan['status']): StatusView | null => {
+    switch (status) {
+        case 'written':
+            return { label: '已写入', type: 'success' }
+        case 'skipped':
+            return { label: '跳过', type: 'warning' }
+        default:
+            return null
+    }
+}
+
+/** schemaStatusView 建表计划状态展示 */
+const schemaStatusView = (status: GenerateSchemaPlan['status']): StatusView => {
+    switch (status) {
+        case 'created':
+            return { label: '已创建', type: 'success' }
+        case 'altered':
+            return { label: '已同步字段', type: 'success' }
+        case 'will_alter':
+            return { label: '将同步字段', type: 'warning' }
+        case 'unchanged':
+            return { label: '无变更', type: 'info' }
+        case 'skipped':
+        case 'exists':
+            return { label: '跳过', type: 'warning' }
+        default:
+            return { label: '将创建', type: 'info' }
+    }
+}
+
+/** authStatusView 权限计划状态展示 */
+const authStatusView = (status: GenerateAuthPlan['status']): StatusView | null => {
+    switch (status) {
+        case 'created':
+            return { label: '新建', type: 'success' }
+        case 'updated':
+            return { label: '更新', type: 'success' }
+        case 'reused':
+            return { label: '复用', type: 'info' }
+        default:
+            return null
+    }
+}
+
+const fileRows = computed(() =>
+    (result.value?.files ?? []).map((f) => ({
+        ...f,
+        statusView: fileStatusView(f.status),
+    })),
+)
+
+const schemaRows = computed(() =>
+    (result.value?.schema ?? []).map((s) => ({
+        ...s,
+        statusView: schemaStatusView(s.status),
+    })),
+)
+
+const authRows = computed(() =>
+    (result.value?.auth ?? []).map((a) => ({
+        ...a,
+        statusView: authStatusView(a.status),
+    })),
+)
 </script>
 
 <template>
@@ -37,44 +111,42 @@ const resultJson = computed(() => (result.value ? JSON.stringify(result.value, n
                 </el-descriptions-item>
             </el-descriptions>
 
-            <div class="mt-4 text-xs font-medium">计划文件（{{ result.files.length }}）</div>
-            <ul class="mt-1 text-xs text-gray-600 max-h-28 overflow-auto space-y-1">
-                <li v-for="f in result.files" :key="f.path">{{ f.path }} ({{ f.bytes }})</li>
-            </ul>
-
-            <div v-if="result.written.length" class="mt-3 text-xs font-medium text-green-700">
-                已写入（{{ result.written.length }}）
-            </div>
-            <ul v-if="result.written.length" class="mt-1 text-xs text-green-700 max-h-24 overflow-auto space-y-1">
-                <li v-for="p in result.written" :key="p">{{ p }}</li>
-            </ul>
-
-            <div v-if="result.skipped.length" class="mt-3 text-xs font-medium text-amber-700">
-                跳过（{{ result.skipped.length }}）
-            </div>
-            <ul v-if="result.skipped.length" class="mt-1 text-xs text-amber-700 max-h-24 overflow-auto space-y-1">
-                <li v-for="p in result.skipped" :key="p">{{ p }}</li>
-            </ul>
-
-            <div class="mt-3 text-xs font-medium">建表计划（{{ result.schema.length }}）</div>
-            <ul class="mt-1 text-xs text-gray-600 max-h-28 overflow-auto space-y-1">
-                <li v-for="s in result.schema" :key="s.table">
-                    {{ s.table }} — {{ s.exists ? '已存在→跳过' : '将创建' }}
+            <div class="mt-4 text-xs font-medium">计划文件（{{ fileRows.length }}）</div>
+            <ul class="mt-1 text-xs text-gray-600 max-h-40 overflow-auto space-y-1">
+                <li v-for="f in fileRows" :key="f.path" class="flex items-center gap-2 flex-wrap">
+                    <span>{{ f.path }} ({{ f.bytes }})</span>
+                    <el-tag v-if="f.statusView" size="small" :type="f.statusView.type" effect="plain">
+                        {{ f.statusView.label }}
+                    </el-tag>
                 </li>
             </ul>
 
-            <div v-if="result.tablesCreated?.length" class="mt-3 text-xs font-medium text-green-700">
-                已建表（{{ result.tablesCreated.length }}）
-            </div>
-            <ul v-if="result.tablesCreated?.length" class="mt-1 text-xs text-green-700 space-y-1">
-                <li v-for="t in result.tablesCreated" :key="t">{{ t }}</li>
+            <div class="mt-3 text-xs font-medium">建表计划（{{ schemaRows.length }}）</div>
+            <ul class="mt-1 text-xs text-gray-600 max-h-52 overflow-auto space-y-2">
+                <li v-for="s in schemaRows" :key="s.table" class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span>{{ s.table }}</span>
+                        <el-tag size="small" :type="s.statusView.type" effect="plain">
+                            {{ s.statusView.label }}
+                        </el-tag>
+                    </div>
+                    <pre
+                        v-if="s.sql"
+                        class="whitespace-pre-wrap break-all rounded bg-gray-50 px-2 py-1 text-[11px] text-gray-500"
+                    >{{ s.sql }}</pre>
+                </li>
             </ul>
 
-            <div v-if="result.auth.length" class="mt-3 text-xs font-medium">
-                权限计划（{{ result.auth.length }}）
+            <div v-if="authRows.length" class="mt-3 text-xs font-medium">
+                权限计划（{{ authRows.length }}）
             </div>
-            <ul v-if="result.auth.length" class="mt-1 text-xs text-gray-600 max-h-28 overflow-auto space-y-1">
-                <li v-for="a in result.auth" :key="a">{{ a }}</li>
+            <ul v-if="authRows.length" class="mt-1 text-xs text-gray-600 max-h-40 overflow-auto space-y-1">
+                <li v-for="a in authRows" :key="a.name" class="flex items-center gap-2 flex-wrap">
+                    <span>{{ a.name }}</span>
+                    <el-tag v-if="a.statusView" size="small" :type="a.statusView.type" effect="plain">
+                        {{ a.statusView.label }}
+                    </el-tag>
+                </li>
             </ul>
 
             <el-collapse v-if="resultJson" class="mt-3">

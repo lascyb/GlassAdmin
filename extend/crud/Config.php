@@ -61,6 +61,11 @@ class Config
         if (!preg_match('/^[A-Z][A-Za-z0-9]*$/', $entity)) {
             throw new \InvalidArgumentException('paths.controller 类名须为 PascalCase');
         }
+        if (self::isPhpReservedClassName($entity)) {
+            throw new \InvalidArgumentException(
+                "paths.controller 类名「{$entity}」是 PHP 保留字，请改用如 {$entity}Entity"
+            );
+        }
 
         $writeMode = $data['writeMode'] ?? 'skip';
         if (!in_array($writeMode, ['skip', 'overwrite'], true)) {
@@ -70,14 +75,6 @@ class Config
         $menus = self::normalizeMenus($data['menus']);
         $leaf = $menus[count($menus) - 1];
         $title = (string) $leaf['title'];
-
-        $primary = self::firstEnabled($menus);
-        $moduleTitle = (string) ($primary['title'] ?? $title);
-        $menuIcon = trim((string) ($primary['icon'] ?? ($data['menuIcon'] ?? 'el:Document')));
-        if ($menuIcon === '') {
-            $menuIcon = 'el:Document';
-        }
-        $menuSort = isset($primary['sort']) ? (int) $primary['sort'] : (int) ($data['menuSort'] ?? 0);
 
         $fields = [];
         foreach (array_values($data['fields']) as $i => $f) {
@@ -100,19 +97,20 @@ class Config
             $fields[] = $f;
         }
 
+        $table = strtolower(trim((string) $data['table']));
+        if ($table === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
+            throw new \InvalidArgumentException('table 无效，须为小写 snake_case（如 demo_item）');
+        }
+
         return [
             'module'       => $module,
             'entity'       => $entity,
-            'table'        => trim((string) $data['table']),
+            'table'        => $table,
             'title'        => $title,
-            'moduleTitle'  => $moduleTitle,
             'fields'       => $fields,
-            'maps'         => is_array($data['maps'] ?? null) ? $data['maps'] : [],
             'options'      => is_array($data['options'] ?? null) ? $data['options'] : [],
             'writeMode'    => $writeMode,
-            'generateAuth' => !array_key_exists('generateAuth', $data) || (bool)$data['generateAuth'],
-            'menuIcon'     => $menuIcon,
-            'menuSort'     => $menuSort,
+            'generateAuth' => !array_key_exists('generateAuth', $data) || (bool) $data['generateAuth'],
             'menus'        => $menus,
             'paths'        => $paths,
         ];
@@ -171,6 +169,38 @@ class Config
     }
 
     /**
+     * isPhpReservedClassName 是否不可用作 class/interface/trait/enum 名（大小写不敏感）
+     */
+    public static function isPhpReservedClassName(string $name): bool
+    {
+        static $reserved = null;
+        if ($reserved === null) {
+            $reserved = array_fill_keys([
+                'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone',
+                'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty',
+                'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'enum', 'eval',
+                'exit', 'extends', 'final', 'finally', 'fn', 'for', 'foreach', 'function', 'global', 'goto',
+                'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface',
+                'isset', 'list', 'match', 'namespace', 'new', 'or', 'print', 'private', 'protected',
+                'public', 'readonly', 'require', 'require_once', 'return', 'static', 'switch', 'throw',
+                'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'yield', 'from',
+                'int', 'float', 'bool', 'string', 'true', 'false', 'null', 'void', 'iterable', 'object',
+                'mixed', 'never', 'self', 'parent',
+            ], true);
+        }
+
+        return isset($reserved[strtolower($name)]);
+    }
+
+    /**
+     * safeEntityClassName 保留字时追加 Entity 后缀
+     */
+    public static function safeEntityClassName(string $entity): string
+    {
+        return self::isPhpReservedClassName($entity) ? ($entity . 'Entity') : $entity;
+    }
+
+    /**
      * normalizeMenus 规范化 menus；末项必须为 view
      *
      * @param mixed $raw
@@ -224,22 +254,5 @@ class Config
         }
 
         return $menus;
-    }
-
-    /**
-     * firstEnabled 取首个 enabled 项
-     *
-     * @param list<array{type: string, path: string, title: string, icon?: string, sort?: int, enabled: bool}> $menus
-     * @return array{type: string, path: string, title: string, icon?: string, sort?: int, enabled: bool}|null
-     */
-    private static function firstEnabled(array $menus): ?array
-    {
-        foreach ($menus as $m) {
-            if (!empty($m['enabled'])) {
-                return $m;
-            }
-        }
-
-        return $menus[0] ?? null;
     }
 }

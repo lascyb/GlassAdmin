@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import type { RoleRow } from '@/apis/auth/role'
 import * as roleApi from '@/apis/auth/role'
-import type {RoleRow} from '@/apis/auth/role'
 import GaTreeTable from '@/components/ga-tree-table/index.vue'
-import {useTreeCrud} from '@/composables/useTreeCrud'
+import { useTreeCrud } from '@/composables/useTreeCrud'
 import EditView from '@/views/auth/role/edit.vue'
-import {onMounted} from 'vue'
+import { onMounted } from 'vue'
 
 const {treeData, loading, editController, load, remove, openEdit, openAdd, openAddChild, onSaved} =
     useTreeCrud<RoleRow>(

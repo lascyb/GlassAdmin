@@ -46,6 +46,9 @@ class CrudGenerate extends Command
                 $config['generateAuth'] = false;
             }
             $ctx = Context::fromConfig($config);
+            if ($ctx->generateAuth) {
+                (new AuthInstaller())->validate($ctx);
+            }
             $files = (new Generator())->build($ctx);
         } catch (\Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
@@ -63,18 +66,20 @@ class CrudGenerate extends Command
         $schemaPreview = (new SchemaInstaller())->preview($ctx);
         $output->writeln('<info>计划建表 ' . count($schemaPreview) . ' 张（已存在则跳过）：</info>');
         foreach ($schemaPreview as $item) {
-            $state = $item['exists'] ? '已存在→跳过' : '将创建';
+            $state = $item['status'] === 'exists' ? '已存在→跳过' : '将创建';
             $output->writeln("  - {$item['table']} ({$state})");
             if ($dryRun) {
                 $output->writeln($item['sql']);
             }
         }
 
+        $authInstaller = new AuthInstaller();
+        $authPreview = [];
         if ($ctx->generateAuth) {
-            $preview = (new AuthInstaller())->preview($ctx);
-            $output->writeln('<info>计划写入权限/菜单 ' . count($preview) . ' 项（不挂角色）：</info>');
-            foreach ($preview as $item) {
-                $output->writeln("  - {$item}");
+            $authPreview = $authInstaller->preview($ctx);
+            $output->writeln('<info>计划写入权限/菜单 ' . count($authPreview) . ' 项（不挂角色）：</info>');
+            foreach ($authPreview as $item) {
+                $output->writeln("  - {$item['name']}");
             }
         }
 
@@ -85,18 +90,23 @@ class CrudGenerate extends Command
         }
 
         try {
-            $result = (new Writer())->write($root, $files, (string) $config['writeMode']);
+            $fileResult = (new Writer())->write($root, $files, (string) $config['writeMode']);
         } catch (\Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 
             return 1;
         }
 
-        foreach ($result['written'] as $path) {
-            $output->writeln("<info>写入</info> {$path}");
-        }
-        foreach ($result['skipped'] as $path) {
-            $output->writeln("<comment>跳过</comment> {$path}");
+        $written = 0;
+        $skipped = 0;
+        foreach ($fileResult as $item) {
+            if ($item['status'] === 'written') {
+                $output->writeln("<info>写入</info> {$item['path']}");
+                $written++;
+            } else {
+                $output->writeln("<comment>跳过</comment> {$item['path']}");
+                $skipped++;
+            }
         }
 
         try {
@@ -106,29 +116,36 @@ class CrudGenerate extends Command
 
             return 1;
         }
-        foreach ($schema['created'] as $table) {
-            $output->writeln("<info>建表</info> {$table}");
-        }
-        foreach ($schema['skipped'] as $table) {
-            $output->writeln("<comment>表已存在，跳过</comment> {$table}");
+        $tablesCreated = 0;
+        $tablesSkipped = 0;
+        foreach ($schema as $item) {
+            if ($item['status'] === 'created') {
+                $output->writeln("<info>建表</info> {$item['table']}");
+                $tablesCreated++;
+            } else {
+                $output->writeln("<comment>表已存在，跳过</comment> {$item['table']}");
+                $tablesSkipped++;
+            }
         }
 
         if ($ctx->generateAuth) {
             try {
-                $auth = (new AuthInstaller())->install($ctx);
+                $auth = $authInstaller->install($ctx);
             } catch (\Throwable $e) {
                 $output->writeln('<error>权限写入失败: ' . $e->getMessage() . '</error>');
 
                 return 1;
             }
-            foreach ($auth['created'] as $item) {
-                $output->writeln("<info>权限新建</info> {$item}");
-            }
-            foreach ($auth['updated'] as $item) {
-                $output->writeln("<info>权限更新</info> {$item}");
-            }
-            foreach ($auth['reused'] as $item) {
-                $output->writeln("<comment>权限复用</comment> {$item}");
+            $authItems = $authInstaller->applyInstallStatus($authPreview, $auth);
+            foreach ($authItems as $item) {
+                $label = match ($item['status']) {
+                    'created' => '权限新建',
+                    'updated' => '权限更新',
+                    'reused' => '权限复用',
+                    default => '权限',
+                };
+                $tag = $item['status'] === 'reused' ? 'comment' : 'info';
+                $output->writeln("<{$tag}>{$label}</{$tag}> {$item['name']}");
             }
             if (!empty($auth['viewOverwritten'])) {
                 $output->writeln('<info>已覆盖 view 权限绑定</info> cleared=' . $auth['bindingsCleared'] . ' written=' . $auth['bindings']);
@@ -137,8 +154,8 @@ class CrudGenerate extends Command
             }
         }
 
-        $output->writeln('<info>完成</info> written=' . count($result['written']) . ' skipped=' . count($result['skipped'])
-            . ' tablesCreated=' . count($schema['created']) . ' tablesSkipped=' . count($schema['skipped']));
+        $output->writeln("<info>完成</info> written={$written} skipped={$skipped}"
+            . " tablesCreated={$tablesCreated} tablesSkipped={$tablesSkipped}");
 
         return 0;
     }

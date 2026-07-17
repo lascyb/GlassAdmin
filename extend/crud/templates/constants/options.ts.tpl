@@ -1,5 +1,5 @@
 
 /** <%name%> */
-export const <%name%> = [
+export const <%name%>: EnumOption[] = [
 <%entries%>
 ]

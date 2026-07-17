@@ -96,6 +96,7 @@ const handlePasswordLogin = async () => {
       data.refresh_token,
       data.user,
       data.expire_at,
+      data.refresh_expire_at,
       passwordForm.remember,
     )
 

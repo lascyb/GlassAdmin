@@ -27,18 +27,18 @@ export const list = (params: {
 }) => getData<<%entity%>ListRes>(`${API_BASE}/list`, params)
 
 /** read 详情 */
-export const read = (id: number) => getData<<%entity%>Row>(`${API_BASE}/read`, { id })
+export const read = (id: <%pkTs%>) => getData<<%entity%>Row>(`${API_BASE}/read`, { id })
 
 /** create 新建 */
 export const create = (payload: <%entity%>Payload) =>
-    postData<{ id: number }>(`${API_BASE}/create`, payload)
+    postData<{ id: <%pkTs%> }>(`${API_BASE}/create`, payload)
 
 /** update 更新 */
-export const update = (id: number, payload: <%entity%>Payload) =>
-    putData<null>(`${API_BASE}/update?id=${id}`, payload)
+export const update = (id: <%pkTs%>, payload: <%entity%>Payload) =>
+    putData<null>(`${API_BASE}/update?id=${encodeURIComponent(String(id))}`, payload)
 
 /** remove 删除（export 为 delete，因 delete 为保留字） */
-const remove = (id: number) => delData<null>(`${API_BASE}/delete`, { id })
+const remove = (id: <%pkTs%>) => delData<null>(`${API_BASE}/delete`, { id })
 
 export { remove as delete }
 <%uploadExports%>

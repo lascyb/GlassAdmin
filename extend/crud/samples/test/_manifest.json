@@ -1,0 +1,168 @@
+{
+  "description": "字段类型单元测试样例清单（对齐前端 UI CrudGenerateConfig）",
+  "generateAuth": true,
+  "writeMode": "overwrite",
+  "cases": [
+    {
+      "file": "text.json",
+      "uiType": "text",
+      "table": "test_ft_text",
+      "title": "单行文本",
+      "command": "php think crud:generate extend/crud/samples/test/text.json --dry-run"
+    },
+    {
+      "file": "textarea.json",
+      "uiType": "textarea",
+      "table": "test_ft_textarea",
+      "title": "多行文本",
+      "command": "php think crud:generate extend/crud/samples/test/textarea.json --dry-run"
+    },
+    {
+      "file": "password.json",
+      "uiType": "password",
+      "table": "test_ft_password",
+      "title": "密码",
+      "command": "php think crud:generate extend/crud/samples/test/password.json --dry-run"
+    },
+    {
+      "file": "number.json",
+      "uiType": "number",
+      "table": "test_ft_number",
+      "title": "数字",
+      "command": "php think crud:generate extend/crud/samples/test/number.json --dry-run"
+    },
+    {
+      "file": "amount.json",
+      "uiType": "amount",
+      "table": "test_ft_amount",
+      "title": "金额",
+      "command": "php think crud:generate extend/crud/samples/test/amount.json --dry-run"
+    },
+    {
+      "file": "switch.json",
+      "uiType": "switch",
+      "table": "test_ft_switch",
+      "title": "开关",
+      "command": "php think crud:generate extend/crud/samples/test/switch.json --dry-run"
+    },
+    {
+      "file": "radio.json",
+      "uiType": "radio",
+      "table": "test_ft_radio",
+      "title": "单选",
+      "command": "php think crud:generate extend/crud/samples/test/radio.json --dry-run"
+    },
+    {
+      "file": "checkbox.json",
+      "uiType": "checkbox",
+      "table": "test_ft_checkbox",
+      "title": "多选",
+      "command": "php think crud:generate extend/crud/samples/test/checkbox.json --dry-run"
+    },
+    {
+      "file": "select.json",
+      "uiType": "select",
+      "table": "test_ft_select",
+      "title": "下拉单选",
+      "command": "php think crud:generate extend/crud/samples/test/select.json --dry-run"
+    },
+    {
+      "file": "multi_select.json",
+      "uiType": "multi_select",
+      "table": "test_ft_multi_select",
+      "title": "下拉多选",
+      "command": "php think crud:generate extend/crud/samples/test/multi_select.json --dry-run"
+    },
+    {
+      "file": "remote_select.json",
+      "uiType": "remote_select",
+      "table": "test_ft_remote_select",
+      "title": "远程下拉",
+      "command": "php think crud:generate extend/crud/samples/test/remote_select.json --dry-run"
+    },
+    {
+      "file": "remote_multi_select.json",
+      "uiType": "remote_multi_select",
+      "table": "test_ft_remote_multi_select",
+      "title": "远程多选",
+      "command": "php think crud:generate extend/crud/samples/test/remote_multi_select.json --dry-run"
+    },
+    {
+      "file": "date.json",
+      "uiType": "date",
+      "table": "test_ft_date",
+      "title": "日期",
+      "command": "php think crud:generate extend/crud/samples/test/date.json --dry-run"
+    },
+    {
+      "file": "datetime.json",
+      "uiType": "datetime",
+      "table": "test_ft_datetime",
+      "title": "日期时间",
+      "command": "php think crud:generate extend/crud/samples/test/datetime.json --dry-run"
+    },
+    {
+      "file": "time.json",
+      "uiType": "time",
+      "table": "test_ft_time",
+      "title": "时间",
+      "command": "php think crud:generate extend/crud/samples/test/time.json --dry-run"
+    },
+    {
+      "file": "image.json",
+      "uiType": "image",
+      "table": "test_ft_image",
+      "title": "图片",
+      "command": "php think crud:generate extend/crud/samples/test/image.json --dry-run"
+    },
+    {
+      "file": "file.json",
+      "uiType": "file",
+      "table": "test_ft_file",
+      "title": "文件",
+      "command": "php think crud:generate extend/crud/samples/test/file.json --dry-run"
+    },
+    {
+      "file": "color.json",
+      "uiType": "color",
+      "table": "test_ft_color",
+      "title": "颜色",
+      "command": "php think crud:generate extend/crud/samples/test/color.json --dry-run"
+    },
+    {
+      "file": "custom.json",
+      "uiType": "custom",
+      "table": "test_ft_custom",
+      "title": "自定义",
+      "command": "php think crud:generate extend/crud/samples/test/custom.json --dry-run"
+    },
+    {
+      "file": "primary_key.json",
+      "uiType": "primary_key",
+      "table": "test_ft_primary_key",
+      "title": "自增主键",
+      "command": "php think crud:generate extend/crud/samples/test/primary_key.json --dry-run"
+    },
+    {
+      "file": "uuid.json",
+      "uiType": "uuid",
+      "table": "test_ft_uuid",
+      "title": "UUID",
+      "command": "php think crud:generate extend/crud/samples/test/uuid.json --dry-run"
+    },
+    {
+      "file": "create_time.json",
+      "uiType": "create_time",
+      "table": "test_ft_create_time",
+      "title": "创建时间",
+      "command": "php think crud:generate extend/crud/samples/test/create_time.json --dry-run"
+    },
+    {
+      "file": "update_time.json",
+      "uiType": "update_time",
+      "table": "test_ft_update_time",
+      "title": "更新时间",
+      "command": "php think crud:generate extend/crud/samples/test/update_time.json --dry-run"
+    }
+  ]
+}

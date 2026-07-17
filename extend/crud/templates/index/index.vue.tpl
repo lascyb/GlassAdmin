@@ -8,12 +8,12 @@ const { list, total, page, limit, loading, load, search } = usePaginatedList<<%e
 
 const { confirm } = useConfirmAction({ successMsg: '已删除', onSuccess: load })
 
-const editController = reactive<{ show?: boolean; id?: number }>({})
+const editController = reactive<{ show?: boolean; id?: <%pkTs%> }>({})
 
-const clickEdit = (id: number) => Object.assign(editController, { show: true, id })
+const clickEdit = (id: <%pkTs%>) => Object.assign(editController, { show: true, id })
 const clickAdd = () => Object.assign(editController, { show: true, id: undefined })
 const clickDel = (row: <%entity%>Row) => {
-    void confirm(`确定删除「${row.<%titleProp%>}」？`, () => entityApi.delete(row.id))
+    void confirm(`确定删除「${row.<%titleProp%>}」？`, () => entityApi.delete(row.<%pk%>))
 }
 const onSaved = () => {
     editController.show = false
@@ -31,7 +31,7 @@ const onSaved = () => {
         @load="load"
     >
         <template #toolbar>
-            <ga-search-bar<%searchBarKeyword%>
+            <ga-search-bar<%searchBarKeyword%><%searchBarShowKeyword%>
                 :loading="loading"
                 keyword-placeholder="<%keywordPlaceholder%>"
                 @refresh="load"
@@ -46,7 +46,7 @@ const onSaved = () => {
 <%columns%>
         <el-table-column label="操作" fixed="right" width="140">
             <template #default="{ row }">
-                <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />
+                <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.<%pk%>)" />
                 <el-button v-auth="'del'" title="删除" plain type="danger" :icon="Delete" @click="clickDel(row)" />
             </template>
         </el-table-column>

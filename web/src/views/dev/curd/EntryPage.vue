@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Document, DocumentCopy, Plus } from '@element-plus/icons-vue'
+import { Document, DocumentCopy, Plus } from '@element-plus/icons-vue';
 
 const emit = defineEmits<{
     history: []

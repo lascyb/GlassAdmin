@@ -53,10 +53,8 @@ class <%entity%> extends AdminController
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $id = (int) $request->get('id', 0);
-        if ($id <= 0) {
-            return $this->fail(400, 'id 无效');
-        }
+        <%pkParse%>
+<%pkInvalid%>
         $row = <%readQuery%>;
         if (!$row) {
             return $this->fail(404, '不存在');
@@ -81,9 +79,15 @@ class <%entity%> extends AdminController
             return $this->fail(400, $e->getError() ?: $e->getMessage());
         }
 <%createManyBefore%>
+        $payload = $this->buildPayload($data);
+<%autoFillOnCreate%>
         $m = new <%modelAlias%>();
-        $m->save($this->buildPayload($data));
-        $id = (int) $m->getAttr('id');
+        if ($payload === []) {
+            $m->save(['<%pk%>' => null]);
+        } else {
+            $m->save($payload);
+        }
+        $id = <%pkGetAttr%>;
 <%createManyAfter%>
         return $this->ok(['id' => $id]);
     }
@@ -96,10 +100,8 @@ class <%entity%> extends AdminController
         if (!$request->isPut()) {
             return $this->fail(405, '仅支持 PUT');
         }
-        $id = (int) $request->get('id', 0);
-        if ($id <= 0) {
-            return $this->fail(400, 'id 无效');
-        }
+        <%pkParse%>
+<%pkInvalid%>
         $row = <%modelAlias%>::find($id);
         if (!$row) {
             return $this->fail(404, '不存在');
@@ -129,10 +131,8 @@ class <%entity%> extends AdminController
         if (!$request->isDelete()) {
             return $this->fail(405, '仅支持 DELETE');
         }
-        $id = (int) $request->get('id', 0);
-        if ($id <= 0) {
-            return $this->fail(400, 'id 无效');
-        }
+        <%pkParse%>
+<%pkInvalid%>
         $row = <%modelAlias%>::find($id);
         if (!$row) {
             return $this->fail(404, '不存在');
@@ -164,15 +164,5 @@ class <%entity%> extends AdminController
         }
 
         return $payload;
-    }
-<%manyHelpers%><%jsonHelper%>
-    /**
-     * nullableString 去空白后空串转 null
-     */
-    private function nullableString(mixed $value): ?string
-    {
-        $s = trim((string) $value);
-
-        return $s === '' ? null : $s;
     }
 }

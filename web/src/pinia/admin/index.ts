@@ -21,8 +21,7 @@ export type Admin = {
 /**
  * useAdmin 登录态唯一入口。
  * remember/user 由本 store 持久化（默认 localStorage）；
- * token 拆分到 admin_token_session / admin_token_local，由 remember 决定使用哪一侧；
- * afterHydrate 校验 token 有效性，无 token 或已过期时清空 user/remember 与两侧 token。
+ * token 拆分到 admin_token_session / admin_token_local，由 remember 决定使用哪一侧。
  */
 export const useAdmin = defineStore('admin', () => {
     const tokenSession = useAdminTokenSession()
@@ -38,6 +37,7 @@ export const useAdmin = defineStore('admin', () => {
     const token = computed(() => activeTokenStore.value.token)
     const refreshToken = computed(() => activeTokenStore.value.refreshToken)
     const expireAt = computed(() => activeTokenStore.value.expireAt)
+    const refreshExpireAt = computed(() => activeTokenStore.value.refreshExpireAt)
     const tokenValid = computed(() => activeTokenStore.value.valid)
     const loggedIn = computed(() => !!data.value && tokenValid.value)
 
@@ -47,6 +47,7 @@ export const useAdmin = defineStore('admin', () => {
      * @param refreshToken 刷新令牌
      * @param admin 用户信息
      * @param expireAt access 过期秒级时间戳
+     * @param refreshExpireAt refresh 过期秒级时间戳
      * @param rememberLogin 是否勾选「记住我」
      */
     const init = (
@@ -54,12 +55,13 @@ export const useAdmin = defineStore('admin', () => {
         refreshToken: string,
         admin: Admin,
         expireAt: number,
+        refreshExpireAt: number,
         rememberLogin: boolean,
     ) => {
         const inactive = rememberLogin ? tokenSession : tokenLocal
         const target = rememberLogin ? tokenLocal : tokenSession
         inactive.clearToken()
-        target.setTokens(accessToken, refreshToken, expireAt)
+        target.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
         data.value = admin
         remember.value = rememberLogin
     }
@@ -92,6 +94,10 @@ export const useAdmin = defineStore('admin', () => {
         const store = activeTokenStore.value
         const rt = store.refreshToken
         if (!rt) return false
+        const now = Math.floor(Date.now() / 1000)
+        if (store.refreshExpireAt > 0 && store.refreshExpireAt <= now) {
+            return false
+        }
         const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
         const url = `${base}/Login/refresh`
         try {
@@ -104,13 +110,19 @@ export const useAdmin = defineStore('admin', () => {
                 access_token: string
                 refresh_token: string
                 expire_at: number
+                refresh_expire_at: number
                 user?: Admin
             }>
             const payload = unwrap(json)
-            if (!payload.access_token || !payload.refresh_token || !payload.expire_at) {
+            if (!payload.access_token || !payload.refresh_token || !payload.expire_at || !payload.refresh_expire_at) {
                 return false
             }
-            store.setTokens(payload.access_token, payload.refresh_token, payload.expire_at)
+            store.setTokens(
+                payload.access_token,
+                payload.refresh_token,
+                payload.expire_at,
+                payload.refresh_expire_at,
+            )
             if (payload.user) {
                 data.value = payload.user
             }
@@ -121,13 +133,14 @@ export const useAdmin = defineStore('admin', () => {
     }
 
     /**
-     * tryRefreshAccessTokenIfNeeded access 将过期或已过期且有 refresh 时尝试刷新
+     * tryRefreshAccessTokenIfNeeded access 将过期或已过期且 refresh 仍有效时尝试刷新
      */
     const tryRefreshAccessTokenIfNeeded = async (): Promise<void> => {
         const store = activeTokenStore.value
-        if (!store.token || !store.refreshToken) return
+        if (!store.refreshToken) return
         const now = Math.floor(Date.now() / 1000)
-        if (store.expireAt > now + 900) return
+        if (store.refreshExpireAt > 0 && store.refreshExpireAt <= now) return
+        if (store.token && store.expireAt > now + 900) return
         await tryRefreshAccessToken()
     }
 
@@ -135,6 +148,7 @@ export const useAdmin = defineStore('admin', () => {
         token,
         refreshToken,
         expireAt,
+        refreshExpireAt,
         tokenValid,
         data,
         remember,

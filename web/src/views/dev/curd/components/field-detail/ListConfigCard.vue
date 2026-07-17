@@ -1,190 +1,282 @@
 <script setup lang="ts">
-import { LIST_RENDER_TYPE_LABEL, type ListRenderType } from '@/crud/types'
-import { useDevCurd } from '@/pinia/dev/curd'
+import { useDevCurdField } from '@/pinia/dev/curdField'
+import type { ListRenderType, SearchRenderType } from '@/views/dev/curd/types'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
-import { detectControlIntent } from '../../fieldIntent'
-import { applyListRenderGuess, fillPivotDefaults } from '../../helpers'
+import { computed, ref, watch } from 'vue'
+import {
+    LIST_COLUMN_RENDER_GROUPS,
+    LIST_COLUMN_RENDER_OPTIONS,
+} from '../../constants/list-render'
+import {
+    SEARCH_CONTROL_GROUPS,
+    SEARCH_CONTROL_NEED_ENUM,
+    SEARCH_CONTROL_NEED_MATCH,
+    SEARCH_CONTROL_NEED_REMOTE,
+    SEARCH_CONTROL_OPTIONS,
+} from '../../constants/search-render'
+import { isRemoteField, listRenderNeedsEnum } from '../../fieldExt'
+import { inferSearchRender } from '../../helpers'
 import InlineOptionsEditor from '../InlineOptionsEditor.vue'
-import SearchConfigCard from './SearchConfigCard.vue'
+import RemoteConfigDialog from '../RemoteConfigDialog.vue'
 
-const store = useDevCurd()
-const { config, selectedField: field } = storeToRefs(store)
+const fieldStore = useDevCurdField()
+const { selectedField: field, hasList } = storeToRefs(fieldStore)
 
-/** hasList 是否显示列表列 */
-const hasList = computed({
-    get: () => !!field.value?.list,
-    set: (v: boolean) => {
-        if (!field.value) return
-        if (v) {
-            field.value.list = field.value.list ?? { render: 'text', minWidth: 120 }
-        } else {
-            delete field.value.list
-        }
+const renderValueSet = new Set(LIST_COLUMN_RENDER_OPTIONS.map((o) => o.value))
+const controlValueSet = new Set(SEARCH_CONTROL_OPTIONS.map((o) => o.value))
+const searchEnumNeedSet = new Set<string>(SEARCH_CONTROL_NEED_ENUM)
+const searchRemoteNeedSet = new Set<string>(SEARCH_CONTROL_NEED_REMOTE)
+const matchControlSet = new Set<string>(SEARCH_CONTROL_NEED_MATCH)
+
+const enumVisible = ref(false)
+const remoteVisible = ref(false)
+
+/** keywordDisabled 远程字段不允许关键词搜索 */
+const keywordDisabled = computed(() => isRemoteField(field.value))
+
+/** clearRemoteKeyword 远程字段强制关闭关键词搜索 */
+const clearRemoteKeyword = () => {
+    const f = field.value
+    if (!f || !isRemoteField(f) || f.search.keyword !== true) return
+    const advanced = f.search.advanced === true
+    fieldStore.syncSearchFlags(false, advanced)
+}
+
+watch(field, clearRemoteKeyword, { immediate: true, deep: true })
+
+/** ensureSearchMatch 需要匹配方式时默认 fuzzy */
+const ensureSearchMatch = (render: string) => {
+    if (!field.value || !matchControlSet.has(render)) return
+    if (!field.value.search.match) field.value.search.match = 'fuzzy'
+}
+
+/** clearSearchMatch 清除匹配方式 */
+const clearSearchMatch = () => {
+    if (field.value?.search.match) delete field.value.search.match
+}
+
+/** listRenderDisplay 列渲染（仅展示契约内选项） */
+const listRenderDisplay = computed((): string | undefined => {
+    const render = field.value?.list.render
+    return render && renderValueSet.has(render) ? render : undefined
+})
+
+/** searchAdvanced 是否启用高级搜索 */
+const searchAdvanced = computed(() => field.value?.search.advanced === true)
+
+/** searchControlDisplay 高级搜索控件（schema.render 或推断值） */
+const searchControlDisplay = computed((): string | undefined => {
+    if (!field.value || !searchAdvanced.value) return undefined
+    const sr = field.value.search.render ?? inferSearchRender(field.value)
+    return sr && controlValueSet.has(sr) ? sr : undefined
+})
+
+const showSearchMatch = computed(
+    () => searchAdvanced.value && !!searchControlDisplay.value && matchControlSet.has(searchControlDisplay.value),
+)
+
+/** searchMatch 文本匹配方式 {fuzzy:模糊,exact:精确} */
+const searchMatch = computed({
+    get: (): 'fuzzy' | 'exact' => field.value?.search.match ?? 'fuzzy',
+    set: (v: 'fuzzy' | 'exact') => {
+        if (field.value) field.value.search.match = v
     },
 })
 
-/** onListRenderChange 切换列表渲染并推测填充搜索/表单 */
-const onListRenderChange = (render: ListRenderType) => {
-    if (!field.value) return
-    if (!field.value.list) field.value.list = { render, minWidth: 120 }
-    else field.value.list.render = render
-    applyListRenderGuess(field.value, render)
+/** showListEnumEdit 当前列渲染是否需要编辑枚举（远程 tag/tags 不需要） */
+const showListEnumEdit = computed(
+    () => !!listRenderDisplay.value && listRenderNeedsEnum(field.value, listRenderDisplay.value),
+)
+
+/** showSearchEnumEdit 当前搜索控件是否需要编辑枚举 */
+const showSearchEnumEdit = computed(
+    () => !!searchControlDisplay.value && searchEnumNeedSet.has(searchControlDisplay.value),
+)
+
+/** showSearchRemoteEdit 当前搜索控件是否需要编辑远程 */
+const showSearchRemoteEdit = computed(
+    () => !!searchControlDisplay.value && searchRemoteNeedSet.has(searchControlDisplay.value),
+)
+
+/** onListRenderChange 写回 list.render */
+const onListRenderChange = (v: string | undefined) => {
+    if (!v || !renderValueSet.has(v)) return
+    fieldStore.setListRender(v as ListRenderType)
 }
 
-/** intent 当前字段类型 */
-const intent = computed(() => (field.value ? detectControlIntent(field.value) : 'text'))
+/** onKeywordChange 切换关键词搜索 */
+const onKeywordChange = (enabled: boolean) => {
+    if (!field.value || isRemoteField(field.value)) return
+    const advanced = field.value.search.advanced === true
+    if (!enabled && !advanced) {
+        fieldStore.disableSearch()
+        clearSearchMatch()
+        return
+    }
+    fieldStore.syncSearchFlags(enabled, advanced)
+}
 
-/** showEnum 枚举配套区 */
-const showEnum = computed(() => intent.value === 'status' || intent.value === 'select')
+/** onAdvancedChange 切换高级搜索 */
+const onAdvancedChange = (enabled: boolean) => {
+    if (!field.value) return
+    const keyword = isRemoteField(field.value) ? false : field.value.search.keyword === true
+    if (!enabled && !keyword) {
+        fieldStore.disableSearch()
+        fieldStore.setSearchRender('')
+        clearSearchMatch()
+        return
+    }
+    fieldStore.syncSearchFlags(keyword, enabled)
+    if (enabled) {
+        const render = field.value.search.render ?? inferSearchRender(field.value)
+        if (controlValueSet.has(render)) {
+            fieldStore.setSearchRender(render as SearchRenderType)
+            ensureSearchMatch(render)
+        }
+        return
+    }
+    fieldStore.setSearchRender('')
+    clearSearchMatch()
+}
 
-/** showRemote 远程数据源 */
-const showRemote = computed(() => intent.value === 'remote' || intent.value === 'remote_multi')
-
-/** showNumber 数字 min/max */
-const showNumber = computed(() => intent.value === 'number' || intent.value === 'amount')
-
-/** showPivot 多对多中间表 */
-const showPivot = computed(() => intent.value === 'remote_multi')
-
-/** formCfg 表单对象（启用时） */
-const formCfg = computed(() => {
-    const f = field.value?.form
-    if (!f || f === false) return null
-    return f
-})
-
-/** onFillPivot 中间表空时自动填充 */
-const onFillPivot = () => {
-    if (field.value) fillPivotDefaults(field.value, config.value)
+/** onSearchControlChange 写回 search.render */
+const onSearchControlChange = (v: string | undefined) => {
+    if (!v) {
+        fieldStore.setSearchRender('')
+        clearSearchMatch()
+        return
+    }
+    if (!controlValueSet.has(v) || !field.value) return
+    const keyword = isRemoteField(field.value) ? false : field.value.search.keyword === true
+    fieldStore.syncSearchFlags(keyword, true)
+    fieldStore.setSearchRender(v as SearchRenderType)
+    if (matchControlSet.has(v)) ensureSearchMatch(v)
+    else clearSearchMatch()
 }
 </script>
 
 <template>
-    <el-card v-if="field" shadow="never" class="!border">
+    <el-card v-if="field" shadow="never">
         <template #header>
-            <span class="text-sm font-medium">列表相关</span>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <span class="text-sm font-medium shrink-0">列表渲染 / 搜索配置</span>
+                <el-switch v-model="hasList" active-text="显示列" inactive-text="不显示列" />
+            </div>
         </template>
+
         <div class="space-y-4">
-            <!-- 列表渲染 -->
             <section class="space-y-2">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium text-gray-500">列表渲染</span>
-                    <el-switch v-model="hasList" active-text="显示列" size="small" />
-                </div>
-                <el-form v-if="field.list" label-width="80px" size="small">
+                <el-form size="small">
                     <el-form-item label="列渲染" required>
-                        <el-select
-                            :model-value="field.list.render ?? 'text'"
-                            class="!w-52 max-w-full"
-                            @update:model-value="onListRenderChange"
-                        >
-                            <el-option v-for="(label, value) in LIST_RENDER_TYPE_LABEL" :key="value" :label="label" :value="value"/>
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="列宽">
-                        <el-input
-                            class="!w-40 max-w-full"
-                            :model-value="field.list.width == null ? '' : String(field.list.width)"
-                            placeholder="列宽"
-                            @update:model-value="
-                                (v: string) => {
-                                    if (!field?.list) return
-                                    if (v === '') delete field.list.width
-                                    else field.list.width = /^\d+$/.test(v) ? Number(v) : v
-                                }
-                            "
-                        />
-                    </el-form-item>
-                    <el-form-item label="最小列宽">
-                        <el-input
-                            class="!w-40 max-w-full"
-                            :model-value="field.list.minWidth == null ? '' : String(field.list.minWidth)"
-                            placeholder="最小列宽"
-                            @update:model-value="
-                                (v: string) => {
-                                    if (!field?.list) return
-                                    if (v === '') delete field.list.minWidth
-                                    else field.list.minWidth = /^\d+$/.test(v) ? Number(v) : v
-                                }
-                            "
-                        />
-                    </el-form-item>
-                    <el-form-item label="关联展示">
-                        <el-input
-                            v-model="field.list.relationProp"
-                            class="!w-52 max-w-full"
-                            placeholder="如 category.name"
-                        />
-                    </el-form-item>
-                    <el-form-item label="状态映射">
-                        <el-input
-                            v-model="field.list.statusMapKey"
-                            class="!w-52 max-w-full"
-                            placeholder="STATUS_MAP"
-                        />
-                    </el-form-item>
-                    <el-form-item label="选项键">
-                        <el-input
-                            v-model="field.list.optionsKey"
-                            class="!w-52 max-w-full"
-                            placeholder="静态选项键"
-                        />
-                    </el-form-item>
-                </el-form>
-            </section>
-
-            <!-- 配套 -->
-            <section v-if="showEnum || showRemote || showNumber || showPivot" class="space-y-2">
-                <div class="text-xs font-medium text-gray-500">配套</div>
-
-                <InlineOptionsEditor v-if="showEnum" />
-
-                <el-form v-if="showRemote && formCfg" label-width="80px" size="small">
-                    <el-form-item label="数据源" required>
-                        <el-input
-                            v-model="formCfg.optionsKey"
-                            class="!w-72 max-w-full"
-                            placeholder="如 example.Category/list"
-                        />
-                        <div class="text-xs text-gray-400 mt-1">格式：模块.实体/list，供 ga-select-remote</div>
-                    </el-form-item>
-                </el-form>
-
-                <el-form v-if="showNumber && formCfg" label-width="80px" size="small">
-                    <el-form-item label="最小值">
-                        <el-input-number v-model="formCfg.numberMin" controls-position="right" class="!w-36" />
-                    </el-form-item>
-                    <el-form-item label="最大值">
-                        <el-input-number v-model="formCfg.numberMax" controls-position="right" class="!w-36" />
-                    </el-form-item>
-                    <el-form-item v-if="intent === 'amount'" label="步进">
-                        <el-input-number v-model="formCfg.numberStep" controls-position="right" class="!w-36" />
-                    </el-form-item>
-                </el-form>
-
-                <el-form v-if="showPivot && field.relation" label-width="80px" size="small">
-                    <el-form-item label="中间表">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <el-input
-                                v-model="field.relation.pivotTable"
-                                class="!w-56 max-w-full"
-                                placeholder="多对多中间表"
-                            />
-                            <el-button size="small" @click="onFillPivot">自动填充</el-button>
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <el-select
+                                :model-value="listRenderDisplay"
+                                class="!w-20"
+                                clearable
+                                placeholder="列渲染"
+                                popper-class="field-type-select-popper"
+                                @update:model-value="onListRenderChange"
+                            >
+                                <el-option-group
+                                    v-for="g in LIST_COLUMN_RENDER_GROUPS"
+                                    :key="g.label"
+                                    :label="g.label"
+                                >
+                                    <el-option
+                                        v-for="o in g.options"
+                                        :key="o.value"
+                                        :label="o.label"
+                                        :value="o.value"
+                                    />
+                                </el-option-group>
+                            </el-select>
+                            <el-button
+                                v-if="showListEnumEdit"
+                                size="small"
+                                type="primary"
+                                link
+                                @click="enumVisible = true"
+                            >
+                                编辑枚举
+                            </el-button>
                         </div>
                     </el-form-item>
-                    <el-form-item label="本表外键">
-                        <el-input v-model="field.relation.foreignKey" class="!w-56 max-w-full" />
+                    <el-form-item label="搜索配置">
+                        <el-checkbox
+                                :model-value="!keywordDisabled && field.search.keyword === true"
+                                :disabled="keywordDisabled"
+                                @update:model-value="onKeywordChange"
+                            >
+                                启用关键词搜索
+                        </el-checkbox>
+                        <el-checkbox
+                            :model-value="field.search.advanced === true"
+                            @update:model-value="onAdvancedChange"
+                        >
+                                启用高级搜索
+                        </el-checkbox>
                     </el-form-item>
-                    <el-form-item label="关联外键">
-                        <el-input v-model="field.relation.relatedKey" class="!w-56 max-w-full" />
+                    <el-form-item v-if="searchAdvanced"  label="搜索控件" >
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <el-select
+                                :model-value="searchControlDisplay"
+                                class="!w-25 max-w-full"
+                                clearable
+                                placeholder="搜索控件"
+                                popper-class="field-type-select-popper"
+                                @update:model-value="onSearchControlChange"
+                            >
+                                <el-option-group
+                                    v-for="g in SEARCH_CONTROL_GROUPS"
+                                    :key="g.label"
+                                    :label="g.label"
+                                >
+                                    <el-option
+                                        v-for="o in g.options"
+                                        :key="o.value"
+                                        :label="o.label"
+                                        :value="o.value"
+                                    />
+                                </el-option-group>
+                            </el-select>
+                            <el-button
+                                v-if="showSearchEnumEdit"
+                                size="small"
+                                type="primary"
+                                link
+                                @click="enumVisible = true"
+                            >
+                                编辑枚举
+                            </el-button>
+                            <el-button
+                                v-if="showSearchRemoteEdit"
+                                size="small"
+                                type="primary"
+                                link
+                                @click="remoteVisible = true"
+                            >
+                                编辑远程
+                            </el-button>
+                            <el-radio-group v-if="showSearchMatch" v-model="searchMatch" size="small">
+                                <el-radio value="fuzzy">模糊搜索</el-radio>
+                                <el-radio value="exact">精确搜索</el-radio>
+                            </el-radio-group>
+                        </div>
                     </el-form-item>
                 </el-form>
             </section>
-
-            <!-- 搜索 -->
-            <SearchConfigCard />
         </div>
+
+        <el-dialog
+            v-model="enumVisible"
+            title="编辑枚举选项"
+            width="560px"
+            append-to-body
+            destroy-on-close
+        >
+            <InlineOptionsEditor />
+        </el-dialog>
+
+        <RemoteConfigDialog v-model="remoteVisible" />
     </el-card>
 </template>
