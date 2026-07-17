@@ -1,2 +1,2 @@
 
-const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === value)?.label ?? value
+const extraLabel = (value: string) => <%optKey%>.find((o) => o.value === value)?.label ?? value

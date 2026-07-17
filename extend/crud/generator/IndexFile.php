@@ -22,7 +22,6 @@ class IndexFile
         $needStatus = false;
         $needFormat = false;
         $needStorage = false;
-        $needExtraLabel = false;
         foreach ($ctx->listFields as $f) {
             $lr = Context::listRender($f);
             $list = Context::listConfig($f) ?? [];
@@ -35,10 +34,12 @@ class IndexFile
             if ($lr === 'image') {
                 $needStorage = true;
             }
-            if ($lr === 'tags' && Context::columnType($f) === 'json') {
-                $needExtraLabel = true;
-            }
         }
+
+        $keywordSources = $ctx->keywordSourceFields();
+        $vueImports = $keywordSources !== []
+            ? "import { computed, reactive, ref } from 'vue'"
+            : "import { computed, reactive } from 'vue'";
 
         $imports = [
             "import type { {$ctx->entity}Row } from '@/apis/{$ctx->module}/{$ctx->entityFile}'",
@@ -49,7 +50,7 @@ class IndexFile
             "import { usePaginatedList } from '@/composables/usePaginatedList'",
             "import EditView from '@/views/{$ctx->module}/{$ctx->entityFile}/edit.vue'",
             "import { Delete, Edit, Plus } from '@element-plus/icons-vue'",
-            "import { computed, reactive, ref } from 'vue'",
+            $vueImports,
         ];
         if ($needRemote) {
             $imports[] = "import GaSelectRemote from '@/components/ga-select-remote/index.vue'";
@@ -68,7 +69,6 @@ class IndexFile
         $advLines = [];
         $resetLines = [];
         $queryLines = [];
-        $keywordSources = $ctx->keywordSourceFields();
         if ($keywordSources !== []) {
             $queryLines[] = '    keyword: keyword.value.trim() || undefined,';
         }
@@ -154,7 +154,7 @@ class IndexFile
                 : Template::render('index/reset_fn.ts.tpl', [
                     'resetLines' => implode("\n", $resetLines),
                 ]),
-            'extraLabelFn' => $needExtraLabel ? Template::render('index/extra_label.ts.tpl') : '',
+            'extraLabelFn' => '',
             'searchBarKeyword' => $keywordSources !== [] ? "\n                v-model:keyword=\"keyword\"" : '',
             'searchBarShowKeyword' => $keywordSources !== [] ? '' : "\n                :show-keyword=\"false\"",
             'keywordPlaceholder' => $keywordPlaceholder,
@@ -257,7 +257,7 @@ class IndexFile
             'color' => Template::render('index/col/color.vue.tpl', $base) . "\n",
             'image' => Template::render('index/col/image.vue.tpl', $base) . "\n",
             'datetime' => Template::render('index/col/datetime.vue.tpl', $base) . "\n",
-            'tags' => Template::render('index/col/tags.vue.tpl', $base) . "\n",
+            'tags' => Template::render('index/col/tags.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
             'number' => Template::render('index/col/number.vue.tpl', $base) . "\n",
             default => Template::render('index/col/prop.vue.tpl', array_merge($base, [
                 'overflow' => ((isset($list['minWidth']) || $lr === 'text') && $prop !== 'id')

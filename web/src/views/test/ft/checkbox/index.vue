@@ -5,7 +5,7 @@ import GaSearchBar from '@/components/ga-search-bar/index.vue'
 import GaTablePage from '@/components/ga-table-page/index.vue'
 import type { CheckboxRow } from '@/apis/test/ft/checkbox'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 import { FLAGS_OPTIONS } from '@/views/test/ft/checkbox/constants'
@@ -42,7 +42,7 @@ const resetAdvanced = () => {
     advanced.flags = ''
 }
 
-const extraLabel = (value: string) => EXTRA_OPTIONS.find((o) => o.value === value)?.label ?? value
+const extraLabel = (value: string) => FLAGS_OPTIONS.find((o) => o.value === value)?.label ?? value
 </script>
 
 <template>

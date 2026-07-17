@@ -110,6 +110,14 @@ abstract class BaseController
     }
 
     /**
+     * rsaKeyInvalid RSA 密钥无效或已过期
+     */
+    protected function rsaKeyInvalid(string $msg = '密钥无效或已过期', mixed $data = null): Response
+    {
+        return ApiResponse::rsaKeyInvalid($msg, $data);
+    }
+
+    /**
      * paginate 分页响应，委托 ApiResponse::paginate
      */
     protected function paginate(array $list, int $total, int $page, int $limit): Response

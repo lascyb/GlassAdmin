@@ -1,4 +1,4 @@
-import { getData, postFormDataData, putData } from '@/apis/http'
+import { getData, postFormDataData, putData, type HttpRequestOptions } from '@/apis/http'
 
 /** AdminRoleBrief 用户绑定的角色 */
 export type AdminRoleBrief = {
@@ -79,13 +79,13 @@ export const switchRoles = async (role_ids: number[]) => {
 }
 
 /**
- * updateProfile 更新昵称、可选密码（password 为 RSA 密文时需 headers）
+ * updateProfile 更新昵称、可选密码（password 为 RSA 密文时需 headers / rsaRebuild）
  */
 export const updateProfile = async (
     payload: { nickname?: string; password?: string },
-    headers?: { 'X-RSA-Serial': string },
+    options?: HttpRequestOptions,
 ) => {
-    return putData<null>('account.Profile/update', payload, headers ? { headers } : undefined)
+    return putData<null>('account.Profile/update', payload, options)
 }
 
 /**

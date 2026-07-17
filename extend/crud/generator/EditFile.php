@@ -85,7 +85,7 @@ class EditFile
                     : "            {$prop}: form.{$prop},";
             } elseif (Context::isUnixDatetime($f) || in_array($render, ['datetime', 'time'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? null,";
-                $payloadLines[] = "            {$prop}: form.{$prop},";
+                $payloadLines[] = "            {$prop}: form.{$prop} ?? undefined,";
             } elseif ($ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? [],";
                 $payloadLines[] = "            {$prop}: form.{$prop},";

@@ -115,4 +115,12 @@ final class ApiResponse
     {
         return self::fail(500, $msg, $data);
     }
+
+    /**
+     * rsaKeyInvalid RSA 密钥无效或已过期（供前端识别并无感重试一次）
+     */
+    public static function rsaKeyInvalid(string $msg = '密钥无效或已过期', mixed $data = null): Response
+    {
+        return self::fail(40001, $msg, $data);
+    }
 }

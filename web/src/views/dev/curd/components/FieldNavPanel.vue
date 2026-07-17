@@ -6,7 +6,7 @@ import { useDevCurdField } from '@/pinia/dev/curdField'
 import { Delete, Plus, Rank } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import Sortable from 'sortablejs'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
     FIELD_TYPE_GROUPS,
     FIELD_TYPE_NEED_ENUM,
@@ -25,6 +25,13 @@ const { selectedIndex } = storeToRefs(fieldStore)
 
 const enumNeedSet = new Set<string>(FIELD_TYPE_NEED_ENUM)
 const remoteNeedSet = new Set<string>(FIELD_TYPE_NEED_REMOTE)
+
+/** keywordFields 启用关键词搜索的字段（展示于模块 header） */
+const keywordFields = computed(() =>
+    config.value.fields
+        .map((field, index) => ({ field, index }))
+        .filter(({ field }) => field.search?.keyword === true && field.search?.enabled !== false),
+)
 
 const listRef = ref<HTMLElement | null>(null)
 let sortable: Sortable | null = null
@@ -136,7 +143,22 @@ const openRemoteDialog = (index: number) => {
 <template>
     <el-card shadow="never" class="!border h-full flex flex-col min-h-0">
         <div class="flex items-center justify-between mb-2 gap-2">
-            <div class="text-sm font-medium shrink-0">字段列表</div>
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+                <div class="text-sm font-medium shrink-0">字段列表</div>
+                <div v-if="keywordFields.length" class="keyword-bar">
+                    <span class="keyword-bar__label">关键词</span>
+                    <el-tag
+                        v-for="{ field, index } in keywordFields"
+                        :key="fieldRowKey(field)"
+                        size="small"
+                        type="info"
+                        class="cursor-pointer"
+                        @click="fieldStore.selectField(index)"
+                    >
+                        {{ field.label || field.prop }}
+                    </el-tag>
+                </div>
+            </div>
             <el-button size="small" type="primary" :icon="Plus" @click="openAddDialog">添加</el-button>
         </div>
 
@@ -249,7 +271,7 @@ const openRemoteDialog = (index: number) => {
                         </td>
                         <td>
                             <el-checkbox
-                                :model-value="isLayerEnabled(field.search)"
+                                :model-value="field.search.advanced === true"
                                 @change="() => fieldStore.toggleSearchAt(index)"
                             />
                         </td>
@@ -297,6 +319,18 @@ const openRemoteDialog = (index: number) => {
 </template>
 
 <style scoped>
+.keyword-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+.keyword-bar__label {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    flex-shrink: 0;
+}
 .add-type-panel {
     display: flex;
     flex-direction: column;
@@ -348,6 +382,9 @@ const openRemoteDialog = (index: number) => {
 }
 .field-table .col-flag {
     width: 48px;
+}
+.field-table .col-flag {
+  width: 48px;
 }
 .field-table .col-action {
     width: 96px;

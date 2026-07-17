@@ -50,7 +50,7 @@ const submit = async () => {
     saving.value = true
     try {
         const payload = {
-            publish_time: form.publish_time,
+            publish_time: form.publish_time ?? undefined,
         }
         if (form.id) {
             await apis.update(form.id, payload)

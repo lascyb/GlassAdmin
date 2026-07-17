@@ -44,7 +44,7 @@ class Login extends BaseController
         $username = trim((string)RsaKeyService::decryptBySerial($serial, $encryptedUsername));
         $password = (string)RsaKeyService::decryptBySerial($serial, $encryptedPassword);
         if ($username === '' || $password === '') {
-            return $this->fail(400, '密钥无效或已过期');
+            return $this->rsaKeyInvalid();
         }
         /** @var Admin|null $user */
         $user = Admin::where('username', $username)->find();

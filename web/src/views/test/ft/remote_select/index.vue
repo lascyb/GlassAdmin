@@ -6,7 +6,7 @@ import GaSelectRemote from '@/components/ga-select-remote/index.vue'
 import GaTablePage from '@/components/ga-table-page/index.vue'
 import type { RemoteSelectRow } from '@/apis/test/ft/remote_select'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 

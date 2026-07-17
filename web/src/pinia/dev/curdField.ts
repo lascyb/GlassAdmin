@@ -135,17 +135,22 @@ export const useDevCurdField = defineStore('dev_curd_field', () => {
         }
     }
 
-    /** setSearchEnabledAt 设置搜索层 enabled */
-    const setSearchEnabledAt = (index: number, enabled: boolean) => {
+    /** setAdvancedAt 设置高级搜索开关（列表「搜索」列） */
+    const setAdvancedAt = (index: number, advanced: boolean) => {
         const field = fieldAt(index)
         if (!field) return
         if (!field.search || typeof field.search !== 'object') {
             field.search = { keyword: false, advanced: false }
         }
-        field.search.enabled = enabled
-        if (enabled && !hasSearchParticipation(field.search)) {
-            field.search.keyword = true
+        const keyword = field.search.keyword === true
+        if (!advanced && !keyword) {
+            field.search.enabled = false
+            field.search.keyword = false
+            field.search.advanced = false
+            return
         }
+        field.search.advanced = advanced
+        field.search.enabled = keyword || advanced
     }
 
     /** setFormEnabledAt 设置表单层 enabled */
@@ -168,11 +173,11 @@ export const useDevCurdField = defineStore('dev_curd_field', () => {
         setListEnabledAt(index, !isLayerEnabled(field.list))
     }
 
-    /** toggleSearchAt 指定字段切换搜索 enabled */
+    /** toggleSearchAt 指定字段切换高级搜索 */
     const toggleSearchAt = (index: number) => {
         const field = fieldAt(index)
         if (!field) return
-        setSearchEnabledAt(index, !isLayerEnabled(field.search))
+        setAdvancedAt(index, field.search?.advanced !== true)
     }
 
     /** toggleFormAt 指定字段切换表单 enabled */

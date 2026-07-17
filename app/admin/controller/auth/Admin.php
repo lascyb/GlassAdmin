@@ -137,7 +137,7 @@ class Admin extends AdminController
         }
         $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
         if ($plain === null || $plain === '') {
-            return $this->fail(400, '密码解密失败');
+            return $this->rsaKeyInvalid();
         }
         $err = $this->validatePlainPassword($plain);
         if ($err !== null) {
@@ -203,7 +203,7 @@ class Admin extends AdminController
             }
             $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
             if ($plain === null || $plain === '') {
-                return $this->fail(400, '密码解密失败');
+                return $this->rsaKeyInvalid();
             }
             $err = $this->validatePlainPassword($plain);
             if ($err !== null) {

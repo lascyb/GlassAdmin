@@ -5,7 +5,7 @@ import GaSearchBar from '@/components/ga-search-bar/index.vue'
 import GaTablePage from '@/components/ga-table-page/index.vue'
 import type { TextareaRow } from '@/apis/test/ft/textarea'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 

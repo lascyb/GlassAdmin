@@ -1,4 +1,4 @@
-import { delData, getData, postData, putData } from '@/apis/http'
+import { delData, getData, postData, putData, type HttpRequestOptions } from '@/apis/http'
 
 /** AdminRoleBrief 管理员绑定的角色摘要 */
 export type AdminRoleBrief = {
@@ -55,9 +55,9 @@ export const fetchRead = async (id: number) => {
  */
 export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
-    headers: { 'X-RSA-Serial': string },
+    options: HttpRequestOptions & { headers: { 'X-RSA-Serial': string } },
 ) => {
-    return postData<{ id: number }>('auth.Admin/save', payload, { headers })
+    return postData<{ id: number }>('auth.Admin/save', payload, options)
 }
 
 /**
@@ -66,12 +66,12 @@ export const saveAdmin = async (
 export const updateAdmin = async (
     id: number,
     payload: { nickname?: string; role_ids: number[]; status: number; password?: string },
-    headers?: { 'X-RSA-Serial': string },
+    options?: HttpRequestOptions,
 ) => {
     return putData<null>(
         'auth.Admin/update?id=' + id,
         payload,
-        headers ? { headers } : undefined,
+        options,
     )
 }
 

@@ -60,7 +60,7 @@ class Helper
             return 'string[] | null';
         }
         if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal'], true)
-            || in_array($render, ['number', 'switch', 'radio', 'select', 'datetime', 'remote_select'], true)
+            || in_array($render, ['number', 'switch', 'radio', 'select', 'datetime', 'time', 'remote_select'], true)
             || Context::isUnixDatetime($f)
         ) {
             return 'number';

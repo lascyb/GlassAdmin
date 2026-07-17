@@ -8,6 +8,9 @@ export type RsaPublicKeyInfo = {
     expireAt: number
 }
 
+/** SKIP_SECONDS 与后端 RsaKeyService 一致，距过期预留秒数 */
+const SKIP_SECONDS = 600
+
 export const useSecurityRsa = defineStore('security_rsa', () => {
     const rsaPublicKey = ref<RsaPublicKeyInfo | null>(null)
     let pendingRsaPublicKeyRequest: Promise<RsaPublicKeyInfo | null> | null = null
@@ -20,8 +23,14 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         rsaPublicKey.value = null
     }
 
+    /** forceRefreshPublicKey 清空缓存并重新拉取公钥（40001 重试用） */
+    const forceRefreshPublicKey = async (): Promise<RsaPublicKeyInfo | null> => {
+        clearRsaPublicKey()
+        return await ensureRsaPublicKey()
+    }
+
     const isExpired = (expireAt: number): boolean => {
-        return Math.floor(Date.now() / 1000) >= expireAt
+        return Math.floor(Date.now() / 1000) >= expireAt - SKIP_SECONDS
     }
 
     const ensureRsaPublicKey = async (): Promise<RsaPublicKeyInfo | null> => {
@@ -148,6 +157,7 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         rsaPublicKey,
         setRsaPublicKey,
         clearRsaPublicKey,
+        forceRefreshPublicKey,
         isExpired,
         ensureRsaPublicKey,
         getPublicKeyBySerial,

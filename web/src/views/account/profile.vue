@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import * as accountApi from '@/apis/account'
+import { createRsaRebuild } from '@/apis/http'
 import { useAdmin } from '@/pinia/admin'
+import { useSecurityRsa } from '@/pinia/security/rsa'
 import GaPasswordInput from '@/components/ga-password-input/index.vue'
 import GaUploadAvatar from '@/components/ga-upload-avatar/index.vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue'
 
 const admin = useAdmin()
+const securityRsa = useSecurityRsa()
 const passwordRef = useTemplateRef<InstanceType<typeof GaPasswordInput>>('passwordRef')
 
 const loading = ref(false)
@@ -48,20 +51,30 @@ const onAvatarSuccess = (avatar: string) => {
 const submit = async () => {
     saving.value = true
     try {
-        const body: { nickname: string; password?: string } = {
-            nickname: form.nickname.trim(),
+        const buildPayload = async () => {
+            const body: { nickname: string; password?: string } = {
+                nickname: form.nickname.trim(),
+            }
+            let headers: { 'X-RSA-Serial': string } | undefined
+            if (form.password) {
+                const enc = await passwordRef.value!.getEncryptedPayload()
+                if (enc.password) body.password = enc.password
+                headers = enc.headers
+            }
+            return { params: body, headers }
         }
-        let headers: { 'X-RSA-Serial': string } | undefined
-        if (form.password) {
-            const enc = await passwordRef.value!.getEncryptedPayload()
-            if (enc.password) body.password = enc.password
-            headers = enc.headers
-        }
-        await accountApi.updateProfile(body, headers)
+
+        const { params, headers } = await buildPayload()
+        await accountApi.updateProfile(params, {
+            headers,
+            rsaRebuild: form.password
+                ? createRsaRebuild(buildPayload, securityRsa.forceRefreshPublicKey)
+                : undefined,
+        })
         ElMessage.success('保存成功')
         form.password = ''
         if (admin.data) {
-            admin.data.nickname = body.nickname || admin.data.username
+            admin.data.nickname = params.nickname || admin.data.username
         }
         await load()
     } catch (e: unknown) {

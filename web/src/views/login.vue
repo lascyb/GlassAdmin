@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAdmin } from '@/pinia/admin'
 import { useSecurityRsa } from '@/pinia/security/rsa'
-import { ApiError, postData } from '@/apis/http'
+import { ApiError, createRsaRebuild, postData } from '@/apis/http'
 import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { reactive, ref } from 'vue'
@@ -69,8 +69,26 @@ const handlePasswordLogin = async () => {
   }
   logining.value = true
   try {
-    const { serial: rsaSerial, texts: [encryptedUsername,encryptedPassword] } = await securityRsa.encrypt(passwordForm.username, passwordForm.password)
-    if (!rsaSerial || !encryptedUsername || !encryptedPassword) {
+    const buildLoginPayload = async () => {
+      const { serial: rsaSerial, texts: [encryptedUsername, encryptedPassword] } =
+        await securityRsa.encrypt(passwordForm.username, passwordForm.password)
+      if (!rsaSerial || !encryptedUsername || !encryptedPassword) {
+        return null
+      }
+      return {
+        params: {
+          username: encryptedUsername,
+          password: encryptedPassword,
+          remember: passwordForm.remember,
+        },
+        headers: {
+          'X-RSA-Serial': rsaSerial,
+        },
+      }
+    }
+
+    const payload = await buildLoginPayload()
+    if (!payload) {
       ElMessage.error('获取登录公钥失败，请稍后重试')
       return
     }
@@ -81,14 +99,9 @@ const handlePasswordLogin = async () => {
       expire_at: number
       refresh_expire_at: number
       user: { id: number; username: string; nickname: string; avatar?: string | null; role_ids?: number[] }
-    }>('Login/password', {
-      username: encryptedUsername,
-      password: encryptedPassword,
-      remember: passwordForm.remember,
-    }, {
-      headers: {
-        'X-RSA-Serial': rsaSerial,
-      },
+    }>('Login/password', payload.params, {
+      headers: payload.headers,
+      rsaRebuild: createRsaRebuild(buildLoginPayload, securityRsa.forceRefreshPublicKey),
     })
 
     admin.init(

@@ -6,7 +6,7 @@ import type { NamedOption, NamedOptionGroup } from '../types/option'
 type FormRenderFormDefaults = Omit<FieldInferenceForm, 'render'>
 
 /** FormRenderDef 表单渲染项定义（契约 + UI） */
-type FormRenderDef = {
+export type FormRenderDef = {
     key?: string
     value: string
     label: string
@@ -59,8 +59,8 @@ const FORM_SCHEMA_DEFS = FORM_RENDER_DEFS.filter((d) => 'key' in d)
 const FORM_UI_DEFS = FORM_RENDER_DEFS.filter((d) => 'group' in d)
 
 /** formRenderDefOf 取表单控件完整定义 */
-export const formRenderDefOf = (render: FormRenderType) =>
-    FORM_SCHEMA_DEFS.find((d) => d.value === render)
+export const formRenderDefOf = (render: FormRenderType): FormRenderDef | undefined =>
+    FORM_SCHEMA_DEFS.find((d) => d.value === render) as FormRenderDef | undefined
 
 /** formDefaultsOf 取表单控件 form 层默认参数 */
 export const formDefaultsOf = (render: FormRenderType): FormRenderFormDefaults | undefined =>

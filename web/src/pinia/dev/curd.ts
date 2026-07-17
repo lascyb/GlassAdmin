@@ -1,6 +1,6 @@
 import type { GenerateResult } from '@/apis/dev/curd'
 import * as curdApi from '@/apis/dev/curd'
-import type { CrudFieldSchema, CrudGenerateConfig } from '@/views/dev/curd/types'
+import type { CrudGenerateConfig } from '@/views/dev/curd/types'
 import { useDevCurdField } from '@/pinia/dev/curdField'
 import { useDevCurdGlobal } from '@/pinia/dev/curdGlobal'
 import {
@@ -15,6 +15,9 @@ import { cloneConfig, emptyConfig, leafView, syncDerivedFields } from '@/views/d
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+
+const enumNeedSet = new Set<string>(FIELD_TYPE_NEED_ENUM)
+const remoteNeedSet = new Set<string>(FIELD_TYPE_NEED_REMOTE)
 
 type Step = 'entry' | 'build'
 
@@ -120,13 +123,13 @@ export const useDevCurd = defineStore('dev_curd', () => {
             if (!f.prop?.trim()) return '存在未填写字段名的项'
             if (!f.label?.trim()) return '存在未填写中文标签的项'
             const type = resolveFieldType(f)
-            if (type && FIELD_TYPE_NEED_REMOTE.includes(type)) {
+            if (type && remoteNeedSet.has(type)) {
                 const api = remoteApiOf(f)
                 if (!api) {
                     return `字段「${f.label || f.prop}」为远程控件，请填写数据源（如 test.ft.Text/list）`
                 }
             }
-            if (type && FIELD_TYPE_NEED_ENUM.includes(type)) {
+            if (type && enumNeedSet.has(type)) {
                 const optKey = enumKeyOf(f)
                 if (!optKey?.trim()) {
                     return `字段「${f.label || f.prop}」为枚举控件，请配置 options 键`
