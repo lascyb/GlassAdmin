@@ -59,16 +59,18 @@ class EditFile
 
             if ($relation === 'belongs_to') {
                 $method = Context::relationMethodName($f);
+                $labelField = Context::remoteLabelField($f);
                 $initVar = Context::toCamel($method) . 'Init';
-                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; name: string }> | undefined>()";
+                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; {$labelField}: string }> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
                 $assignLines[] = "                {$prop}: d.{$prop} ?? undefined,";
                 $initAssign[] = "            {$initVar}.value = d.{$method} ? [d.{$method}] : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop} ?? null,";
             } elseif ($relation === 'belongs_to_many') {
                 $method = Context::relationMethodName($f);
+                $labelField = Context::remoteLabelField($f);
                 $initVar = Context::toCamel($method) . 'Init';
-                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; name: string }> | undefined>()";
+                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; {$labelField}: string }> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
                 $assignLines[] = "                {$prop}: d.{$prop} ?? d.{$method}?.map((t) => t.id) ?? [],";
                 $initAssign[] = "            {$initVar}.value = d.{$method}?.length ? d.{$method} : undefined";

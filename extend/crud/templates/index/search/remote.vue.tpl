@@ -2,7 +2,7 @@
                         <ga-select-remote
                             v-model="advanced.<%prop%>"
                             :remote-url="'<%url%>'"
-                            :props="{ value: 'id', label: 'name' }"<%multiAttrs%>
+                            :props="{ value: '<%valueField%>', label: '<%labelField%>' }"<%multiAttrs%>
                             clearable
                             placeholder="<%placeholder%>"
                             class="<%className%>"

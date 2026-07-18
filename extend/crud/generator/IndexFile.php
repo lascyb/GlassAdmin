@@ -178,6 +178,8 @@ class IndexFile
                 'label' => $label,
                 'prop' => $prop,
                 'url' => $url,
+                'valueField' => Context::remoteValueField($f),
+                'labelField' => Context::remoteLabelField($f),
                 'multiAttrs' => $sr === 'remote_multi_select' ? "\n                            multiple\n                            collapse-tags" : '',
                 'placeholder' => Context::searchPlaceholder($f, $sr),
                 'className' => $sr === 'remote_multi_select' ? '!w-48' : '!w-40',
@@ -241,11 +243,13 @@ class IndexFile
         if ($relation === 'belongs_to') {
             return Template::render('index/col/belongs_to.vue.tpl', array_merge($base, [
                 'method' => Context::relationMethodName($f),
+                'labelField' => Context::remoteLabelField($f),
             ])) . "\n";
         }
         if ($relation === 'belongs_to_many') {
             return Template::render('index/col/belongs_to_many.vue.tpl', array_merge($base, [
                 'method' => Context::relationMethodName($f),
+                'labelField' => Context::remoteLabelField($f),
             ])) . "\n";
         }
 

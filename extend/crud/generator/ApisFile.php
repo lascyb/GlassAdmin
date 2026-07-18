@@ -44,13 +44,15 @@ class ApisFile
             }
             if ($relation === 'belongs_to') {
                 $method = Context::relationMethodName($f);
+                $labelField = Context::remoteLabelField($f);
                 $rowFields[] = "    {$prop}?: number | null";
-                $rowFields[] = "    {$method}?: { id: number; name: string } | null";
+                $rowFields[] = "    {$method}?: { id: number; {$labelField}: string } | null";
                 $payloadFields[] = "    {$prop}?: number | null";
             } elseif ($relation === 'belongs_to_many') {
                 $method = Context::relationMethodName($f);
+                $labelField = Context::remoteLabelField($f);
                 $rowFields[] = "    {$prop}?: number[]";
-                $rowFields[] = "    {$method}?: Array<{ id: number; name: string }>";
+                $rowFields[] = "    {$method}?: Array<{ id: number; {$labelField}: string }>";
                 $payloadFields[] = "    {$prop}?: number[]";
             } else {
                 $req = Context::isRequired($f);
