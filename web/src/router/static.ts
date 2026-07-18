@@ -8,8 +8,7 @@ export const routes: RouteRecordRaw[] = [
         name: "root",
         path: '/',
         component: () => import("@/layouts/index.vue"), //全部走layout布局模板
-        beforeEnter: async (_to, from:RouteLocationNormalizedGeneric, next) => {
-            console.log("to root",from.fullPath)
+        beforeEnter: async (to, _from: RouteLocationNormalizedGeneric, next) => {
             const admin = useAdmin()
             // access 过期但 refresh 仍有效时先续期，避免「记住我」被误清
             await admin.tryRefreshAccessTokenIfNeeded()
@@ -17,7 +16,7 @@ export const routes: RouteRecordRaw[] = [
                 next()
             } else {
                 admin.clear()
-                admin.setReferer(from.fullPath)
+                admin.setReferer(to.fullPath)
                 next({ name: 'login', replace: true })
             }
         },

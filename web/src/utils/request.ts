@@ -114,14 +114,14 @@ export const useFetch = createFetch({
             if (response?.status === 401) {
                 if (retried401Execute.has(execute)) {
                     ElMessage.warning({message: '未授权，请重新登录'})
-                    admin.setReferer(location.href)
+                    admin.setReferer(router.currentRoute.value.fullPath)
                     await router.push('/login')
                     return {error}
                 }
                 const refreshed = await admin.tryRefreshAccessToken()
                 if (!refreshed) {
                     ElMessage.warning({message: '未授权，请重新登录'})
-                    admin.setReferer(location.href)
+                    admin.setReferer(router.currentRoute.value.fullPath)
                     await router.push('/login')
                     return {error}
                 }

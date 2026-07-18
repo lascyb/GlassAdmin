@@ -73,17 +73,40 @@ export const useAdmin = defineStore('admin', () => {
         data.value = null
     }
 
-    const setReferer = (href: string = "") => {
-        if (referer.value == "") {
-            referer.value = href
+    /** normalizeRefererPath 将完整 URL 或路由路径规范为可 router.push 的 path */
+    const normalizeRefererPath = (href: string): string => {
+        const raw = href.trim()
+        if (!raw) return ''
+        try {
+            if (raw.startsWith('http://') || raw.startsWith('https://')) {
+                const u = new URL(raw)
+                return `${u.pathname}${u.search}${u.hash}`
+            }
+        } catch {
+            return ''
         }
+        return raw.startsWith('/') ? raw : `/${raw}`
     }
-    const getReferer = (defaultPath="/") => {
-        let r = referer.value
-        referer.value = ""
-        if (r==""){
-            r = defaultPath
-        }
+
+    /** isLoginPath 是否登录页（不可作为回跳目标） */
+    const isLoginPath = (path: string): boolean => {
+        const p = path.split('?')[0]?.split('#')[0] ?? ''
+        return p === '/login' || p.endsWith('/login')
+    }
+
+    /** setReferer 记录登录后回跳地址（仅首次，忽略空/登录页） */
+    const setReferer = (href: string = '') => {
+        if (referer.value !== '') return
+        const path = normalizeRefererPath(href)
+        if (!path || isLoginPath(path)) return
+        referer.value = path
+    }
+
+    /** getReferer 取出并清空回跳地址，无有效值时返回 defaultPath */
+    const getReferer = (defaultPath = '/') => {
+        const r = referer.value
+        referer.value = ''
+        if (!r || isLoginPath(r)) return defaultPath
         return r
     }
 
