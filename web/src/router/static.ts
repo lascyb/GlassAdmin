@@ -10,9 +10,9 @@ export const routes: RouteRecordRaw[] = [
         component: () => import("@/layouts/index.vue"), //全部走layout布局模板
         beforeEnter: async (to, _from: RouteLocationNormalizedGeneric, next) => {
             const admin = useAdmin()
-            // access 过期但 refresh 仍有效时先续期，避免「记住我」被误清
-            await admin.tryRefreshAccessTokenIfNeeded()
-            if (admin.loggedIn) {
+            // access 过期或即将过期时先续期；刷新失败会 clear，避免假登录态停留
+            const sessionOk = await admin.tryRefreshAccessTokenIfNeeded()
+            if (sessionOk && admin.loggedIn) {
                 next()
             } else {
                 admin.clear()

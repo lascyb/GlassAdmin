@@ -13,6 +13,29 @@ const getAdmin = () => useAdmin()
 
 /** retried401Execute 已对该 useFetch 实例执行过「刷新 + 重放」后，再次 401 则不再重试（按 execute 引用区分并发请求） */
 const retried401Execute = new WeakSet<() => Promise<Response | null>>()
+
+/** redirectingToLogin 避免并发 401 / 刷新失败重复跳转登录页 */
+let redirectingToLogin = false
+
+/** redirectToLogin 清登录态并跳转登录页 */
+const redirectToLogin = async (message = '未授权，请重新登录') => {
+    if (redirectingToLogin) return
+    const admin = getAdmin()
+    const route = router.currentRoute.value
+    if (route.name === 'login') {
+        admin.clear()
+        return
+    }
+    redirectingToLogin = true
+    try {
+        admin.clear()
+        admin.setReferer(route.fullPath)
+        ElMessage.warning({ message })
+        await router.push({ name: 'login', replace: true })
+    } finally {
+        redirectingToLogin = false
+    }
+}
 /**
  * getApiBaseUrl 获取 API 基础地址
  * 从环境变量中读取，如果没有配置则使用空字符串（相对路径）
@@ -106,23 +129,26 @@ export const useFetch = createFetch({
                 options, url: requestUrl
             }
         }, async afterFetch({data}) {
-            // 请求成功返回后再按需刷新 access，不阻塞本次响应解析（不 await）
-            void getAdmin().tryRefreshAccessTokenIfNeeded()
+            // 请求成功后按需续期；刷新失败则清登录态并回登录页（不阻塞本次响应）
+            void (async () => {
+                const admin = getAdmin()
+                if (!admin.data) return
+                const ok = await admin.tryRefreshAccessTokenIfNeeded()
+                if (!ok) {
+                    await redirectToLogin('登录已失效，请重新登录')
+                }
+            })()
             return {data}
         }, async onFetchError({response, error, execute}) {
             const admin = getAdmin()
             if (response?.status === 401) {
                 if (retried401Execute.has(execute)) {
-                    ElMessage.warning({message: '未授权，请重新登录'})
-                    admin.setReferer(router.currentRoute.value.fullPath)
-                    await router.push('/login')
+                    await redirectToLogin()
                     return {error}
                 }
                 const refreshed = await admin.tryRefreshAccessToken()
                 if (!refreshed) {
-                    ElMessage.warning({message: '未授权，请重新登录'})
-                    admin.setReferer(router.currentRoute.value.fullPath)
-                    await router.push('/login')
+                    await redirectToLogin()
                     return {error}
                 }
                 retried401Execute.add(execute)

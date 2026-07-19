@@ -156,15 +156,38 @@ export const useAdmin = defineStore('admin', () => {
     }
 
     /**
-     * tryRefreshAccessTokenIfNeeded access 将过期或已过期且 refresh 仍有效时尝试刷新
+     * tryRefreshAccessTokenIfNeeded access 将过期或即将过期时尝试刷新。
+     * @returns true 会话可继续；false 需重新登录（失败时会 clear）
      */
-    const tryRefreshAccessTokenIfNeeded = async (): Promise<void> => {
+    const tryRefreshAccessTokenIfNeeded = async (): Promise<boolean> => {
         const store = activeTokenStore.value
-        if (!store.refreshToken) return
         const now = Math.floor(Date.now() / 1000)
-        if (store.refreshExpireAt > 0 && store.refreshExpireAt <= now) return
-        if (store.token && store.expireAt > now + 900) return
-        await tryRefreshAccessToken()
+
+        // access 仍充足，无需刷新
+        if (store.token && store.expireAt > now + 900) {
+            return true
+        }
+
+        const accessStillOk = !!(store.token && store.expireAt > now)
+        const refreshUsable =
+            !!store.refreshToken &&
+            (store.refreshExpireAt <= 0 || store.refreshExpireAt > now)
+
+        // 无可用 refresh：仅当 access 尚未过期时继续
+        if (!refreshUsable) {
+            if (!accessStillOk) {
+                clear()
+            }
+            return accessStillOk
+        }
+
+        const ok = await tryRefreshAccessToken()
+        if (!ok) {
+            // 服务端拒绝或网络失败：清登录态，避免 canRefresh 仍为 true 而停留在页面
+            clear()
+            return false
+        }
+        return true
     }
 
     return {
