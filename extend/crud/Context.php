@@ -627,27 +627,28 @@ class Context
     }
 
     /**
-     * relationMethodName 关联方法名（category_id → category；tag_ids → tags）
+     * relationMethodName 关联方法名（始终按 prop 推导，避免 relationProp 陈旧如 field_2）
+     * {user_id:user, tag_ids:tags}；ThinkPHP with() 会 snake→camel，方法名勿含下划线
      */
     public static function relationMethodName(array $field): string
     {
-        $rp = self::relationProp($field);
-        if ($rp !== '') {
-            if (str_contains($rp, '.')) {
-                return explode('.', $rp, 2)[0];
-            }
-
-            return $rp;
-        }
-        $prop = (string) $field['prop'];
+        $prop = (string) ($field['prop'] ?? '');
         if (str_ends_with($prop, '_ids')) {
             return substr($prop, 0, -4) . 's';
         }
         if (str_ends_with($prop, '_id')) {
             return substr($prop, 0, -3);
         }
-
-        return $prop;
+        // 无 _id/_ids 后缀时退回 relationProp 首段，并规范为可调用方法名
+        $rp = self::relationProp($field);
+        $name = $rp !== ''
+            ? (str_contains($rp, '.') ? explode('.', $rp, 2)[0] : $rp)
+            : $prop;
+        if ($name === '') {
+            return 'related';
+        }
+        // field_2 → field2，避免 with('field_2') 找不到 field_2() 而落到 Query->field2
+        return str_contains($name, '_') ? self::toCamel($name) : $name;
     }
 
     /**
