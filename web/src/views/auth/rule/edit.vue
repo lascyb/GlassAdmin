@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RulePayload, RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
+import { views } from '@/router/views'
 import BindBackendApiPanel from '@/views/auth/rule/BindBackendApiPanel.vue'
 import Picker from '@components/ga-icon/picker.vue'
 import { ElMessage } from 'element-plus'
@@ -40,6 +41,35 @@ const showBackendApiPanel = computed(
 
 /** dialogWidth 弹窗宽度：含接口勾选时加宽 */
 const dialogWidth = computed(() => (showBackendApiPanel.value ? '720px' : '520px'))
+
+/** routeOnly 前端规则是否仅作为路由（method=route） */
+const routeOnly = computed({
+    get: () => form.method === 'route',
+    set: (v: boolean) => {
+        form.method = v ? 'route' : ''
+    },
+})
+
+/**
+ * toViewComponentValue glob key 转为 auth_rule.component（相对 views/）
+ */
+function toViewComponentValue(globKey: string): string {
+    return globKey.replace(/^\/src\/views\//, '').replace(/^@\/views\//, '')
+}
+
+/** viewComponentOptions 可选页面组件（来自 import.meta.glob） */
+const viewComponentOptions = computed(() => {
+    const map = new Map<string, string>()
+    for (const key of Object.keys(views)) {
+        const value = toViewComponentValue(key)
+        if (value) map.set(value, value)
+    }
+    const current = form.component.trim()
+    if (current) map.set(current, current)
+    return [...map.values()]
+        .sort((a, b) => a.localeCompare(b))
+        .map((value) => ({ label: value, value }))
+})
 
 /** 递归移除当前节点及其子节点，防止选自己为父级造成循环 */
 function removeNodeAndChildren(nodes: RuleRow[], targetId: number): RuleRow[] {
@@ -145,7 +175,7 @@ function ruleEditMapRow(row: RuleRow) {
     form.pid = row.pid
     form.name = row.name
     form.path = row.path ?? ''
-    form.method = row.method ?? 'GET'
+    form.method = row.method ?? (props.scope === 'backend' ? 'GET' : '')
     form.component = row.component ?? ''
     form.icon = row.icon ?? null
     form.sort = row.sort
@@ -210,7 +240,7 @@ async function ruleEditSubmit() {
                 pid: form.pid,
                 name: form.name.trim(),
                 path: form.path.trim() || null,
-                method: null,
+                method: form.method === 'route' ? 'route' : null,
                 component: form.type === 'view' ? form.component.trim() || null : null,
                 icon: form.icon?.trim() ? form.icon.trim() : null,
                 sort: form.sort,
@@ -242,6 +272,9 @@ watch(
         if (props.scope === 'frontend' && type === 'menu') {
             backendRuleIds.value = []
         }
+        if (props.scope === 'frontend' && type === 'btn' && form.method === 'route') {
+            form.method = ''
+        }
     },
 )
 
@@ -267,15 +300,15 @@ defineExpose({openAdd, openEdit})
                 />
             </el-form-item>
             <el-form-item label="类型">
-                <el-select v-if="scope === 'frontend'" v-model="form.type" class="w-full">
-                    <el-option label="目录" value="menu"/>
-                    <el-option label="页面" value="view"/>
-                    <el-option label="按钮" value="btn"/>
-                </el-select>
-                <el-select v-else v-model="form.type" class="w-full">
-                    <el-option label="目录" value="menu"/>
-                    <el-option label="接口" value="api"/>
-                </el-select>
+                <el-radio-group v-if="scope === 'frontend'" v-model="form.type">
+                    <el-radio value="menu">目录</el-radio>
+                    <el-radio value="view">页面</el-radio>
+                    <el-radio value="btn">按钮</el-radio>
+                </el-radio-group>
+                <el-radio-group v-else v-model="form.type">
+                    <el-radio value="menu">目录</el-radio>
+                    <el-radio value="api">接口</el-radio>
+                </el-radio-group>
             </el-form-item>
             <el-form-item label="名称" required>
                 <el-input v-model.trim="form.name" maxlength="100" show-word-limit/>
@@ -283,28 +316,46 @@ defineExpose({openAdd, openEdit})
 
             <template v-if="scope === 'backend'">
                 <template v-if="form.type === 'api'">
+                    <el-form-item label="method">
+                        <el-radio-group v-model="form.method">
+                            <el-radio-button value="GET">GET</el-radio-button>
+                            <el-radio-button value="POST">POST</el-radio-button>
+                            <el-radio-button value="PUT">PUT</el-radio-button>
+                            <el-radio-button value="DELETE">DELETE</el-radio-button>
+                            <el-radio-button value="PATCH">PATCH</el-radio-button>
+                            <el-radio-button value="*">*</el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
                     <el-form-item label="path" required>
                         <el-input v-model.trim="form.path" placeholder="如 auth.Rule/tree"/>
-                    </el-form-item>
-                    <el-form-item label="method">
-                        <el-select v-model="form.method" class="w-full">
-                            <el-option label="GET" value="GET"/>
-                            <el-option label="POST" value="POST"/>
-                            <el-option label="PUT" value="PUT"/>
-                            <el-option label="DELETE" value="DELETE"/>
-                            <el-option label="PATCH" value="PATCH"/>
-                            <el-option label="*" value="*"/>
-                        </el-select>
                     </el-form-item>
                 </template>
             </template>
 
             <template v-else>
+                <el-form-item v-if="form.type === 'menu' || form.type === 'view'" label="仅作为路由">
+                    <el-checkbox v-model="routeOnly">是（不入侧栏菜单）</el-checkbox>
+                </el-form-item>
                 <el-form-item label="path">
                     <el-input v-model.trim="form.path" placeholder="路由 path 片段"/>
                 </el-form-item>
                 <el-form-item v-if="form.type === 'view'" label="component">
-                    <el-input v-model.trim="form.component" placeholder="如 auth/rule/index.vue"/>
+                    <el-select
+                        v-model="form.component"
+                        class="w-full"
+                        filterable
+                        allow-create
+                        clearable
+                        default-first-option
+                        placeholder="选择或输入，如 auth/rule/index.vue"
+                    >
+                        <el-option
+                            v-for="item in viewComponentOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        />
+                    </el-select>
                 </el-form-item>
                 <el-form-item v-if="form.type !== 'btn'" label="图标">
                     <Picker v-model="form.icon"/>

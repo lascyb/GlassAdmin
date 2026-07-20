@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import * as adminApi from '@/apis/auth/admin'
-import { createRsaRebuild } from '@/apis/http'
 import type { RoleRow } from '@/apis/auth/role'
 import * as roleApi from '@/apis/auth/role'
 import GaPasswordInput from '@/components/ga-password-input/index.vue'
-import { useSecurityRsa } from '@/pinia/security/rsa'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, useTemplateRef } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
 const props = defineProps<{
     id?: number
@@ -14,9 +12,6 @@ const props = defineProps<{
 
 const show = defineModel<boolean>('modelValue', { required: true })
 const emit = defineEmits<{ saved: [] }>()
-
-const passwordRef = useTemplateRef<InstanceType<typeof GaPasswordInput>>('passwordRef')
-const securityRsa = useSecurityRsa()
 
 const form = reactive<{
     id?: number
@@ -96,59 +91,27 @@ const submit = async () => {
     saving.value = true
     try {
         if (form.id) {
+            const body: {
+                nickname: string
+                role_ids: number[]
+                status: number
+                password?: string
+            } = {
+                nickname: form.nickname.trim(),
+                role_ids: form.role_ids,
+                status: form.status,
+            }
             if (form.password) {
-                const buildPayload = async () => {
-                    const enc = await passwordRef.value!.getEncryptedPayload()
-                    const body: {
-                        nickname: string
-                        role_ids: number[]
-                        status: number
-                        password?: string
-                    } = {
-                        nickname: form.nickname.trim(),
-                        role_ids: form.role_ids,
-                        status: form.status,
-                    }
-                    if (enc.password) body.password = enc.password
-                    return { params: body, headers: enc.headers }
-                }
-                const { params, headers } = await buildPayload()
-                await adminApi.updateAdmin(form.id, params, {
-                    headers,
-                    rsaRebuild: createRsaRebuild(buildPayload, securityRsa.forceRefreshPublicKey),
-                })
-            } else {
-                await adminApi.updateAdmin(form.id, {
-                    nickname: form.nickname.trim(),
-                    role_ids: form.role_ids,
-                    status: form.status,
-                })
+                body.password = form.password
             }
+            await adminApi.updateAdmin(form.id, body)
         } else {
-            const buildPayload = async () => {
-                const enc = await passwordRef.value!.getEncryptedPayload()
-                if (!enc.password || !enc.headers) {
-                    return null
-                }
-                return {
-                    params: {
-                        username: form.username.trim(),
-                        nickname: form.nickname.trim(),
-                        role_ids: form.role_ids,
-                        status: form.status,
-                        password: enc.password,
-                    },
-                    headers: enc.headers,
-                }
-            }
-            const payload = await buildPayload()
-            if (!payload) {
-                ElMessage.error('请设置登录密码')
-                return
-            }
-            await adminApi.saveAdmin(payload.params, {
-                headers: payload.headers,
-                rsaRebuild: createRsaRebuild(buildPayload, securityRsa.forceRefreshPublicKey),
+            await adminApi.saveAdmin({
+                username: form.username.trim(),
+                nickname: form.nickname.trim(),
+                role_ids: form.role_ids,
+                status: form.status,
+                password: form.password,
             })
         }
         ElMessage.success('已保存')
@@ -178,7 +141,6 @@ const submit = async () => {
                 </el-form-item>
                 <el-form-item :label="form.id ? '新密码' : '密码'" :required="!form.id">
                     <ga-password-input
-                        ref="passwordRef"
                         v-model="form.password"
                         :placeholder="form.id ? '留空表示不修改' : '至少 6 位'"
                     />

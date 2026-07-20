@@ -99,10 +99,7 @@ export const relatedNameFromProp = (prop: string): string =>
 
 /** ensureRemoteExt 远程数据源占位写入 ext.remote */
 const ensureRemoteExt = (field: CrudFieldSchema): void => {
-    const remoteExt = ensureFieldRemoteExt(field)
-    if (!remoteExt.api) {
-        remoteExt.api = `test.ft.Text/list`
-    }
+    ensureFieldRemoteExt(field)
 }
 
 /** applyRenderExt 按 needEnum/needRemote 补 ext.enum / ext.remote */

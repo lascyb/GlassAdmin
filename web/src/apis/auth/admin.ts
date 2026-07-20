@@ -16,8 +16,8 @@ export type AdminRow = {
     role_ids?: number[]
     /** 预加载角色，与 with roles 字段 id,name 一致 */
     roles?: AdminRoleBrief[]
-    create_time?: string | null
-    update_time?: string | null
+    create_time?: number | null
+    update_time?: number | null
     last_login_time?: number | null
 }
 
@@ -51,28 +51,33 @@ export const fetchRead = async (id: number) => {
 }
 
 /**
- * saveAdmin 新建（password 为 RSA 密文；需 headers X-RSA-Serial）
+ * saveAdmin 新建（明文 password，经 encryptFields 自动 RSA）
  */
 export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
-    options: HttpRequestOptions & { headers: { 'X-RSA-Serial': string } },
+    options?: HttpRequestOptions,
 ) => {
-    return postData<{ id: number }>('auth.Admin/save', payload, options)
+    return postData<{ id: number }>('auth.Admin/save', payload, {
+        ...options,
+        encryptFields: options?.encryptFields ?? ['password'],
+    })
 }
 
 /**
- * updateAdmin 更新（password 可选，有则 RSA 密文）
+ * updateAdmin 更新（password 可选明文，有则经 encryptFields 自动 RSA）
  */
 export const updateAdmin = async (
     id: number,
     payload: { nickname?: string; role_ids: number[]; status: number; password?: string },
     options?: HttpRequestOptions,
 ) => {
-    return putData<null>(
-        'auth.Admin/update?id=' + id,
-        payload,
-        options,
-    )
+    const encryptFields =
+        options?.encryptFields ??
+        (payload.password ? ['password'] : undefined)
+    return putData<null>('auth.Admin/update?id=' + id, payload, {
+        ...options,
+        encryptFields,
+    })
 }
 
 /**

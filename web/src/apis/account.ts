@@ -16,8 +16,8 @@ export type ProfileRow = {
     role_ids?: number[]
     status: number
     roles?: AdminRoleBrief[]
-    create_time?: string | null
-    update_time?: string | null
+    create_time?: number | null
+    update_time?: number | null
 }
 
 /** SwitchRolesRes 切换生效角色响应 */
@@ -30,30 +30,9 @@ export type SwitchRolesRes = {
 export type OperationLogRow = {
     id: number
     admin_id: number
-    action: string
     summary: string
     ip?: string | null
     create_time?: string | null
-}
-
-/** NotificationRow 通知行 */
-export type NotificationRow = {
-    id: number
-    admin_id: number
-    category: string
-    title: string
-    content?: string | null
-    read_at?: string | null
-    create_time?: string | null
-}
-
-/** NotificationsListRes 通知列表 */
-export type NotificationsListRes = {
-    list: NotificationRow[]
-    total: number
-    page: number
-    limit: number
-    unread_count: number
 }
 
 /** OperationLogsListRes 操作日志分页 */
@@ -79,13 +58,23 @@ export const switchRoles = async (role_ids: number[]) => {
 }
 
 /**
- * updateProfile 更新昵称、可选密码（password 为 RSA 密文时需 headers / rsaRebuild）
+ * updateProfile 更新昵称
  */
-export const updateProfile = async (
-    payload: { nickname?: string; password?: string },
+export const updateProfile = async (payload: { nickname?: string }) => {
+    return putData<null>('account.Profile/update', payload)
+}
+
+/**
+ * changePassword 修改当前用户密码（明文 password，经 encryptFields 自动 RSA；需角色鉴权）
+ */
+export const changePassword = async (
+    payload: { password: string },
     options?: HttpRequestOptions,
 ) => {
-    return putData<null>('account.Profile/update', payload, options)
+    return putData<null>('account.Profile/changePassword', payload, {
+        ...options,
+        encryptFields: options?.encryptFields ?? ['password'],
+    })
 }
 
 /**
@@ -96,26 +85,8 @@ export const uploadProfileAvatar = async (formData: FormData) => {
 }
 
 /**
- * fetchOperationLogs 操作日志分页
+ * fetchMyOperationLogs 当前用户操作日志分页
  */
-export const fetchOperationLogs = async (params: { page?: number; limit?: number }) => {
-    return getData<OperationLogsListRes>('account.OperationLog/index', params)
-}
-
-/**
- * fetchNotifications 通知分页；category 为 system|friend
- */
-export const fetchNotifications = async (params: {
-    page?: number
-    limit?: number
-    category?: string
-}) => {
-    return getData<NotificationsListRes>('account.Notification/index', params)
-}
-
-/**
- * markNotificationsRead 标记已读：ids 或 all
- */
-export const markNotificationsRead = async (payload: { ids?: number[]; all?: boolean }) => {
-    return putData<null>('account.Notification/markRead', payload)
+export const fetchMyOperationLogs = async (params: { page?: number; limit?: number }) => {
+    return getData<OperationLogsListRes>('account.Profile/operationLogs', params)
 }

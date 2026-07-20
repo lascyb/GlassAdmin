@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { useLayoutMenus } from "@/pinia/layout/menus"
+import { useSystemConfig } from "@/pinia/system/config"
 import { Expand, Fold } from "@element-plus/icons-vue"
-import { computed } from "vue"
+import { computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 
 const layoutMenus = useLayoutMenus()
+const systemConfig = useSystemConfig()
 const router = useRouter()
+
+onMounted(() => {
+    void systemConfig.ensureLoaded(['site_title'])
+})
+
 const toHome = () => {
     layoutMenus.module = undefined
     router.push('/')
@@ -29,7 +36,7 @@ const btnStyle = computed(() => ({
         <div v-if="!layoutMenus.collapse"
              class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
              @click="toHome">
-            GlassAdmin
+            {{ systemConfig.siteTitle }}
         </div>
         <el-button :style="btnStyle" plain text type="primary" @click="collapse">
             <el-icon size="22">

@@ -82,9 +82,6 @@ class AdminTokenService
             $roleIds = [];
         }
         $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
-        if ($roleIds === []) {
-            return null;
-        }
 
         return new AdminAuthPayload((int) $payload['admin_id'], $roleIds);
     }
@@ -118,11 +115,6 @@ class AdminTokenService
         }
 
         $roleIds = Admin::activeRoleIdsFor($adminId);
-        if ($roleIds === []) {
-            Cache::delete($key);
-
-            return null;
-        }
 
         Cache::delete($key);
 

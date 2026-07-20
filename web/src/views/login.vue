@@ -1,19 +1,20 @@
 <script setup lang="ts">
+import { ApiError, postData } from '@/apis/http'
+import feishuIcon from '@/assets/images/feishu.png'
 import { useAdmin } from '@/pinia/admin'
-import { useSecurityRsa } from '@/pinia/security/rsa'
-import { ApiError, createRsaRebuild, postData } from '@/apis/http'
 import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const securityRsa = useSecurityRsa()
 const admin = useAdmin()
 
 // 登录方式：password | sms
 const loginType = ref<'password' | 'sms'>('password')
 const logining = ref<boolean>(false)
+const feishuLogining = ref(false)
+
 // 密码登录表单
 const passwordForm = reactive({
   username: '',
@@ -31,6 +32,28 @@ const smsForm = reactive({
 const countdown = ref(0)
 const codeButtonText = ref('获取验证码')
 
+type LoginResult = {
+  access_token: string
+  refresh_token: string
+  expire_at: number
+  refresh_expire_at: number
+  user: { id: number; username: string; nickname: string; avatar?: string | null; role_ids?: number[] }
+}
+
+/** applyLoginResult 写入登录态并跳转 */
+const applyLoginResult = async (data: LoginResult, remember: boolean) => {
+  admin.init(
+    data.access_token,
+    data.refresh_token,
+    data.user,
+    data.expire_at,
+    data.refresh_expire_at,
+    remember,
+  )
+  ElMessage.success('登录成功')
+  await router.push(admin.getReferer())
+}
+
 // 获取验证码
 const getVerificationCode = () => {
   if (!smsForm.phone) {
@@ -38,17 +61,14 @@ const getVerificationCode = () => {
     return
   }
 
-  // 验证手机号格式
   const phoneRegex = /^1[3-9]\d{9}$/
   if (!phoneRegex.test(smsForm.phone)) {
     ElMessage.warning('请输入正确的手机号')
     return
   }
 
-  // 这里应该调用API发送验证码
   ElMessage.success('验证码已发送')
 
-  // 开始倒计时
   countdown.value = 60
   const timer = setInterval(() => {
     countdown.value--
@@ -69,53 +89,18 @@ const handlePasswordLogin = async () => {
   }
   logining.value = true
   try {
-    const buildLoginPayload = async () => {
-      const { serial: rsaSerial, texts: [encryptedUsername, encryptedPassword] } =
-        await securityRsa.encrypt(passwordForm.username, passwordForm.password)
-      if (!rsaSerial || !encryptedUsername || !encryptedPassword) {
-        return null
-      }
-      return {
-        params: {
-          username: encryptedUsername,
-          password: encryptedPassword,
-          remember: passwordForm.remember,
-        },
-        headers: {
-          'X-RSA-Serial': rsaSerial,
-        },
-      }
-    }
-
-    const payload = await buildLoginPayload()
-    if (!payload) {
-      ElMessage.error('获取登录公钥失败，请稍后重试')
-      return
-    }
-
-    const data = await postData<{
-      access_token: string
-      refresh_token: string
-      expire_at: number
-      refresh_expire_at: number
-      user: { id: number; username: string; nickname: string; avatar?: string | null; role_ids?: number[] }
-    }>('Login/password', payload.params, {
-      headers: payload.headers,
-      rsaRebuild: createRsaRebuild(buildLoginPayload, securityRsa.forceRefreshPublicKey),
-    })
-
-    admin.init(
-      data.access_token,
-      data.refresh_token,
-      data.user,
-      data.expire_at,
-      data.refresh_expire_at,
-      passwordForm.remember,
+    const data = await postData<LoginResult>(
+      'account.login.Password/login',
+      {
+        username: passwordForm.username,
+        password: passwordForm.password,
+        remember: passwordForm.remember,
+      },
+      { encryptFields: ['username', 'password'] },
     )
 
-    ElMessage.success('登录成功')
-    await router.push(admin.getReferer())
-  } catch(e) {
+    await applyLoginResult(data, passwordForm.remember)
+  } catch (e) {
     ElMessage.error(e instanceof ApiError ? e.message : '登录请求失败' + e)
   } finally {
     logining.value = false
@@ -128,23 +113,67 @@ const handleSmsLogin = async () => {
     ElMessage.warning('请输入手机号和验证码')
     return
   }
-  
-  // 这里应该调用登录API
+
   ElMessage.success('登录成功')
   await router.push('/')
 }
 
-// 第三方登录
-const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
-  // 这里应该调用第三方登录API
-  ElMessage.info(`正在使用${type === 'wechat' ? '微信' : type === 'qq' ? 'QQ' : 'GitHub'}登录`)
+/** handleFeishuLogin 跳转后端飞书授权入口 */
+const handleFeishuLogin = () => {
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+  if (!base) {
+    ElMessage.error('未配置 VITE_API_BASE_URL')
+    return
+  }
+  feishuLogining.value = true
+  location.href = `${base}/account.login.FeishuOauth2/authorize`
 }
+
+/** handleFeishuCallback 处理飞书授权回调（login_from=feishu-web&code=） */
+const handleFeishuCallback = async () => {
+  const params = new URLSearchParams(window.location.search)
+  const loginFrom = params.get('login_from')
+  if (loginFrom !== 'feishu-web') {
+    return
+  }
+
+  const error = params.get('error')
+  if (error === 'access_denied') {
+    ElMessage.warning('已取消飞书登录授权')
+    await router.replace({ path: '/login' })
+    return
+  }
+
+  const code = params.get('code')
+  if (!code) {
+    ElMessage.error('飞书授权码缺失')
+    await router.replace({ path: '/login' })
+    return
+  }
+
+  feishuLogining.value = true
+  try {
+    const data = await postData<LoginResult>('account.login.FeishuOauth2/login', {
+      code,
+      remember: false,
+    })
+    await applyLoginResult(data, false)
+  } catch (e) {
+    ElMessage.error(e instanceof ApiError ? e.message : '飞书登录失败')
+    await router.replace({ path: '/login' })
+  } finally {
+    feishuLogining.value = false
+  }
+}
+
+onMounted(() => {
+  void handleFeishuCallback()
+})
 </script>
 
 <template>
-  <div class="login-container">
+  <div class="login-container" v-loading="feishuLogining" element-loading-text="正在进行飞书授权登录...">
     <div class="login-box">
-      <!-- Logo 区域 -->
       <div class="logo-section">
         <div class="logo-icon">
           <el-icon :size="48" color="#409EFF">
@@ -155,7 +184,6 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
         <p class="logo-subtitle">透明可视的后台框架</p>
       </div>
 
-      <!-- 登录方式切换 -->
       <el-tabs v-model="loginType" class="login-tabs">
         <el-tab-pane label="密码登录" name="password">
           <el-form :model="passwordForm" class="login-form">
@@ -183,7 +211,6 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
             <el-form-item>
               <div class="form-options">
                 <el-checkbox v-model="passwordForm.remember">记住我</el-checkbox>
-                <el-link type="primary">忘记密码？</el-link>
               </div>
             </el-form-item>
             <el-form-item>
@@ -191,8 +218,8 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
                 type="primary"
                 size="large"
                 class="login-button"
-                @click="handlePasswordLogin"
                 :loading="logining"
+                @click="handlePasswordLogin"
               >
                 登录
               </el-button>
@@ -226,20 +253,15 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
                 <el-button
                   :disabled="countdown > 0"
                   size="large"
-                  @click="getVerificationCode"
                   class="code-button"
+                  @click="getVerificationCode"
                 >
                   {{ codeButtonText }}
                 </el-button>
               </div>
             </el-form-item>
             <el-form-item>
-              <el-button
-                type="primary"
-                size="large"
-                class="login-button"
-                @click="handleSmsLogin"
-              >
+              <el-button type="primary" size="large" class="login-button" @click="handleSmsLogin">
                 登录
               </el-button>
             </el-form-item>
@@ -247,40 +269,20 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
         </el-tab-pane>
       </el-tabs>
 
-      <!-- 第三方登录 -->
       <div class="third-party-section">
         <div class="divider">
           <span class="divider-text">其他登录方式</span>
         </div>
-        <div class="third-party-buttons">
-          <el-button
-            circle
-            class="third-party-btn wechat"
-            @click="handleThirdPartyLogin('wechat')"
-          >
-            <svg viewBox="0 0 24 24" class="third-party-icon">
-              <path fill="currentColor" d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.496-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm6.673 3.036c-1.693.104-3.8.675-5.465 2.008-1.92 1.595-2.884 4.097-2.17 6.642.324 1.15 1.014 2.16 1.947 2.9a.495.495 0 0 1 .118.643l-.297 1.104a.515.515 0 0 0-.04.157c0 .12.1.22.223.22a.24.24 0 0 0 .125-.04l1.417-.83a.642.642 0 0 1 .533-.073c.92.24 1.888.365 2.873.365 4.8 0 8.691-3.288 8.691-7.342 0-3.336-2.807-6.11-6.467-7.116zm-3.04 4.318c.52 0 .94.43.94.96a.95.95 0 0 1-.94.96.95.95 0 0 1-.94-.96c0-.53.42-.96.94-.96zm3.567 0c.52 0 .94.43.94.96a.95.95 0 0 1-.94.96.95.95 0 0 1-.94-.96c0-.53.42-.96.94-.96z"/>
-            </svg>
-          </el-button>
-          <el-button
-            circle
-            class="third-party-btn qq"
-            @click="handleThirdPartyLogin('qq')"
-          >
-            <svg viewBox="0 0 24 24" class="third-party-icon">
-              <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 1.804.473 3.498 1.3 4.968L2 22l5.315-1.256C8.563 21.688 10.22 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.214 0-2.38-.22-3.47-.616l-.24-.06-2.53.6.6-2.48-.066-.24C5.45 15.9 5.2 14.5 5.2 13c0-3.75 3.05-6.8 6.8-6.8s6.8 3.05 6.8 6.8-3.05 6.8-6.8 6.8z"/>
-            </svg>
-          </el-button>
-          <el-button
-            circle
-            class="third-party-btn github"
-            @click="handleThirdPartyLogin('github')"
-          >
-            <svg viewBox="0 0 24 24" class="third-party-icon">
-              <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
-            </svg>
-          </el-button>
-        </div>
+        <button
+          type="button"
+          class="feishu-login-btn"
+          :disabled="feishuLogining"
+          title="飞书登录"
+          @click="handleFeishuLogin"
+        >
+          <img :src="feishuIcon" alt="" class="feishu-login-btn__icon" />
+          <span class="feishu-login-btn__text">{{ feishuLogining ? '正在跳转…' : '飞书登录' }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -403,13 +405,13 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
 }
 
 .third-party-section {
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
 .divider {
   position: relative;
   text-align: center;
-  margin: 24px 0;
+  margin: 0 0 20px;
 }
 
 .divider::before {
@@ -419,58 +421,62 @@ const handleThirdPartyLogin = (type: 'wechat' | 'qq' | 'github') => {
   left: 0;
   right: 0;
   height: 1px;
-  background: #e4e7ed;
+  background: #ebeef5;
 }
 
 .divider-text {
   position: relative;
   background: white;
-  padding: 0 16px;
-  color: #909399;
-  font-size: 14px;
+  padding: 0 14px;
+  color: #a8abb2;
+  font-size: 13px;
 }
 
-.third-party-buttons {
-  display: flex;
+.feishu-login-btn {
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  background: #fff;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.third-party-btn {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 1px solid #e4e7ed;
-  background: white;
-  transition: all 0.3s;
+.feishu-login-btn:hover:not(:disabled) {
+  border-color: #3370ff;
+  background: #f5f8ff;
+  box-shadow: 0 2px 8px rgba(51, 112, 255, 0.12);
 }
 
-.third-party-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.feishu-login-btn:active:not(:disabled) {
+  background: #eef3ff;
 }
 
-.third-party-btn.wechat:hover {
-  border-color: #07c160;
-  color: #07c160;
+.feishu-login-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
-.third-party-btn.qq:hover {
-  border-color: #12b7f5;
-  color: #12b7f5;
+.feishu-login-btn__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
-.third-party-btn.github:hover {
-  border-color: #24292e;
-  color: #24292e;
+.feishu-login-btn__text {
+  line-height: 1;
 }
 
-.third-party-icon {
-  width: 24px;
-  height: 24px;
-}
-
-/* 响应式设计 */
 @media (max-width: 480px) {
   .login-box {
     padding: 24px;

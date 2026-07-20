@@ -28,7 +28,7 @@ class IndexFile
             if ($lr === 'status' || ($lr === 'tag' && Context::enumKey($f) !== '')) {
                 $needStatus = true;
             }
-            if ($lr === 'datetime') {
+            if ($lr === 'datetime' && Context::isUnixDatetime($f)) {
                 $needFormat = true;
             }
             if ($lr === 'image') {
@@ -93,7 +93,10 @@ class IndexFile
                 $queryLines[] = "    {$prop}_start: advanced.{$prop}?.[0] || undefined,";
                 $queryLines[] = "    {$prop}_end: advanced.{$prop}?.[1] || undefined,";
             } elseif ($sr === 'datetime_range') {
-                $advLines[] = "    {$prop}: null as [number, number] | null,";
+                // Unix 秒用 number；MySQL datetime/timestamp 用字符串
+                $advLines[] = Context::isUnixDatetime($f)
+                    ? "    {$prop}: null as [number, number] | null,"
+                    : "    {$prop}: null as [string, string] | null,";
                 $resetLines[] = "    advanced.{$prop} = null";
                 $queryLines[] = "    {$prop}_start: advanced.{$prop}?.[0] || undefined,";
                 $queryLines[] = "    {$prop}_end: advanced.{$prop}?.[1] || undefined,";
@@ -201,6 +204,7 @@ class IndexFile
             return Template::render('index/search/datetime_range.vue.tpl', [
                 'label' => $label,
                 'prop' => $prop,
+                'valueFormat' => Context::isUnixDatetime($f) ? 'X' : 'YYYY-MM-DD HH:mm:ss',
             ]) . "\n";
         }
         if ($sr === 'input') {
@@ -260,7 +264,9 @@ class IndexFile
                 : Template::render('index/col/prop.vue.tpl', array_merge($base, ['overflow' => ''])) . "\n",
             'color' => Template::render('index/col/color.vue.tpl', $base) . "\n",
             'image' => Template::render('index/col/image.vue.tpl', $base) . "\n",
-            'datetime' => Template::render('index/col/datetime.vue.tpl', $base) . "\n",
+            'datetime' => Context::isUnixDatetime($f)
+                ? Template::render('index/col/datetime.vue.tpl', $base) . "\n"
+                : Template::render('index/col/prop.vue.tpl', array_merge($base, ['overflow' => ''])) . "\n",
             'tags' => Template::render('index/col/tags.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
             'number' => Template::render('index/col/number.vue.tpl', $base) . "\n",
             default => Template::render('index/col/prop.vue.tpl', array_merge($base, [

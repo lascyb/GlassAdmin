@@ -7,5 +7,6 @@ return [
     'commands' => [
         'rsa:generate'   => \app\admin\command\GenerateRsaKeys::class,
         'crud:generate'  => \app\admin\command\CrudGenerate::class,
+        'mcp:serve'      => \app\admin\command\McpServe::class,
     ],
 ];

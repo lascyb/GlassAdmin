@@ -4,6 +4,7 @@ declare (strict_types = 1);
 namespace app\admin\model;
 
 use think\Model;
+use think\model\relation\BelongsTo;
 
 /**
  * AdminOperationLog 管理员操作日志
@@ -23,6 +24,9 @@ class AdminOperationLog extends Model
     /** @var bool|array<string>|string 自动时间戳 */
     protected $autoWriteTimestamp = 'datetime';
 
+    /** @var string 与 datetime 列一致（全局 datetime_format=false 时须显式指定） */
+    protected string $dateFormat = 'Y-m-d H:i:s';
+
     /** @var string 创建时间字段 */
     protected $createTime = 'create_time';
 
@@ -34,4 +38,12 @@ class AdminOperationLog extends Model
         'id'       => 'integer',
         'admin_id' => 'integer',
     ];
+
+    /**
+     * admin 关联操作人
+     */
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'admin_id');
+    }
 }

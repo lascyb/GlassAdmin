@@ -22,6 +22,15 @@
             "email": "lascyb@qq.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../feishu-sdk-php",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
     "require": {
         "php": ">=8.3",
         "topthink/framework": "^8.0",
@@ -32,7 +41,8 @@
         "ext-swoole": "^4.0|^5.0|^6.0",
         "topthink/think-swoole": "^4.1",
         "topthink/think-multi-app": "^1.1",
-        "mcp/sdk": "^0.7.0"
+        "mcp/sdk": "^0.7.0",
+        "lascyb/feishu-sdk-php": "^1.0"
     },
     "require-dev": {
         "topthink/think-dumper": "^1.0",

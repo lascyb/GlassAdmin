@@ -131,7 +131,9 @@ const resetAdvanced = () => {
                 {{ formatUnixTime(row.last_login_time) }}
             </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="170" />
+        <el-table-column label="创建时间" width="170">
+            <template #default="{ row }">{{ formatUnixTime(row.create_time) }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="88">
             <template #default="{ row }">
                 <ga-status-tag :value="row.status" :map="ADMIN_STATUS_MAP" />

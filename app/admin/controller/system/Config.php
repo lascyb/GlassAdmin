@@ -16,6 +16,39 @@ class Config extends AdminController
     /** list 默认每页条数 */
     private const int LIMIT_DEFAULT = 20;
 
+    /** @var list<string> 已登录可读配置值，不校验 RBAC */
+    protected array $loginOnlyActions = ['values'];
+
+    /**
+     * values 读取启用中的配置键值（可选 keys 逗号分隔或数组）
+     */
+    public function values(Request $request): Response
+    {
+        if (!$request->isGet()) {
+            return $this->fail(405, '仅支持 GET');
+        }
+        $raw = $request->get('keys', []);
+        $keys = [];
+        if (is_string($raw) && $raw !== '') {
+            $keys = array_values(array_filter(array_map('trim', explode(',', $raw))));
+        } elseif (is_array($raw)) {
+            $keys = array_values(array_filter(array_map(static fn ($k): string => trim((string) $k), $raw)));
+        }
+        if ($keys !== []) {
+            return $this->ok(SystemConfigService::getConfigs($keys));
+        }
+
+        $grouped = SystemConfigService::getAllConfigs();
+        $flat = [];
+        foreach ($grouped as $pairs) {
+            foreach ($pairs as $k => $v) {
+                $flat[$k] = $v;
+            }
+        }
+
+        return $this->ok($flat);
+    }
+
     /**
      * list 配置列表（分页 + 筛选）
      */

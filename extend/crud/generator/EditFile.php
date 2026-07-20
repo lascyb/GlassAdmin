@@ -85,9 +85,12 @@ class EditFile
                 $payloadLines[] = $render === 'date'
                     ? "            {$prop}: form.{$prop} || undefined,"
                     : "            {$prop}: form.{$prop},";
-            } elseif (Context::isUnixDatetime($f) || in_array($render, ['datetime', 'time'], true)) {
+            } elseif (Context::isUnixDatetime($f)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? null,";
                 $payloadLines[] = "            {$prop}: form.{$prop} ?? undefined,";
+            } elseif (in_array($render, ['datetime', 'time'], true) || in_array($ct, ['datetime', 'timestamp'], true)) {
+                $assignLines[] = "                {$prop}: d.{$prop} ?? '',";
+                $payloadLines[] = "            {$prop}: form.{$prop} || undefined,";
             } elseif ($ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? [],";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
@@ -169,8 +172,11 @@ class EditFile
         if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint'], true)) {
             return '0';
         }
-        if (Context::isUnixDatetime($f) || in_array($render, ['datetime', 'time'], true)) {
+        if (Context::isUnixDatetime($f)) {
             return 'null as number | null';
+        }
+        if (in_array($render, ['datetime', 'time'], true) || in_array($ct, ['datetime', 'timestamp'], true)) {
+            return "''";
         }
 
         return "''";
@@ -227,7 +233,9 @@ class EditFile
             'multi_select', 'checkbox' => Template::render('edit/field/multi_select.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
             'color' => Template::render('edit/field/color.vue.tpl', $base) . "\n",
             'image', 'file' => $this->renderImageItem($f),
-            'datetime', 'time' => Template::render('edit/field/datetime.vue.tpl', $base) . "\n",
+            'datetime', 'time' => Template::render('edit/field/datetime.vue.tpl', array_merge($base, [
+                'valueFormat' => Context::isUnixDatetime($f) ? 'X' : 'YYYY-MM-DD HH:mm:ss',
+            ])) . "\n",
             'date' => Template::render('edit/field/date.vue.tpl', $base) . "\n",
             default => Template::render('edit/field/input.vue.tpl', array_merge($base, ['max' => $max])) . "\n",
         };

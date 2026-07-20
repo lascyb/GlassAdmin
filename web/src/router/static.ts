@@ -23,6 +23,12 @@ export const routes: RouteRecordRaw[] = [
         children: [
             {name: "root-default", path: '', component: () => import("@/views/index.vue"),}, //默认首页快捷入口
             {
+                name: 'account-profile',
+                path: 'account/profile',
+                component: () => import('@/views/account/profile.vue'),
+                meta: { title: '个人信息' },
+            },
+            {
                 path: ":404*", component: () => import("@/layouts/components/error/404.vue") // 默认 404 页面
             },
             //动态路由插入点

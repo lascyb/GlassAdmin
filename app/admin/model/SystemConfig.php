@@ -31,8 +31,10 @@ class SystemConfig extends Model
 
     /** @var array<string, string> */
     protected $type = [
-        'id'     => 'integer',
-        'sort'    => 'integer',
-        'status'  => 'integer',
+        'id'          => 'integer',
+        'sort'        => 'integer',
+        'status'      => 'integer',
+        'create_time' => 'integer',
+        'update_time' => 'integer',
     ];
 }

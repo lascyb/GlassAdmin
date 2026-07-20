@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\account;
 
+use app\admin\model\AdminOperationLog;
 use app\admin\service\AdminTokenService;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
@@ -18,14 +19,28 @@ use think\Response;
  */
 class Profile extends AdminController
 {
-    /** @var list<string> */
-    protected array $loginOnlyActions = ['*'];
+    /**
+     * @var list<string> 仅需登录的 action；changePassword 需角色鉴权，不在此列
+     */
+    protected array $loginOnlyActions = [
+        'read',
+        'update',
+        'uploadAvatar',
+        'switchRoles',
+        'operationLogs',
+    ];
 
     /** password 明文最小长度（与 auth.Admin 一致） */
     private const int PASSWORD_MIN_LEN = 6;
 
     /** avatarMaxBytes 头像上传最大字节数 */
     private const int AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
+    /** operationLogsMax 操作日志单页 limit 上限 */
+    private const int OPERATION_LOGS_MAX = 100;
+
+    /** operationLogsDefaultLimit 操作日志默认每页条数 */
+    private const int OPERATION_LOGS_DEFAULT_LIMIT = 10;
 
     /**
      * read 当前用户资料（不含密码）
@@ -96,39 +111,58 @@ class Profile extends AdminController
     }
 
     /**
-     * update 更新当前用户昵称、可选密码（RSA）；不可改用户名/角色/状态
+     * update 更新当前用户昵称；不可改用户名/角色/状态/密码
      */
     public function update(Request $request): Response
     {
         if (!$request->isPut()) {
             return $this->fail(405, '仅支持 PUT');
         }
-        $id   = $this->auth->adminId;
-        $row  = AdminModel::find($id);
+        $id  = $this->auth->adminId;
+        $row = AdminModel::find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
         }
         $nickname = trim((string) $request->put('nickname', ''));
-        $encPwd   = (string) $request->put('password', '');
-        $data     = [
+        $row->save([
             'nickname' => $nickname !== '' ? $nickname : null,
-        ];
-        if ($encPwd !== '') {
-            $serial = trim((string) $request->header('X-RSA-Serial', ''));
-            if ($serial === '') {
-                return $this->fail(400, '修改密码需携带 X-RSA-Serial');
-            }
-            $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
-            if ($plain === null || $plain === '') {
-                return $this->rsaKeyInvalid();
-            }
-            $err = $this->validatePlainPassword($plain);
-            if ($err !== null) {
-                return $this->fail(400, $err);
-            }
-            $data['password'] = password_hash($plain, PASSWORD_BCRYPT);
+        ]);
+
+        return $this->ok();
+    }
+
+    /**
+     * changePassword 修改当前用户密码（RSA 密文；需角色鉴权）
+     */
+    public function changePassword(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
         }
-        $row->save($data);
+        $id  = $this->auth->adminId;
+        $row = AdminModel::find($id);
+        if (!$row) {
+            return $this->fail(404, '用户不存在');
+        }
+        $encPwd = (string) $request->put('password', '');
+        if ($encPwd === '') {
+            return $this->fail(400, '请输入新密码');
+        }
+        $serial = trim((string) $request->header('X-RSA-Serial', ''));
+        if ($serial === '') {
+            return $this->fail(400, '修改密码需携带 X-RSA-Serial');
+        }
+        $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
+        if ($plain === null || $plain === '') {
+            return $this->rsaKeyInvalid();
+        }
+        $err = $this->validatePlainPassword($plain);
+        if ($err !== null) {
+            return $this->fail(400, $err);
+        }
+        $row->save([
+            'password' => password_hash($plain, PASSWORD_BCRYPT),
+        ]);
 
         return $this->ok();
     }
@@ -188,6 +222,36 @@ class Profile extends AdminController
         $row->save(['avatar' => $relative]);
 
         return $this->ok(['avatar' => AdminModel::avatarPublicUrl($relative)]);
+    }
+
+    /**
+     * operationLogs 当前用户操作日志分页
+     */
+    public function operationLogs(Request $request): Response
+    {
+        if (!$request->isGet()) {
+            return $this->fail(405, '仅支持 GET');
+        }
+        $adminId = $this->auth->adminId;
+        $page    = max(1, (int) $request->get('page', 1));
+        $limit   = min(
+            self::OPERATION_LOGS_MAX,
+            max(1, (int) $request->get('limit', self::OPERATION_LOGS_DEFAULT_LIMIT))
+        );
+        $paginator = AdminOperationLog::where('admin_id', $adminId)
+            ->field('id,admin_id,summary,ip,create_time')
+            ->order('id', 'desc')
+            ->paginate([
+                'list_rows' => $limit,
+                'page'      => $page,
+            ]);
+
+        return $this->paginate(
+            $paginator->items(),
+            $paginator->total(),
+            $paginator->currentPage(),
+            $paginator->listRows()
+        );
     }
 
     /**

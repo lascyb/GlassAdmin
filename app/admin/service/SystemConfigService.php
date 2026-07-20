@@ -34,7 +34,7 @@ class SystemConfigService
         if (is_string($cached)) {
             return $cached;
         }
-        $row = SystemConfig::where('key', $key)->where('status', 1)->field('value')->find();
+        $row = SystemConfig::where('key', $key)->whereIn('status', [1, 2])->field('value')->find();
         if (!$row) {
             return null;
         }
@@ -63,7 +63,7 @@ class SystemConfigService
         }
         if ($miss !== []) {
             $rows = SystemConfig::where('key', 'in', $miss)
-                ->where('status', 1)
+                ->whereIn('status', [1, 2])
                 ->field('key,value')
                 ->select();
             foreach ($rows as $row) {
@@ -88,7 +88,7 @@ class SystemConfigService
         if (is_array($cached)) {
             return $cached;
         }
-        $rows = SystemConfig::where('status', 1)->field('key,value,group')->select();
+        $rows = SystemConfig::whereIn('status', [1, 2])->field('key,value,group')->select();
         $result = [];
         foreach ($rows as $row) {
             $group = (string) $row->getAttr('group');
@@ -131,7 +131,7 @@ class SystemConfigService
      */
     public static function getGroups(): array
     {
-        return SystemConfig::distinct(true)->where('status', 1)->order('group', 'asc')->column('group');
+        return SystemConfig::distinct(true)->whereIn('status', [1, 2])->order('group', 'asc')->column('group');
     }
 
     /**

@@ -28,6 +28,9 @@ class Rule extends Model
     /** @var list<string>|true */
     protected array|bool $autoWriteTimestamp = true;
 
+    /** @var string 与 datetime 列一致（全局 datetime_format=false 时须显式指定） */
+    protected string $dateFormat = 'Y-m-d H:i:s';
+
     /** @var array<string, string> */
     protected $type = [
         'id' => 'integer',

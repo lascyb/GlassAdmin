@@ -84,7 +84,8 @@ class ControllerFile
                 $endVar = '$' . Context::toCamel($prop) . 'End';
                 $listParams[] = "        {$startVar} = \$request->get('{$prop}_start');";
                 $listParams[] = "        {$endVar} = \$request->get('{$prop}_end');";
-                $rangeTpl = ($sr === 'datetime_range' || Context::isUnixDatetime($f))
+                // Unix 秒走 int 比较；date / MySQL datetime 走字符串比较
+                $rangeTpl = Context::isUnixDatetime($f)
                     ? 'controller/filter/datetime_range.php.tpl'
                     : 'controller/filter/date_range.php.tpl';
                 $listFilters .= Template::render($rangeTpl, [

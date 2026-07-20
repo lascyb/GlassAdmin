@@ -186,6 +186,10 @@ class MenuService
                 'type' => $n['type'],
                 'path' => $n['path'] ?? '',
             ];
+            $method = $n['method'] ?? null;
+            if ($method !== null && $method !== '') {
+                $item['method'] = $method;
+            }
             if (!empty($n['component'])) {
                 $item['component'] = $n['component'];
             }

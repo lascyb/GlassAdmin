@@ -4,6 +4,7 @@ import GaLogo from '../logo.vue'
 import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
+import { menusForDisplay } from '@/utils/menu/menusForDisplay'
 import { useRoute, useRouter } from 'vue-router'
 import GaIcon from "@components/ga-icon/index.vue";
 
@@ -13,6 +14,7 @@ const route = useRoute()
 const layoutMenus = useLayoutMenus()
 
 const menus = ref<Menu[]>([])
+const moduleOptions = computed(() => menusForDisplay(layoutMenus.menus))
 
 /** asideStyle 侧栏宽度与收起态同步（避免 scoped 内 --el-aside-width 与 useCssVar 目标不一致） */
 const asideStyle = computed(() => ({
@@ -71,7 +73,7 @@ onMounted(() => {
             <div style="height: 100%; background: var(--el-fill-color-light)" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
-                    :options="layoutMenus.menus"
+                    :options="moduleOptions"
                     size="small"
                     direction="vertical"
                     :block="false"

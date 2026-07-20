@@ -59,14 +59,23 @@ class Helper
         if ($ct === 'json' || $render === 'multi_select') {
             return 'string[] | null';
         }
+        // Unix 秒时间字段
+        if (Context::isUnixDatetime($f)) {
+            return 'number';
+        }
+        // MySQL date/datetime/timestamp 存字符串
+        if (in_array($ct, ['date', 'datetime', 'timestamp'], true)
+            || in_array($render, ['date', 'datetime', 'time'], true)
+        ) {
+            return $required ? 'string' : 'string | null';
+        }
         if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal'], true)
-            || in_array($render, ['number', 'switch', 'radio', 'select', 'datetime', 'time', 'remote_select'], true)
-            || Context::isUnixDatetime($f)
+            || in_array($render, ['number', 'switch', 'radio', 'select', 'remote_select'], true)
         ) {
             return 'number';
         }
-        if (in_array($ct, ['date', 'datetime', 'timestamp', 'varchar', 'char', 'text', 'mediumtext', 'longtext'], true)
-            || in_array($render, ['input', 'textarea', 'color', 'image', 'date', 'readonly'], true)
+        if (in_array($ct, ['varchar', 'char', 'text', 'mediumtext', 'longtext'], true)
+            || in_array($render, ['input', 'textarea', 'color', 'image', 'readonly'], true)
         ) {
             return $required ? 'string' : 'string | null';
         }

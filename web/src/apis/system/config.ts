@@ -80,3 +80,13 @@ export const deleteConfig = async (id: number) => {
 export const batchSaveConfig = async (group: string, pairs: Record<string, string>) => {
     return putData<null>('system.Config/batchSave', { group, pairs })
 }
+
+/**
+ * fetchValues 读取启用中的配置键值；不传 keys 则返回全部
+ */
+export const fetchValues = async (keys?: string[]) => {
+    return getData<Record<string, string>>(
+        'system.Config/values',
+        keys?.length ? { keys: keys.join(',') } : undefined,
+    )
+}

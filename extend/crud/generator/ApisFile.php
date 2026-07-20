@@ -74,8 +74,9 @@ class ApisFile
                 $listParamFields[] = "    {$prop}_start?: string";
                 $listParamFields[] = "    {$prop}_end?: string";
             } elseif ($sr === 'datetime_range') {
-                $listParamFields[] = "    {$prop}_start?: number";
-                $listParamFields[] = "    {$prop}_end?: number";
+                $rangeTs = Context::isUnixDatetime($f) ? 'number' : 'string';
+                $listParamFields[] = "    {$prop}_start?: {$rangeTs}";
+                $listParamFields[] = "    {$prop}_end?: {$rangeTs}";
             } elseif ($sr === 'input') {
                 $listParamFields[] = "    {$prop}?: string";
             } else {

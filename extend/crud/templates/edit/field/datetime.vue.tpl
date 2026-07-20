@@ -2,7 +2,7 @@
                     <el-date-picker
                         v-model="form.<%prop%>"
                         type="datetime"
-                        value-format="X"
+                        value-format="<%valueFormat%>"
                         placeholder="<%placeholder%>"
                         class="!w-full"
                     />

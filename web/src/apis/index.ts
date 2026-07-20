@@ -10,5 +10,5 @@ export { ApiError, unwrap, getData, postData, putData, delData, postFormDataData
  * @returns menus 供 useLayoutMenus.init
  */
 export const index = async (): Promise<{ menus: Menu[] }> => {
-    return getData<{ menus: Menu[] }>('Menu/menus')
+    return getData<{ menus: Menu[] }>('account.Menu/menus')
 }

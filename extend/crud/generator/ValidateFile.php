@@ -63,6 +63,8 @@ class ValidateFile
                 }
             } elseif ($ct === 'date' || $render === 'date') {
                 $parts[] = 'date';
+            } elseif (in_array($ct, ['datetime', 'timestamp'], true) || in_array($render, ['datetime', 'time'], true)) {
+                $parts[] = 'date';
             } elseif ($render === 'image') {
                 $parts[] = 'max:255';
             } else {

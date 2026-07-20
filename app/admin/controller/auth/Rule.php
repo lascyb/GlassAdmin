@@ -5,6 +5,7 @@ namespace app\admin\controller\auth;
 
 use app\admin\model\auth\Rule as RuleModel;
 use app\admin\model\auth\RuleFrontendApi;
+use app\admin\service\AdminOperationLogService;
 use app\admin\service\AdminRbacService;
 use app\admin\service\MenuService;
 use app\common\controller\AdminController;
@@ -102,6 +103,7 @@ class Rule extends AdminController
         }
         if ($scope === 'backend') {
             AdminRbacService::forgetAllRoleRbacCaches();
+            AdminOperationLogService::forgetApiNameCache();
         }
 
         return $this->ok(['id' => $id]);
@@ -157,6 +159,7 @@ class Rule extends AdminController
         }
         if ($oldScope === 'backend' || $newScope === 'backend') {
             AdminRbacService::forgetAllRoleRbacCaches();
+            AdminOperationLogService::forgetApiNameCache();
         }
 
         return $this->ok();
@@ -211,6 +214,7 @@ class Rule extends AdminController
             MenuService::forgetAllRoleMenuCaches();
         }
         AdminRbacService::forgetAllRoleRbacCaches();
+        AdminOperationLogService::forgetApiNameCache();
 
         return $this->ok(['deleted' => count($sortedIds)]);
     }

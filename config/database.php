@@ -12,8 +12,9 @@ return [
     // 字符串则明确指定时间字段类型 支持 int timestamp datetime date
     'auto_timestamp'  => true,
 
-    // 时间字段取出后的默认时间格式
-    'datetime_format' => 'Y-m-d H:i:s',
+    // 时间字段取出后的默认时间格式；false 表示保持库中原始值（bigint Unix 秒不转成日期字符串）
+    // 与前端 formatUnixTime / CRUD 约定一致；datetime 列模型可自行设 $dateFormat
+    'datetime_format' => false,
 
     // 时间字段配置 配置格式：create_time,update_time
     'datetime_field'  => '',
