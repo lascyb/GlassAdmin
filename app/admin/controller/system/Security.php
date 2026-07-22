@@ -1,7 +1,7 @@
 <?php
 declare (strict_types=1);
 
-namespace app\admin\controller\account;
+namespace app\admin\controller\system;
 
 use app\admin\service\RsaKeyService;
 use app\BaseController;

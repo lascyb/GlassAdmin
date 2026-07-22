@@ -4,8 +4,8 @@ namespace app\admin\model\auth;
 
 use think\Model;
 
-class RuleFrontendApi extends Model
+class RuleApi extends Model
 {
     /** @var string 表名 */
-    protected $name = 'auth_rule_frontend_api';
+    protected $name = 'auth_rule_api';
 }

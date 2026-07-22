@@ -1,7 +1,7 @@
 <?php
 declare (strict_types = 1);
 
-namespace app\admin\model;
+namespace app\admin\model\auth;
 
 use think\Model;
 use think\model\relation\BelongsTo;
@@ -19,7 +19,7 @@ use think\model\relation\BelongsTo;
 class AdminOperationLog extends Model
 {
     /** @var string 表名 */
-    protected $name = 'admin_operation_log';
+    protected $name = 'auth_admin_operation_log';
 
     /** @var bool|array<string>|string 自动时间戳 */
     protected $autoWriteTimestamp = 'datetime';

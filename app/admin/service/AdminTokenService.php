@@ -3,7 +3,8 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
-use app\admin\model\Admin;
+use app\admin\model\auth\Admin;
+use app\admin\model\auth\AdminRole;
 use app\admin\service\auth\AdminAuthPayload;
 use Random\RandomException;
 use think\facade\Cache;
@@ -114,7 +115,7 @@ class AdminTokenService
             return null;
         }
 
-        $roleIds = Admin::activeRoleIdsFor($adminId);
+        $roleIds = AdminRole::activeRoleIds($adminId);
 
         Cache::delete($key);
 

@@ -3,13 +3,17 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\auth;
 
+use app\admin\model\auth\RoleRule;
 use app\admin\model\auth\Rule as RuleModel;
-use app\admin\model\auth\RuleFrontendApi;
+use app\admin\model\auth\RuleApi;
 use app\admin\service\AdminOperationLogService;
 use app\admin\service\AdminRbacService;
 use app\admin\service\MenuService;
 use app\common\controller\AdminController;
 use Exception;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -22,7 +26,11 @@ class Rule extends AdminController
     /**
      * tree 按 scope 返回树
      *
+     * @param Request $request
      * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function tree(Request $request): Response
     {
@@ -43,7 +51,11 @@ class Rule extends AdminController
     /**
      * read 单条规则；前端 view/btn 附带已绑定的 backend_rule_id 列表（字段名 backend_rule_ids）
      *
+     * @param Request $request
      * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function read(Request $request): Response
     {
@@ -57,7 +69,7 @@ class Rule extends AdminController
         }
         $data = $row->toArray();
         if ($data['scope'] === 'frontend' && in_array($data['type'], ['view', 'btn'], true)) {
-            $data['backend_rule_ids'] = RuleFrontendApi::where('frontend_rule_id', $id)->column('backend_rule_id');
+            $data['backend_rule_ids'] = RuleApi::where('frontend_rule_id', $id)->column('backend_rule_id');
             $data['backend_rule_ids'] = array_map('intval', $data['backend_rule_ids']);
         }
 
@@ -145,7 +157,7 @@ class Rule extends AdminController
                             throw new Exception($bindErr);
                         }
                     } elseif ($newType === 'menu') {
-                        RuleFrontendApi::where('frontend_rule_id', $id)->delete();
+                        RuleApi::where('frontend_rule_id', $id)->delete();
                         AdminRbacService::forgetAllRoleRbacCaches();
                     }
                 }
@@ -275,15 +287,16 @@ class Rule extends AdminController
     /** destroyRule 删除单条规则及关联 */
     private function destroyRule(int $id): void
     {
-        Db::name('auth_rule_frontend_api')->where('frontend_rule_id', $id)->delete();
-        Db::name('auth_rule_frontend_api')->where('backend_rule_id', $id)->delete();
-        Db::name('auth_role_rule')->where('rule_id', $id)->delete();
+        RuleApi::where('frontend_rule_id', $id)->delete();
+        RuleApi::where('backend_rule_id', $id)->delete();
+        RoleRule::where('rule_id', $id)->delete();
         RuleModel::destroy($id);
     }
 
     /**
      * bindApis 为前端 view/btn 绑定后端 api 规则
      *
+     * @param Request $request
      * @return Response
      */
     public function bindApis(Request $request): Response
@@ -313,7 +326,12 @@ class Rule extends AdminController
     /**
      * syncBackendApis 同步前端 view/btn 与后端 api 的绑定关系
      *
-     * @param  mixed $rawIds
+     * @param int $fid
+     * @param mixed $rawIds
+     * @return string|null
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     private function syncBackendApis(int $fid, mixed $rawIds): ?string
     {
@@ -334,9 +352,9 @@ class Rule extends AdminController
                 'backend_rule_id'  => $bid,
             ];
         }
-        RuleFrontendApi::where('frontend_rule_id', $fid)->delete();
+        RuleApi::where('frontend_rule_id', $fid)->delete();
         if (count($insert) > 0) {
-            RuleFrontendApi::insertAll($insert);
+            RuleApi::insertAll($insert);
         }
         AdminRbacService::forgetAllRoleRbacCaches();
 

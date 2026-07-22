@@ -84,7 +84,7 @@ class Config extends AdminController
         if ($id <= 0) {
             return $this->fail(400, 'id 无效');
         }
-        $row = \app\admin\model\SystemConfig::find($id);
+        $row = \app\admin\model\system\Config::find($id);
         if (!$row) {
             return $this->fail(404, '不存在');
         }
@@ -141,7 +141,7 @@ class Config extends AdminController
         }
         $data = $request->put();
 
-        $row = \app\admin\model\SystemConfig::find($id);
+        $row = \app\admin\model\system\Config::find($id);
         if (!$row) {
             return $this->fail(404, '不存在');
         }
@@ -176,7 +176,7 @@ class Config extends AdminController
         if ($id <= 0) {
             return $this->fail(400, 'id 无效');
         }
-        $row = \app\admin\model\SystemConfig::find($id);
+        $row = \app\admin\model\system\Config::find($id);
         if (!$row) {
             return $this->fail(404, '不存在');
         }

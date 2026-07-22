@@ -3,14 +3,16 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\account;
 
-use app\admin\model\AdminOperationLog;
+use app\admin\model\auth\Admin as AdminModel;
+use app\admin\model\auth\AdminOperationLog;
+use app\admin\model\auth\AdminRole;
+use app\admin\model\auth\oauth2\Feishu;
 use app\admin\service\AdminTokenService;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
-use app\admin\model\Admin as AdminModel;
 use think\exception\FileException;
-use think\file\UploadedFile;
 use think\facade\Db;
+use think\file\UploadedFile;
 use think\Request;
 use think\Response;
 
@@ -24,6 +26,7 @@ class Profile extends AdminController
      */
     protected array $loginOnlyActions = [
         'read',
+        'roles',
         'update',
         'uploadAvatar',
         'switchRoles',
@@ -56,10 +59,20 @@ class Profile extends AdminController
             return $this->fail(404, '用户不存在');
         }
         $data = $row->toArray();
-        $rolesPayload = AdminModel::rolesPayload($id);
-        $data['roles'] = $rolesPayload['roles'];
-        $data['role_ids'] = $this->auth->roleIds;
-
+        $data["oauth2"] = [];
+        $feishu = Feishu::where("admin_id", $id)->field("name,avatar")->find();
+        if ($feishu) {
+            $data["oauth2"][] = $feishu->toArray();
+        }
+        return $this->ok($data);
+    }
+    public function roles(Request $request): Response
+    {
+        if (!$request->isGet()) {
+            return $this->fail(405, '仅支持 GET');
+        }
+        $id = $this->auth->adminId;
+        $data['roles'] = AdminRole::rolesPayload($id);
         return $this->ok($data);
     }
 
@@ -80,7 +93,7 @@ class Profile extends AdminController
         if ($roleIds === []) {
             return $this->fail(400, '请至少启用一个角色');
         }
-        $bound = AdminModel::boundRoleIdsFor($id);
+        $bound = AdminRole::allRoleIds($id);
         foreach ($roleIds as $roleId) {
             if (!in_array($roleId, $bound, true)) {
                 return $this->fail(400, '角色无效');
@@ -89,7 +102,7 @@ class Profile extends AdminController
 
         Db::startTrans();
         try {
-            AdminModel::syncActiveRoles($id, $roleIds);
+            AdminRole::syncActiveRoles($id, $roleIds);
             Db::commit();
         } catch (\Throwable $e) {
             Db::rollback();
@@ -102,11 +115,8 @@ class Profile extends AdminController
             return $this->fail(500, '更新登录态失败');
         }
 
-        $rolesPayload = AdminModel::rolesPayload($id);
-
         return $this->ok([
-            'role_ids' => $roleIds,
-            'roles'    => $rolesPayload['roles'],
+            'roles'    => AdminRole::rolesPayload($id),
         ]);
     }
 

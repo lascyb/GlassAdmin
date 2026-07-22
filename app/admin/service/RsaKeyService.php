@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
-use app\admin\model\RsaKey;
+use app\admin\model\system\RsaKey;
 use Throwable;
 
 /**

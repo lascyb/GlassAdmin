@@ -14,8 +14,10 @@ export type Admin = {
     avatar?: string | null
     /** 绑定的角色 auth_role.id 列表（当前生效） */
     role_ids?: number[]
+    /** 绑定的角色 auth_role.id 列表（当前生效） */
+    role_codes?: string[]
     /** 已分配角色（含 enabled） */
-    roles?: { id: number; name: string; enabled: number }[]
+    roles?: { id: number; code: string; name: string; enabled: number }[]
 }
 
 /**
@@ -63,6 +65,8 @@ export const useAdmin = defineStore('admin', () => {
         inactive.clearToken()
         target.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
         data.value = admin
+        data.value.role_codes = admin.roles?.filter(item=>item.enabled==1)?.map(item=>item.code)
+        data.value.role_ids = admin.roles?.filter(item=>item.enabled==1)?.map(item=>item.id)
         remember.value = rememberLogin
     }
 

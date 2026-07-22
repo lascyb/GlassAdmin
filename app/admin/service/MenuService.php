@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace app\admin\service;
 
 use app\admin\model\auth\Rule;
+use app\admin\model\auth\RoleRule;
 use think\facade\Cache;
-use think\facade\Db;
 
 /**
  * MenuService 侧栏菜单：按 role_ids 关联 auth_role_rule 取前端规则、组树、按角色组合缓存（对外均为 static）
@@ -104,7 +104,7 @@ class MenuService
         } else {
             $ruleIds = [];
             foreach ($roleIds as $roleId) {
-                $ids = Db::name('auth_role_rule')->where('role_id', $roleId)->column('rule_id');
+                $ids = RoleRule::where('role_id', $roleId)->column('rule_id');
                 foreach ($ids as $id) {
                     $ruleIds[(int) $id] = true;
                 }

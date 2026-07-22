@@ -3,13 +3,13 @@ declare (strict_types=1);
 
 namespace app\admin\controller\auth;
 
+use app\admin\model\auth\AdminRole;
 use app\admin\model\auth\Role as RoleModel;
 use app\admin\model\auth\RoleRule;
 use app\admin\model\auth\Rule as RuleModel;
 use app\admin\service\AdminRbacService;
 use app\admin\service\MenuService;
 use app\common\controller\AdminController;
-use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -47,7 +47,7 @@ class Role extends AdminController
             return $this->fail(404, '不存在');
         }
         $data = $row->toArray();
-        $data['rule_ids'] = array_map('intval', Db::name('auth_role_rule')->where('role_id', $id)->column('rule_id'));
+        $data['rule_ids'] = array_map('intval', RoleRule::where('role_id', $id)->column('rule_id'));
 
         return $this->ok($data);
     }
@@ -63,6 +63,7 @@ class Role extends AdminController
             return $this->fail(405, '仅支持 POST');
         }
         $post = $request->post();
+        $code = $request->post("code/s", "", "trim");
         $name = $request->post("name/s", "", "trim");
         if ($name == "") {
             return $this->fail(400, '角色名必填');
@@ -70,6 +71,7 @@ class Role extends AdminController
         $m = new RoleModel();
         $m->save([
             'pid' => (int)($post['pid'] ?? 0),
+            'code' => $code,
             'name' => $name,
             'desc' => isset($post['desc']) ? (string)$post['desc'] : null,
             'sort' => (int)($post['sort'] ?? 0),
@@ -103,6 +105,7 @@ class Role extends AdminController
         }
         $row->save([
             'pid' => (int)($put['pid'] ?? $row->getAttr('pid')),
+            'code' => trim((string)$put['code']),
             'name' => trim((string)$put['name']),
             'desc' => array_key_exists('desc', $put) ? (string)$put['desc'] : $row->getAttr('desc'),
             'sort' => (int)($put['sort'] ?? $row->getAttr('sort')),
@@ -129,10 +132,10 @@ class Role extends AdminController
         if (RoleModel::where('pid', $id)->count() > 0) {
             return $this->fail(400, '存在子角色，禁止删除');
         }
-        if (Db::name('admin_role')->where('role_id', $id)->count() > 0) {
+        if (AdminRole::where('role_id', $id)->count() > 0) {
             return $this->fail(400, '仍有管理员绑定该角色');
         }
-        Db::name('auth_role_rule')->where('role_id', $id)->delete();
+        RoleRule::where('role_id', $id)->delete();
         RoleModel::destroy($id);
         MenuService::forgetRoleMenuCache($id);
         AdminRbacService::forgetRoleRbacCache($id);

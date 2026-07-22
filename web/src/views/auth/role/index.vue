@@ -36,6 +36,7 @@ const onAddChild = (row: RoleRow) => openAddChild(row.id)
         border
     >
       <el-table-column label="ID" prop="id" width="80"/>
+      <el-table-column label="识别码" prop="code"/>
       <el-table-column label="名称" prop="name"/>
       <el-table-column label="描述" prop="desc" show-overflow-tooltip/>
     </ga-tree-table>

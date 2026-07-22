@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
-use app\admin\model\SystemConfig;
+use app\admin\model\system\Config;
 use think\facade\Cache;
 use think\facade\Db;
 
@@ -34,7 +34,7 @@ class SystemConfigService
         if (is_string($cached)) {
             return $cached;
         }
-        $row = SystemConfig::where('key', $key)->whereIn('status', [1, 2])->field('value')->find();
+        $row = Config::where('key', $key)->whereIn('status', [1, 2])->field('value')->find();
         if (!$row) {
             return null;
         }
@@ -62,7 +62,7 @@ class SystemConfigService
             }
         }
         if ($miss !== []) {
-            $rows = SystemConfig::where('key', 'in', $miss)
+            $rows = Config::where('key', 'in', $miss)
                 ->whereIn('status', [1, 2])
                 ->field('key,value')
                 ->select();
@@ -88,7 +88,7 @@ class SystemConfigService
         if (is_array($cached)) {
             return $cached;
         }
-        $rows = SystemConfig::whereIn('status', [1, 2])->field('key,value,group')->select();
+        $rows = Config::whereIn('status', [1, 2])->field('key,value,group')->select();
         $result = [];
         foreach ($rows as $row) {
             $group = (string) $row->getAttr('group');
@@ -109,7 +109,7 @@ class SystemConfigService
      */
     public static function getList(int $page, int $limit, string $group = '', string $keyword = '')
     {
-        $q = SystemConfig::order('group', 'asc')->order('sort', 'asc')->order('id', 'asc');
+        $q = Config::order('group', 'asc')->order('sort', 'asc')->order('id', 'asc');
         if ($group !== '') {
             $q->where('group', $group);
         }
@@ -131,7 +131,7 @@ class SystemConfigService
      */
     public static function getGroups(): array
     {
-        return SystemConfig::distinct(true)->whereIn('status', [1, 2])->order('group', 'asc')->column('group');
+        return Config::distinct(true)->whereIn('status', [1, 2])->order('group', 'asc')->column('group');
     }
 
     /**
@@ -141,7 +141,7 @@ class SystemConfigService
     {
         return Db::transaction(function () use ($data, $id) {
             if ($id !== null && $id > 0) {
-                $row = SystemConfig::find($id);
+                $row = Config::find($id);
                 if (!$row) {
                     return 0;
                 }
@@ -152,7 +152,7 @@ class SystemConfigService
                     self::forgetConfigCache($data['key']);
                 }
             } else {
-                $m = new SystemConfig();
+                $m = new Config();
                 $m->save($data);
                 $id = (int) $m->getAttr('id');
             }
@@ -168,7 +168,7 @@ class SystemConfigService
     public static function deleteConfig(int $id): bool
     {
         return Db::transaction(function () use ($id) {
-            $row = SystemConfig::find($id);
+            $row = Config::find($id);
             if (!$row) {
                 return false;
             }
@@ -190,11 +190,11 @@ class SystemConfigService
     {
         Db::transaction(function () use ($group, $pairs) {
             foreach ($pairs as $key => $value) {
-                $row = SystemConfig::where('key', $key)->find();
+                $row = Config::where('key', $key)->find();
                 if ($row) {
                     $row->save(['value' => $value]);
                 } else {
-                    $m = new SystemConfig();
+                    $m = new Config();
                     $m->save([
                         'key'   => $key,
                         'value' => $value,

@@ -3,9 +3,10 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
+use app\admin\model\auth\AdminOperationLog;
+use app\admin\model\auth\Rule;
 use app\admin\service\auth\AdminAuthPayload;
 use think\facade\Cache;
-use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -80,8 +81,7 @@ class AdminOperationLogService
         }
 
         $map  = [];
-        $rows = Db::name('auth_rule')
-            ->where('scope', 'backend')
+        $rows = Rule::where('scope', 'backend')
             ->where('type', 'api')
             ->field('path,method,name')
             ->select()
@@ -113,7 +113,7 @@ class AdminOperationLogService
     public static function record(int $adminId, string $action, string $summary, ?string $ip): void
     {
         try {
-            Db::name('admin_operation_log')->insert([
+            AdminOperationLog::insert([
                 'admin_id'    => $adminId,
                 'action'      => $action,
                 'summary'     => mb_substr($summary, 0, self::SUMMARY_MAX, 'UTF-8'),

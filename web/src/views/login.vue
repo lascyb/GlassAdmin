@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ApiError, postData } from '@/apis/http'
 import feishuIcon from '@/assets/images/feishu.png'
-import { useAdmin } from '@/pinia/admin'
+import { type Admin, useAdmin } from '@/pinia/admin'
 import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -37,7 +37,7 @@ type LoginResult = {
   refresh_token: string
   expire_at: number
   refresh_expire_at: number
-  user: { id: number; username: string; nickname: string; avatar?: string | null; role_ids?: number[] }
+  user: Admin
 }
 
 /** applyLoginResult 写入登录态并跳转 */
@@ -126,7 +126,7 @@ const handleFeishuLogin = () => {
     return
   }
   feishuLogining.value = true
-  location.href = `${base}/account.login.FeishuOauth2/authorize`
+  location.href = `${base}/account.login.oauth2.Feishu/authorize`
 }
 
 /** handleFeishuCallback 处理飞书授权回调（login_from=feishu-web&code=） */
@@ -153,7 +153,7 @@ const handleFeishuCallback = async () => {
 
   feishuLogining.value = true
   try {
-    const data = await postData<LoginResult>('account.login.FeishuOauth2/login', {
+    const data = await postData<LoginResult>('account.login.oauth2.Feishu/login', {
       code,
       remember: false,
     })

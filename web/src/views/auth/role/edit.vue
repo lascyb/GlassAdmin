@@ -49,6 +49,7 @@ const emit = defineEmits<{ saved: [] }>()
 const form = reactive<{
   id?: number
   pid?: number
+  code: string
   name: string
   desc: string
   sort: number
@@ -56,6 +57,7 @@ const form = reactive<{
 }>({
   id: undefined,
   pid: undefined,
+  code: '',
   name: '',
   desc: '',
   sort: 0,
@@ -124,6 +126,7 @@ const loadDetail = async () => {
       Object.assign(form, {
         id: d.id,
         pid: d.pid,
+        code: d.code,
         name: d.name,
         desc: d.desc ?? '',
         sort: d.sort,
@@ -143,6 +146,7 @@ const loadDetail = async () => {
     Object.assign(form, {
       id: undefined,
       pid: props.pid,
+      code: '',
       name: '',
       desc: '',
       sort: 0,
@@ -158,6 +162,7 @@ const loadDetail = async () => {
     Object.assign(form, {
       id: undefined,
       pid: undefined,
+      code: '',
       name: '',
       desc: '',
       sort: 0,
@@ -194,6 +199,7 @@ const submit = async () => {
     if (roleId) {
       await roleApi.updateRole(roleId, {
         pid: form.pid ?? 0,
+        code: form.code.trim(),
         name: form.name.trim(),
         desc: form.desc.trim(),
         sort: form.sort,
@@ -202,6 +208,7 @@ const submit = async () => {
     } else {
       const r = await roleApi.saveRole({
         pid: form.pid ?? 0,
+        code: form.code.trim(),
         name: form.name.trim(),
         desc: form.desc.trim(),
         sort: form.sort,
@@ -241,7 +248,10 @@ const submit = async () => {
                 :render-after-expand="false"
             />
           </el-form-item>
-          <el-form-item label="角色名" required>
+          <el-form-item label="角色识别码">
+            <el-input v-model.trim="form.code" placeholder="请输入角色识别码" clearable show-word-limit maxlength="50"/>
+          </el-form-item>
+            <el-form-item label="角色名" required>
             <el-input v-model.trim="form.name" placeholder="请输入角色名" clearable show-word-limit maxlength="50"/>
           </el-form-item>
           <el-form-item label="描述">

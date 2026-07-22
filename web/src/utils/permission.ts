@@ -2,9 +2,6 @@ import type { Menu } from '@/layouts/components/menus/types'
 import { useAdmin } from '@/pinia/admin'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 
-/** SUPER_ROLE_ID 超级管理员，拥有全部前端按钮权限 */
-const SUPER_ROLE_ID = 1
-
 /**
  * collectBtnPaths 从菜单树收集 type=btn 的 path 作为权限键
  */
@@ -36,7 +33,7 @@ export function getStoredPermissions(): Set<string> {
 export function hasPermission(key: string | string[] | undefined | null): boolean {
     if (!key) return true
     const admin = useAdmin()
-    if (admin.data?.role_ids?.includes(SUPER_ROLE_ID)) return true
+    if (admin.data?.role_codes?.includes("SUPER")) return true // 超级管理员，拥有全部前端按钮权限
 
     const keys = Array.isArray(key) ? key : [key]
     const allowed = getStoredPermissions()

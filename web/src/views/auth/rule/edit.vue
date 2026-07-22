@@ -333,9 +333,6 @@ defineExpose({openAdd, openEdit})
             </template>
 
             <template v-else>
-                <el-form-item v-if="form.type === 'menu' || form.type === 'view'" label="仅作为路由">
-                    <el-checkbox v-model="routeOnly">是（不入侧栏菜单）</el-checkbox>
-                </el-form-item>
                 <el-form-item label="path">
                     <el-input v-model.trim="form.path" placeholder="路由 path 片段"/>
                 </el-form-item>
@@ -374,6 +371,9 @@ defineExpose({openAdd, openEdit})
                     <el-radio :value="1">启用</el-radio>
                     <el-radio :value="0">禁用</el-radio>
                 </el-radio-group>
+            </el-form-item>
+            <el-form-item v-if="scope === 'frontend' && (form.type === 'menu' || form.type === 'view')" label="仅作为路由">
+                <el-checkbox v-model="routeOnly">是（不入侧栏菜单）</el-checkbox>
             </el-form-item>
         </el-form>
         <template #footer>

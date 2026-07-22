@@ -1,22 +1,26 @@
 <?php
 declare(strict_types=1);
 
-namespace app\admin\controller\account\login;
+namespace app\admin\controller\account\login\oauth2;
 
-use app\admin\model\Admin;
-use app\admin\model\AdminOauthFeishu;
+use app\admin\controller\account\login\BaseLogin;
+use app\admin\model\auth\Admin;
+use app\admin\model\auth\oauth2\Feishu as Oauth2Feishu;
 use feishu\Client as FeishuClient;
 use feishu\FeishuException;
 use feishu\OAuth2;
 use feishu\open_apis\authen\v1\user_info\UserInfoGetRequest;
 use Random\RandomException;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Config;
 use think\Response;
 
 /**
  * FeishuOauth2 飞书 OAuth2 授权登录
  */
-class FeishuOauth2 extends BaseLogin
+class Feishu extends BaseLogin
 {
     /**
      * authorize 跳转飞书授权页
@@ -44,6 +48,10 @@ class FeishuOauth2 extends BaseLogin
     /**
      * login 飞书授权码登录
      * @return Response
+     * @throws RandomException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function login(): Response
     {
@@ -88,7 +96,7 @@ class FeishuOauth2 extends BaseLogin
         }
 
         try {
-            $bind = AdminOauthFeishu::findOrCreate($userInfo, $token);
+            $bind = Oauth2Feishu::findOrCreate($userInfo, $token);
         } catch (\Throwable $e) {
             return $this->fail(500, '用户绑定失败：' . $e->getMessage());
         }

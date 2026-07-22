@@ -3,6 +3,7 @@ import { getData, postFormDataData, putData, type HttpRequestOptions } from '@/a
 /** AdminRoleBrief 用户绑定的角色 */
 export type AdminRoleBrief = {
     id: number
+    code: string
     name: string
     enabled: number
 }
@@ -50,6 +51,12 @@ export const fetchProfile = async () => {
     return getData<ProfileRow>('account.Profile/read')
 }
 
+/**
+ * fetchProfile 当前用户资料
+ */
+export const fetchRoles = async () => {
+    return getData<ProfileRow>('account.Profile/roles')
+}
 /**
  * switchRoles 切换当前用户启用的角色
  */

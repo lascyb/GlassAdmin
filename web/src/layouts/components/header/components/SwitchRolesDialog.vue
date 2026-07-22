@@ -19,10 +19,9 @@ const onlyOneRole = computed(() => roleOptions.value.length <= 1)
 const loadRoles = async () => {
     rolesLoading.value = true
     try {
-        const profile = await accountApi.fetchProfile()
+        const profile = await accountApi.fetchRoles()
         roleOptions.value = profile.roles ?? []
-        selectedRoleIds.value =
-            profile.roles?.filter((r) => r.enabled === 1).map((r) => r.id) ?? profile.role_ids ?? []
+        selectedRoleIds.value = profile.roles?.filter((r) => r.enabled === 1).map((r) => r.id) ?? profile.role_ids ?? []
     } catch (e: unknown) {
         ElMessage.error(e instanceof Error ? e.message : '加载角色失败')
     } finally {
@@ -40,8 +39,9 @@ const applyRoles = async () => {
     try {
         const res = await accountApi.switchRoles(selectedRoleIds.value)
         if (admin.data) {
-            admin.data.role_ids = res.role_ids
             admin.data.roles = res.roles
+            admin.data.role_codes = admin.data.roles?.filter(item=>item.enabled==1)?.map(item=>item.code)
+            admin.data.role_ids = admin.data.roles?.filter(item=>item.enabled==1)?.map(item=>item.id)
         }
         visible.value = false
         ElMessage.success('角色已切换，正在刷新…')

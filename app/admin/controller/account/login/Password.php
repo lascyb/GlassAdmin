@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace app\admin\controller\account\login;
 
-use app\admin\model\Admin;
+use app\admin\model\auth\Admin;
 use app\admin\service\RsaKeyService;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\Response;
 
 /**
@@ -15,6 +18,9 @@ class Password extends BaseLogin
     /**
      * login 用户名密码登录（仅成功时写操作日志）
      * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function login(): Response
     {

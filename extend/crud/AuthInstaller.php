@@ -3,9 +3,10 @@ declare (strict_types = 1);
 
 namespace crud;
 
+use app\admin\model\auth\Rule;
+use app\admin\model\auth\RuleApi;
 use crud\Context;
 use think\db\exception\DbException;
-use think\facade\Db;
 
 /**
  * AuthInstaller 将权限/菜单直接写入数据库（不挂角色、不生成 SQL 文件）
@@ -13,7 +14,7 @@ use think\facade\Db;
  * 对齐 example 金样：
  * - backend menu 链（与 menus 同级，view 对应接口权限组）+ api：list/read/create/update/delete（+upload）
  * - frontend menu 链（menus 按 enabled 过滤，pid 逐级挂接）+ view + btn(add/edit/del)
- * - auth_rule_frontend_api 绑定
+ * - auth_rule_api 绑定
  *
  * 若 frontend view 已存在：更新 view/btn 字段，并覆盖重建该 view 子树的 frontend_api 绑定。
  */
@@ -334,8 +335,7 @@ class AuthInstaller
         $bindingsCleared = 0;
         if ($viewExisted && $frontRuleIds !== []) {
             // 已有 view：覆盖权限绑定（先清后写）
-            $bindingsCleared = (int) Db::name('auth_rule_frontend_api')
-                ->whereIn('frontend_rule_id', $frontRuleIds)
+            $bindingsCleared = (int) RuleApi::whereIn('frontend_rule_id', $frontRuleIds)
                 ->delete();
         }
 
@@ -345,15 +345,14 @@ class AuthInstaller
                 continue;
             }
             if (!$viewExisted) {
-                $exists = Db::name('auth_rule_frontend_api')
-                    ->where('frontend_rule_id', $frontId)
+                $exists = RuleApi::where('frontend_rule_id', $frontId)
                     ->where('backend_rule_id', $backId)
                     ->count();
                 if ($exists > 0) {
                     continue;
                 }
             }
-            Db::name('auth_rule_frontend_api')->insert([
+            RuleApi::insert([
                 'frontend_rule_id' => $frontId,
                 'backend_rule_id'  => $backId,
             ]);
@@ -392,24 +391,23 @@ class AuthInstaller
             $expectedType = ((string) ($menu['type'] ?? 'menu')) === 'view' ? 'view' : 'menu';
             $pid = $frontMenuId;
 
-            $conflict = Db::name('auth_rule')
-                ->where('scope', 'frontend')
+            $conflict = Rule::where('scope', 'frontend')
                 ->where('pid', $pid)
                 ->where('path', $path)
                 ->where('type', '<>', $expectedType)
                 ->whereIn('type', ['menu', 'view'])
                 ->find();
 
-            if (is_array($conflict) && $conflict !== []) {
+            if ($conflict) {
                 throw new \RuntimeException(sprintf(
                     '前端菜单冲突：路径「%s」在 pid=%d 下已存在 %s「%s」(id=%d)，'
                     . '当前生成需要 %s「%s」。'
                     . '请调整 menus 路径、手动合并权限规则，或取消「生成权限规则」后仅生成代码。',
                     $label,
                     $pid,
-                    (string) $conflict['type'],
-                    (string) $conflict['name'],
-                    (int) $conflict['id'],
+                    (string) $conflict->getAttr('type'),
+                    (string) $conflict->getAttr('name'),
+                    (int) $conflict->getAttr('id'),
                     $expectedType,
                     (string) ($menu['title'] ?? $path),
                 ));
@@ -527,10 +525,7 @@ class AuthInstaller
      */
     private function findRuleId(array $where): int
     {
-        $q = Db::name('auth_rule');
-        foreach ($where as $k => $v) {
-            $q->where($k, $v);
-        }
+        $q = Rule::where($where);
 
         return (int) $q->value('id');
     }
@@ -559,7 +554,7 @@ class AuthInstaller
                 $patch = $data;
                 unset($patch['create_time'], $patch['scope'], $patch['type']);
                 $patch['update_time'] = date('Y-m-d H:i:s');
-                Db::name('auth_rule')->where('id', $id)->update($patch);
+                Rule::where('id', $id)->update($patch);
                 $updated[] = $label;
             } else {
                 $reused[] = $label;
@@ -567,7 +562,7 @@ class AuthInstaller
 
             return $id;
         }
-        $id = (int) Db::name('auth_rule')->insertGetId($data);
+        $id = (int) Rule::insertGetId($data);
         $created[] = $label;
 
         return $id;

@@ -3,11 +3,11 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\auth;
 
+use app\admin\model\auth\Admin as AdminModel;
+use app\admin\model\auth\AdminRole;
 use app\admin\model\auth\Role as RoleModel;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
-use app\admin\model\Admin as AdminModel;
-use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -102,9 +102,7 @@ class Admin extends AdminController
         }
         $data = $row->toArray();
         unset($data['password']);
-        $roles = $data['roles'] ?? [];
-        $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
-
+        $data['role_ids'] = array_column($data['roles'] ?? [],'id');
         return $this->ok($data);
     }
 
@@ -153,7 +151,7 @@ class Admin extends AdminController
             'nickname' => $nickname !== '' ? $nickname : null,
             'status'   => $status,
         ]);
-        AdminModel::syncRoles((int) $m->getAttr('id'), $roleIds);
+        AdminRole::syncRoles((int) $m->getAttr('id'), $roleIds);
 
         return $this->ok(['id' => (int) $m->getAttr('id')]);
     }
@@ -177,7 +175,7 @@ class Admin extends AdminController
         $nickname = trim((string) $request->put('nickname', ''));
         $roleIds  = $this->parseRoleIds($request->put('role_ids'));
         if ($roleIds === []) {
-            $roleIds = AdminModel::roleIdsFor($id);
+            $roleIds = AdminRole::activeRoleIds($id);
         }
         $status   = (int) $request->put('status', (int) $row->getAttr('status'));
         $encPwd   = (string) $request->put('password', '');
@@ -213,7 +211,7 @@ class Admin extends AdminController
         }
         $row->save($data);
         if ($request->has('role_ids')) {
-            AdminModel::syncRoles($id, $roleIds);
+            AdminRole::syncRoles($id, $roleIds);
         }
 
         return $this->ok();
@@ -238,7 +236,7 @@ class Admin extends AdminController
         if (!$row) {
             return $this->fail(404, '不存在');
         }
-        Db::name('admin_role')->where('admin_id', $id)->delete();
+        AdminRole::where('admin_id', $id)->delete();
         AdminModel::destroy($id);
 
         return $this->ok();

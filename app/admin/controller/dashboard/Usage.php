@@ -3,12 +3,12 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\dashboard;
 
-use app\admin\model\Admin;
-use app\admin\model\AdminOperationLog;
+use app\admin\model\auth\Admin;
+use app\admin\model\auth\AdminOperationLog;
+use app\admin\model\auth\AdminRole;
 use app\admin\model\auth\Role;
 use app\admin\model\auth\Rule;
 use app\common\controller\AdminController;
-use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -53,8 +53,7 @@ class Usage extends AdminController
             ->whereLike('action', 'auth.login%')->count();
         $todayWriteOps = max(0, $todayOps - $todayLogin);
 
-        $trendRows = Db::name('admin_operation_log')
-            ->where('create_time', '>=', $trendStart)
+        $trendRows = AdminOperationLog::where('create_time', '>=', $trendStart)
             ->field([
                 'DATE(create_time) AS day',
                 'COUNT(*) AS ops',
@@ -91,9 +90,8 @@ class Usage extends AdminController
             $loginSeries[]  = $bucket['logins'];
         }
 
-        $topAdminRows = Db::name('admin_operation_log')
-            ->alias('l')
-            ->leftJoin('admin a', 'a.id = l.admin_id')
+        $topAdminRows = AdminOperationLog::alias('l')
+            ->leftJoin('auth_admin a', 'a.id = l.admin_id')
             ->where('l.create_time', '>=', $trendStart)
             ->field([
                 'l.admin_id',
@@ -117,8 +115,7 @@ class Usage extends AdminController
             ];
         }, $topAdminRows);
 
-        $topActionRows = Db::name('admin_operation_log')
-            ->where('create_time', '>=', $trendStart)
+        $topActionRows = AdminOperationLog::where('create_time', '>=', $trendStart)
             ->whereNotLike('action', 'auth.login%')
             ->field(['action', 'COUNT(*) AS count'])
             ->group('action')
@@ -132,8 +129,7 @@ class Usage extends AdminController
             'count'  => (int) $row['count'],
         ], $topActionRows);
 
-        $roleDistRows = Db::name('admin_role')
-            ->alias('ar')
+        $roleDistRows = AdminRole::alias('ar')
             ->leftJoin('auth_role r', 'r.id = ar.role_id')
             ->field(['ar.role_id', 'MAX(IFNULL(r.name, \'未分配\')) AS role_name', 'COUNT(*) AS count'])
             ->group('ar.role_id')
@@ -146,8 +142,7 @@ class Usage extends AdminController
             'count'     => (int) $row['count'],
         ], $roleDistRows);
 
-        $moduleActionRows = Db::name('admin_operation_log')
-            ->where('create_time', '>=', $trendStart)
+        $moduleActionRows = AdminOperationLog::where('create_time', '>=', $trendStart)
             ->whereNotLike('action', 'auth.login%')
             ->field(['action', 'COUNT(*) AS count'])
             ->group('action')
@@ -168,9 +163,8 @@ class Usage extends AdminController
             $moduleDistribution[] = ['module' => $module, 'count' => $count];
         }
 
-        $recentRows = Db::name('admin_operation_log')
-            ->alias('l')
-            ->leftJoin('admin a', 'a.id = l.admin_id')
+        $recentRows = AdminOperationLog::alias('l')
+            ->leftJoin('auth_admin a', 'a.id = l.admin_id')
             ->field('l.id,l.admin_id,l.action,l.summary,l.ip,l.create_time,a.username,a.nickname')
             ->order('l.id', 'desc')
             ->limit(self::RECENT_LOGS_LIMIT)

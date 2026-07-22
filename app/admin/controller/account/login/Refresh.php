@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace app\admin\controller\account\login;
 
-use app\admin\model\Admin;
+use app\admin\model\auth\Admin;
 use app\admin\service\AdminTokenService;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\Response;
 
 /**
@@ -15,6 +18,9 @@ class Refresh extends BaseLogin
     /**
      * token 用 refresh_token 换发新的 access_token 与 refresh_token
      * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function token(): Response
     {
@@ -51,13 +57,6 @@ class Refresh extends BaseLogin
             'refresh_token'     => $pair['refresh_token'] ?? '',
             'expire_at'         => $pair['expire_at'],
             'refresh_expire_at' => $pair['refresh_expire_at'],
-            'user'              => [
-                'id'       => (int) $user->getAttr('id'),
-                'username' => (string) $user->getAttr('username'),
-                'nickname' => (string) ($user->getAttr('nickname') ?: $user->getAttr('username')),
-                'avatar'   => $user->getAttr('avatar'),
-                'role_ids' => $authPayload->roleIds,
-            ],
         ]);
     }
 }

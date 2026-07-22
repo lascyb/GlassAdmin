@@ -3,13 +3,14 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
+use app\admin\model\auth\RoleRule;
 use app\admin\model\auth\Rule;
+use app\admin\model\auth\RuleApi;
 use think\facade\Cache;
-use think\facade\Db;
 use think\Request;
 
 /**
- * AdminRbacService 管理端接口授权：角色经前端规则绑定后端 api 规则（与 auth_role_rule、auth_rule_frontend_api 一致）
+ * AdminRbacService 管理端接口授权：角色经前端规则绑定后端 api 规则（与 auth_role_rule、auth_rule_api 一致）
  * 超级管理员应在中间件层跳过本服务，不在此处理
  */
 class AdminRbacService
@@ -126,13 +127,12 @@ class AdminRbacService
         if (is_array($cached)) {
             return array_map('intval', $cached);
         }
-        $frontendIds = Db::name('auth_role_rule')->where('role_id', $roleId)->column('rule_id');
+        $frontendIds = RoleRule::where('role_id', $roleId)->column('rule_id');
         $frontendIds = array_map('intval', $frontendIds);
         if ($frontendIds === []) {
             $ids = [];
         } else {
-            $ids = Db::name('auth_rule_frontend_api')
-                ->where('frontend_rule_id', 'in', $frontendIds)
+            $ids = RuleApi::where('frontend_rule_id', 'in', $frontendIds)
                 ->column('backend_rule_id');
             $ids = array_values(array_unique(array_map('intval', $ids)));
         }

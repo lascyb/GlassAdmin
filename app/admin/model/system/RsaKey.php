@@ -1,13 +1,13 @@
 <?php
 declare (strict_types = 1);
 
-namespace app\admin\model;
+namespace app\admin\model\system;
 
 use think\Model;
 
 class RsaKey extends Model
 {
-    protected $name = 'rsa_key';
+    protected $name = 'system_rsa_key';
 
     protected bool $autoWriteTimestamp = true;
 

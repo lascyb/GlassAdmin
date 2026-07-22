@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace app\admin\model;
+namespace app\admin\model\auth\oauth2;
 
+use app\admin\model\auth\Admin;
 use think\facade\Db;
 use think\Model;
 
 /**
- * AdminOauthFeishu 管理员飞书 OAuth 绑定（表 admin_oauth_feishu）
+ * AdminOauthFeishu 管理员飞书 OAuth 绑定（表 auth_oauth2_feishu）
  *
  * @property int         $id
  * @property int         $admin_id
@@ -23,9 +24,9 @@ use think\Model;
  * @property int|null    $create_time
  * @property int|null    $update_time
  */
-class AdminOauthFeishu extends Model
+class Feishu extends Model
 {
-    protected $name = 'admin_oauth_feishu';
+    protected $name = 'auth_oauth2_feishu';
 
     protected array|bool $autoWriteTimestamp = true;
 

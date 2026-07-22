@@ -418,9 +418,9 @@ class Remote extends AdminController
     {
         $exact = [
             'migrations', 'migration', 'phinxlog', 'think_migrations',
-            'auth_admin', 'auth_admin_role', 'auth_role', 'auth_role_rule',
-            'auth_rule', 'auth_rule_frontend_api', 'system_config',
-            'dev_crud_history', 'rsa_key',
+            'auth_admin', 'auth_admin_role', 'auth_admin_operation_log', 'auth_oauth2_feishu',
+            'auth_role', 'auth_role_rule', 'auth_rule', 'auth_rule_api',
+            'system_config', 'system_rsa_key', 'dev_crud_history',
         ];
         if (in_array($name, $exact, true)) {
             return true;

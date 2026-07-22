@@ -1,7 +1,7 @@
 <?php
 declare (strict_types = 1);
 
-namespace app\admin\model;
+namespace app\admin\model\system;
 
 use think\Model;
 
@@ -21,7 +21,7 @@ use think\Model;
  * @property int         $create_time
  * @property int         $update_time
  */
-class SystemConfig extends Model
+class Config extends Model
 {
     /** @var string 表名 */
     protected $name = 'system_config';

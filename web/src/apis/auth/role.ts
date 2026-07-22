@@ -4,6 +4,7 @@ import { delData, getData, postData, putData } from '@/apis/http'
 export type RoleRow = {
     id: number
     pid: number
+    code: string
     name: string
     desc?: string | null
     sort: number
@@ -34,7 +35,7 @@ export const fetchRead = async (id: number) => {
 /**
  * saveRole 新建角色
  */
-export const saveRole = async (payload: { pid?: number; name: string; desc?: string; sort?: number; status?: number }) => {
+export const saveRole = async (payload: { pid?: number; code: string; name: string; desc?: string; sort?: number; status?: number }) => {
     return postData<{ id: number }>('auth.Role/save', payload)
 }
 
@@ -43,7 +44,7 @@ export const saveRole = async (payload: { pid?: number; name: string; desc?: str
  */
 export const updateRole = async (
     id: number,
-    payload: { pid?: number; name: string; desc?: string; sort?: number; status?: number },
+    payload: { pid?: number; code: string; name: string; desc?: string; sort?: number; status?: number },
 ) => {
     return putData<null>('auth.Role/update?id=' + id, payload)
 }
