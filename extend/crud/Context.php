@@ -759,7 +759,13 @@ class Context
             return 'related';
         }
         // field_2 → field2，避免 with('field_2') 找不到 field_2() 而落到 Query->field2
-        return str_contains($name, '_') ? self::toCamel($name) : $name;
+        $name = str_contains($name, '_') ? self::toCamel($name) : $name;
+        // 关联方法名不能与本地列名相同：否则模型属性与关联同名、Row 出现重复键、with() 覆盖标量列
+        if ($name === $prop) {
+            $name .= 'Related';
+        }
+
+        return $name;
     }
 
     /**
