@@ -59,7 +59,6 @@ const onReset = () => {
                 <slot name="actions"/>
             </div>
             <div class="flex shrink-0 items-center gap-2">
-                <el-button :disabled="loading" :icon="Refresh" @click="onRefresh"/>
                 <el-input
                     v-if="showKeyword"
                     v-model="keyword"
@@ -68,7 +67,8 @@ const onReset = () => {
                     class="!w-100"
                     @keyup.enter="onSearch"
                 />
-                <el-button type="primary" @click="onSearch">查询</el-button>
+                <el-button v-if="showKeyword" type="primary" @click="onSearch">查询</el-button>
+                <el-button :disabled="loading" :icon="Refresh" @click="onRefresh"/>
                 <el-button type="primary" @click="expanded = !expanded" plain v-if="showToggle && $slots.advanced"
                            :icon="Search"/>
             </div>
