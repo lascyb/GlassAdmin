@@ -52,6 +52,43 @@ class Helper
         return $vals !== [] && is_string($vals[0]);
     }
 
+    /** remoteValueIsString 远程关联存值是否为字符串（按本地列类型） */
+    public static function remoteValueIsString(array $f): bool
+    {
+        return Context::isStringColumn($f);
+    }
+
+    /** remoteValueTsType 远程/关联字段 TS 类型 */
+    public static function remoteValueTsType(array $f, bool $nullable = true): string
+    {
+        $base = self::remoteValueIsString($f) ? 'string' : 'number';
+
+        return $nullable ? "{$base} | null" : $base;
+    }
+
+    /** remoteRelatedRowTs 远程回显选项行 TS 类型 */
+    public static function remoteRelatedRowTs(array $f): string
+    {
+        $vf = Context::remoteValueField($f);
+        $lf = Context::remoteLabelField($f);
+        $vTs = self::remoteValueIsString($f) ? 'string' : 'number';
+        if ($vf === $lf) {
+            return "{ {$vf}: {$vTs} }";
+        }
+
+        return "{ {$vf}: {$vTs}; {$lf}: string }";
+    }
+
+    /** remotePayloadFn belongs_to / remote_select 写入闭包 */
+    public static function remotePayloadFn(array $f): string
+    {
+        if (self::remoteValueIsString($f)) {
+            return 'static fn (mixed $v): ?string => ($s = trim((string) $v)) !== \'\' ? $s : null';
+        }
+
+        return 'static fn (mixed $v): ?int => ($id = (int) $v) > 0 ? $id : null';
+    }
+
     /** phpLiteralList 枚举值列表转 PHP 数组字面量 */
     public static function phpLiteralList(array $values): string
     {
@@ -90,6 +127,10 @@ class Helper
 
             return 'number';
         }
+        // 远程关联：按本地列类型
+        if (Context::isRemoteField($f) || $render === 'remote_select' || Context::relationType($f) === 'belongs_to') {
+            return self::remoteValueTsType($f, !$required);
+        }
         // Unix 秒时间字段
         if (Context::isUnixDatetime($f)) {
             return 'number';
@@ -101,7 +142,7 @@ class Helper
             return $required ? 'string' : 'string | null';
         }
         if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal'], true)
-            || in_array($render, ['number', 'switch', 'radio', 'select', 'remote_select'], true)
+            || in_array($render, ['number', 'switch', 'radio', 'select'], true)
         ) {
             return 'number';
         }

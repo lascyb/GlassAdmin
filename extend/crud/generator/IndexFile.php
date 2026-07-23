@@ -101,7 +101,8 @@ class IndexFile
                 $queryLines[] = "    {$prop}_start: advanced.{$prop}?.[0] || undefined,";
                 $queryLines[] = "    {$prop}_end: advanced.{$prop}?.[1] || undefined,";
             } elseif ($relation === 'belongs_to' || $sr === 'remote_select') {
-                $advLines[] = "    {$prop}: undefined as number | undefined,";
+                $advType = Helper::remoteValueIsString($f) ? 'string | undefined' : 'number | undefined';
+                $advLines[] = "    {$prop}: undefined as {$advType},";
                 $resetLines[] = "    advanced.{$prop} = undefined";
                 $queryLines[] = "    {$prop}: advanced.{$prop},";
             } elseif ($sr === 'input') {

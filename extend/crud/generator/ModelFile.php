@@ -61,6 +61,7 @@ class ModelFile
                 'label' => (string) $f['label'],
                 'relatedClass' => $relatedEntity,
                 'fk' => (string) $f['prop'],
+                'localKey' => Context::remoteValueField($f),
             ]);
         }
 

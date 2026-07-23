@@ -94,10 +94,17 @@ class ControllerFile
                     'endVar' => $endVar,
                 ]);
             } elseif ($relation === 'belongs_to' || $sr === 'remote_select') {
-                $listParams[] = "        {$var} = (int) \$request->get('{$prop}', 0);";
+                if (Helper::remoteValueIsString($f)) {
+                    $listParams[] = "        {$var} = trim((string) \$request->get('{$prop}', ''));";
+                    $check = "{$var} !== ''";
+                } else {
+                    $listParams[] = "        {$var} = (int) \$request->get('{$prop}', 0);";
+                    $check = "{$var} > 0";
+                }
                 $listFilters .= Template::render('controller/filter/remote_select.php.tpl', [
                     'prop' => $prop,
                     'var' => $var,
+                    'check' => $check,
                 ]);
             } elseif ($sr === 'input') {
                 $listParams[] = "        {$var} = trim((string) \$request->get('{$prop}', ''));";
@@ -204,7 +211,7 @@ class ControllerFile
             $relation = Context::relationType($f);
             $render = Context::formRender($f);
             $fn = match (true) {
-                $relation === 'belongs_to' => "static fn (mixed \$v): ?int => (\$id = (int) \$v) > 0 ? \$id : null",
+                $relation === 'belongs_to' => Helper::remotePayloadFn($f),
                 Context::isBoolField($f) => "static fn (mixed \$v): int => (int) \$v === 1 ? 1 : 0",
                 $ct === 'json' || $render === 'multi_select' => 'fn (mixed $v): ?array => CrudHelper::normalizeStringList($v)',
                 Context::isEnumField($f) => Helper::enumPayloadFn($ctx, $f),

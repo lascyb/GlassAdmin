@@ -59,20 +59,22 @@ class EditFile
 
             if ($relation === 'belongs_to') {
                 $method = Context::relationMethodName($f);
-                $labelField = Context::remoteLabelField($f);
                 $initVar = Context::toCamel($method) . 'Init';
-                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; {$labelField}: string }> | undefined>()";
+                $rowTs = Helper::remoteRelatedRowTs($f);
+                $vf = Context::remoteValueField($f);
+                $initRefs[] = "const {$initVar} = ref<Array<{$rowTs}> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
                 $assignLines[] = "                {$prop}: d.{$prop} ?? undefined,";
                 $initAssign[] = "            {$initVar}.value = d.{$method} ? [d.{$method}] : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop} ?? null,";
             } elseif ($relation === 'belongs_to_many') {
                 $method = Context::relationMethodName($f);
-                $labelField = Context::remoteLabelField($f);
                 $initVar = Context::toCamel($method) . 'Init';
-                $initRefs[] = "const {$initVar} = ref<Array<{ id: number; {$labelField}: string }> | undefined>()";
+                $rowTs = Helper::remoteRelatedRowTs($f);
+                $vf = Context::remoteValueField($f);
+                $initRefs[] = "const {$initVar} = ref<Array<{$rowTs}> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
-                $assignLines[] = "                {$prop}: d.{$prop} ?? d.{$method}?.map((t) => t.id) ?? [],";
+                $assignLines[] = "                {$prop}: d.{$prop} ?? d.{$method}?.map((t) => t.{$vf}) ?? [],";
                 $initAssign[] = "            {$initVar}.value = d.{$method}?.length ? d.{$method} : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
             } elseif (Context::isStringColumn($f) && in_array($render, ['input', 'password', 'textarea', 'color'], true)) {
@@ -152,8 +154,10 @@ class EditFile
         $ct = Context::columnType($f);
         $relation = Context::relationType($f);
         $render = Context::formRender($f);
-        if ($relation === 'belongs_to') {
-            return 'undefined as number | undefined';
+        if ($relation === 'belongs_to' || $render === 'remote_select') {
+            return Helper::remoteValueIsString($f)
+                ? 'undefined as string | undefined'
+                : 'undefined as number | undefined';
         }
         if ($relation === 'belongs_to_many' || $ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) {
             return '[] as ' . (($ct === 'json' || in_array($render, ['multi_select', 'checkbox'], true)) ? 'string[]' : 'number[]');

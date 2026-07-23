@@ -44,15 +44,16 @@ class ApisFile
             }
             if ($relation === 'belongs_to') {
                 $method = Context::relationMethodName($f);
-                $labelField = Context::remoteLabelField($f);
-                $rowFields[] = "    {$prop}?: number | null";
-                $rowFields[] = "    {$method}?: { id: number; {$labelField}: string } | null";
-                $payloadFields[] = "    {$prop}?: number | null";
+                $rowTs = Helper::remoteRelatedRowTs($f);
+                $valTs = Helper::remoteValueTsType($f);
+                $rowFields[] = "    {$prop}?: {$valTs}";
+                $rowFields[] = "    {$method}?: {$rowTs} | null";
+                $payloadFields[] = "    {$prop}?: {$valTs}";
             } elseif ($relation === 'belongs_to_many') {
                 $method = Context::relationMethodName($f);
-                $labelField = Context::remoteLabelField($f);
+                $rowTs = Helper::remoteRelatedRowTs($f);
                 $rowFields[] = "    {$prop}?: number[]";
-                $rowFields[] = "    {$method}?: Array<{ id: number; {$labelField}: string }>";
+                $rowFields[] = "    {$method}?: Array<{$rowTs}>";
                 $payloadFields[] = "    {$prop}?: number[]";
             } else {
                 $req = Context::isRequired($f);
@@ -79,6 +80,10 @@ class ApisFile
                 $listParamFields[] = "    {$prop}_end?: {$rangeTs}";
             } elseif ($sr === 'input') {
                 $listParamFields[] = "    {$prop}?: string";
+            } elseif ($relation === 'belongs_to' || $sr === 'remote_select') {
+                $listParamFields[] = Helper::remoteValueIsString($f)
+                    ? "    {$prop}?: string"
+                    : "    {$prop}?: number";
             } elseif ($sr === 'select' || $sr === 'radio' || Context::isEnumField($f)) {
                 $vals = $ctx->enumValues($f);
                 $listParamFields[] = Helper::enumIsString($vals)

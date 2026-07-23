@@ -36,11 +36,16 @@ class ValidateFile
             if ($relation === 'belongs_to_many' || $ct === 'json' || $render === 'multi_select' || $render === 'remote_multi_select') {
                 $parts[] = 'array';
             } elseif ($relation === 'belongs_to' || $render === 'remote_select') {
-                $parts[] = 'integer';
-                if (isset($form['numberMin'])) {
-                    $parts[] = 'egt:' . (int) $form['numberMin'];
+                if (Helper::remoteValueIsString($f)) {
+                    $maxLen = Context::formMaxLength($f) ?? 255;
+                    $parts[] = 'max:' . $maxLen;
                 } else {
-                    $parts[] = 'gt:0';
+                    $parts[] = 'integer';
+                    if (isset($form['numberMin'])) {
+                        $parts[] = 'egt:' . (int) $form['numberMin'];
+                    } else {
+                        $parts[] = 'gt:0';
+                    }
                 }
             } elseif (Context::isBoolField($f)) {
                 $parts = ['in:0,1'];

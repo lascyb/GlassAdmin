@@ -1,4 +1,4 @@
 
-        if (<%var%> > 0) {
+        if (<%check%>) {
             $q->where('<%prop%>', <%var%>);
         }
