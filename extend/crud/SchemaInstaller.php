@@ -194,6 +194,10 @@ class SchemaInstaller
             $oldFp = $this->existingFingerprint($existing[$name]);
             $newFp = $spec['fingerprint'];
             if ($oldFp === $newFp) {
+                // 列定义一致：仅补齐缺失索引（仅索引变更场景）
+                foreach ($this->ensureIndexStatements($table, $tableSql, $spec['indexes']) as $sql) {
+                    $statements[] = $sql;
+                }
                 continue;
             }
 
@@ -201,6 +205,20 @@ class SchemaInstaller
                 throw new \InvalidArgumentException("不支持变更主键列定义: {$table}.{$name}");
             }
 
+            // 类型（含 auto_increment）未变，仅默认值/可空/注释差异 → 原地 MODIFY，保留列数据
+            $oldParts = explode('|', $oldFp);
+            $newParts = explode('|', $newFp);
+            $typeSame = ($oldParts[0] ?? '') === ($newParts[0] ?? '')
+                && ($oldParts[3] ?? '') === ($newParts[3] ?? '');
+            if ($typeSame) {
+                $statements[] = "ALTER TABLE {$tableSql} MODIFY COLUMN {$spec['definition']}";
+                foreach ($this->ensureIndexStatements($table, $tableSql, $spec['indexes']) as $sql) {
+                    $statements[] = $sql;
+                }
+                continue;
+            }
+
+            // 类型变更（可能丢数据）→ 保守归档重建：旧列 rename 归档，再建新列
             $archived = $this->archiveName($name, 'update', $ts);
             // RENAME 后索引名仍占用，需先删掉本列常用索引名，再为新列重建
             foreach ($this->columnIndexNames($name, $spec['indexes']) as $idxName) {
@@ -216,6 +234,26 @@ class SchemaInstaller
         }
 
         return ['statements' => $statements];
+    }
+
+    /**
+     * ensureIndexStatements 为已存在列补齐缺失索引（已存在则跳过）
+     *
+     * @param list<string> $indexes
+     * @return list<string>
+     */
+    private function ensureIndexStatements(string $table, string $tableSql, array $indexes): array
+    {
+        $out = [];
+        foreach ($indexes as $idxSql) {
+            if (preg_match('/\b(?:UNIQUE\s+)?INDEX\s+`([^`]+)`/i', $idxSql, $m)
+                && $this->indexExists($table, $m[1])) {
+                continue;
+            }
+            $out[] = "ALTER TABLE {$tableSql} ADD {$idxSql}";
+        }
+
+        return $out;
     }
 
     /**
