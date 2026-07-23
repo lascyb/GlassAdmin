@@ -405,15 +405,20 @@ class SchemaInstaller
         $type = preg_replace('/\s+character set\s+\w+/i', '', $type) ?? $type;
         $type = preg_replace('/\s+collate\s+\w+/i', '', $type) ?? $type;
         $type = trim(preg_replace('/\s+/', ' ', $type) ?? $type);
+        // 去掉括号参数里逗号后的空格：decimal(10, 2) 与 SHOW COLUMNS 的 decimal(10,2) 对齐
+        $type = preg_replace('/,\s+/', ',', $type) ?? $type;
 
         if ($default === null) {
             $def = 'NULL';
         } elseif (is_bool($default)) {
             $def = $default ? '1' : '0';
-        } elseif (is_int($default) || is_float($default)) {
-            $def = (string) $default;
         } else {
             $def = (string) $default;
+            // 数值默认统一规范：0 与 0.00、1.5 与 1.50 视为相同（排除 01 这类前导零字符串）
+            if (is_numeric($def) && preg_match('/^-?0\d/', $def) !== 1) {
+                $normalized = rtrim(rtrim(number_format((float) $def, 6, '.', ''), '0'), '.');
+                $def = ($normalized === '' || $normalized === '-0') ? '0' : $normalized;
+            }
         }
 
         return implode('|', [
