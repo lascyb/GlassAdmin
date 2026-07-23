@@ -521,7 +521,7 @@ class SchemaInstaller
         $comment = $this->quoteComment($ctx->title);
         $body = implode(",\n", $parts);
 
-        return "CREATE TABLE {$table} (\n{$body}\n) ENGINE=InnoDB CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT={$comment} ROW_FORMAT=Dynamic";
+        return "CREATE TABLE {$table} (\n{$body}\n) ENGINE=InnoDB CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT={$comment} ROW_FORMAT=Dynamic";
     }
 
     /**
@@ -552,7 +552,7 @@ class SchemaInstaller
             . "  `{$rk}` bigint UNSIGNED NOT NULL COMMENT " . $this->quoteComment('关联 id') . ",\n"
             . "  PRIMARY KEY (`{$fk}`, `{$rk}`) USING BTREE,\n"
             . "  INDEX `idx_{$rk}`(`{$rk}` ASC) USING BTREE\n"
-            . ") ENGINE=InnoDB CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT={$comment} ROW_FORMAT=Dynamic";
+            . ") ENGINE=InnoDB CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT={$comment} ROW_FORMAT=Dynamic";
     }
 
     /**
@@ -601,9 +601,9 @@ class SchemaInstaller
             'decimal' => $this->decimalType($col),
             'varchar' => $this->charType('varchar', $col),
             'char' => $this->charType('char', $col),
-            'text' => 'text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
-            'mediumtext' => 'mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
-            'longtext' => 'longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+            'text' => 'text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci',
+            'mediumtext' => 'mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci',
+            'longtext' => 'longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci',
             'date' => 'date',
             'datetime' => 'datetime',
             'timestamp' => 'timestamp',
@@ -627,7 +627,7 @@ class SchemaInstaller
             $len = 16383;
         }
 
-        return "{$base}({$len}) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+        return "{$base}({$len}) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci";
     }
 
     /**
