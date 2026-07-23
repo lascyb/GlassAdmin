@@ -406,7 +406,7 @@ class SchemaInstaller
         } elseif (empty($col['autoIncrement']) && empty($col['primary'])) {
             if ($nullable) {
                 $default = null;
-            } elseif (in_array($type, ['bigint', 'int', 'tinyint', 'decimal'], true)) {
+            } elseif (in_array($type, ['bigint', 'int', 'tinyint', 'decimal', 'float'], true)) {
                 $default = 0;
             }
         }
@@ -642,6 +642,7 @@ class SchemaInstaller
             'int' => 'int' . $unsigned,
             'tinyint' => 'tinyint' . $unsigned,
             'decimal' => $this->decimalType($col),
+            'float' => 'float',
             'varchar' => $this->charType('varchar', $col),
             'char' => $this->charType('char', $col),
             'text' => 'text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci',
@@ -722,7 +723,7 @@ class SchemaInstaller
             if ($nullable) {
                 return $nullPart . ' DEFAULT NULL';
             }
-            if (in_array($type, ['bigint', 'int', 'tinyint', 'decimal'], true)) {
+            if (in_array($type, ['bigint', 'int', 'tinyint', 'decimal', 'float'], true)) {
                 return $nullPart . ' DEFAULT 0';
             }
 
@@ -734,7 +735,7 @@ class SchemaInstaller
             if ($nullable) {
                 return $nullPart . ' DEFAULT NULL';
             }
-            if (in_array($type, ['bigint', 'int', 'tinyint', 'decimal'], true)) {
+            if (in_array($type, ['bigint', 'int', 'tinyint', 'decimal', 'float'], true)) {
                 return $nullPart . ' DEFAULT 0';
             }
 

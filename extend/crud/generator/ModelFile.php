@@ -27,7 +27,7 @@ class ModelFile
             $ct = (string) ($col['type'] ?? '');
             $phpType = match (true) {
                 in_array($ct, ['bigint', 'int', 'tinyint'], true) => 'integer',
-                $ct === 'decimal' => 'float',
+                in_array($ct, ['decimal', 'float'], true) => 'float',
                 $ct === 'json' => 'json',
                 default => null,
             };

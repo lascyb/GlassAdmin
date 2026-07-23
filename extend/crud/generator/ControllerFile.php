@@ -216,6 +216,7 @@ class ControllerFile
                 $ct === 'json' || $render === 'multi_select' => 'fn (mixed $v): ?array => CrudHelper::normalizeStringList($v)',
                 Context::isEnumField($f) => Helper::enumPayloadFn($ctx, $f),
                 $ct === 'decimal' => 'static fn (mixed $v): float => round((float) $v, ' . Context::decimalScale($f) . ')',
+                $ct === 'float' => 'static fn (mixed $v): float => (float) $v',
                 Context::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime') => 'static fn (mixed $v): ?int => ($ts = (int) $v) > 0 ? $ts : null',
                 in_array($ct, ['bigint', 'int', 'tinyint'], true) || $render === 'number' => 'static fn (mixed $v): int => (int) $v',
                 default => 'fn (mixed $v): ?string => CrudHelper::nullableString($v)',

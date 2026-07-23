@@ -11,6 +11,7 @@ export const MYSQL_FIELD_TYPE_DEFS = [
     { key: 'INT', value: 'int' },
     { key: 'TINYINT', value: 'tinyint', comment: '开关枚举' },
     { key: 'DECIMAL', value: 'decimal' },
+    { key: 'FLOAT', value: 'float' },
     { key: 'VARCHAR', value: 'varchar', comment: '短文本路径' },
     { key: 'CHAR', value: 'char' },
     { key: 'TEXT', value: 'text' },

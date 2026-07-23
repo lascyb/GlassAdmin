@@ -141,7 +141,7 @@ class Helper
         ) {
             return $required ? 'string' : 'string | null';
         }
-        if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal'], true)
+        if (in_array($ct, ['bigint', 'int', 'tinyint', 'decimal', 'float'], true)
             || in_array($render, ['number', 'switch', 'radio', 'select'], true)
         ) {
             return 'number';

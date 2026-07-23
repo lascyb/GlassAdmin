@@ -397,7 +397,7 @@ class Context
 
         return match ($ct) {
             'tinyint' => 'bool',
-            'int', 'bigint', 'decimal' => 'number_range',
+            'int', 'bigint', 'decimal', 'float' => 'number_range',
             'date' => 'date_range',
             'datetime', 'timestamp' => 'datetime_range',
             default => 'input',

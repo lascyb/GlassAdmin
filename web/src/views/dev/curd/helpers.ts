@@ -287,9 +287,10 @@ export const parseMysqlType = (typeRaw: string): ParsedMysqlType => {
             case 'bool':
             case 'boolean':
                 return 'tinyint'
+            case 'float':
+                return 'float'
             case 'decimal':
             case 'numeric':
-            case 'float':
             case 'double':
             case 'real':
                 return 'decimal'
@@ -378,6 +379,7 @@ const inferSearchRenderFromColumn = (field: CrudFieldSchema): SearchRenderType =
         case 'int':
         case 'bigint':
         case 'decimal':
+        case 'float':
             return SEARCH_RENDER.NUMBER_RANGE
         case 'date':
             return SEARCH_RENDER.DATE_RANGE

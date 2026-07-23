@@ -179,7 +179,7 @@ class EditFile
 
             return Helper::jsLiteral($vals[0]);
         }
-        if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint'], true)) {
+        if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint', 'float'], true)) {
             return '0';
         }
         if (Context::isUnixDatetime($f)) {

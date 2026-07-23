@@ -54,7 +54,7 @@ class ValidateFile
                 // ThinkPHP in: 规则用逗号分隔；字符串值原样拼接
                 $parts[] = 'in:' . implode(',', array_map(static fn ($v): string => (string) $v, $vals));
                 $messages[] = "        '{$prop}.in' => '{$f['label']}无效',";
-            } elseif ($ct === 'decimal') {
+            } elseif (in_array($ct, ['decimal', 'float'], true)) {
                 $parts[] = 'float';
                 if (isset($form['numberMin'])) {
                     $parts[] = 'egt:' . (float) $form['numberMin'];
