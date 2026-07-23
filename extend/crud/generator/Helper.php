@@ -115,7 +115,7 @@ class Helper
     /** constantsImport options 的 import 行 */
     public static function constantsImport(Context $ctx): string
     {
-        $names = array_keys($ctx->options);
+        $names = $ctx->constantNames();
         if ($names === []) {
             return '';
         }

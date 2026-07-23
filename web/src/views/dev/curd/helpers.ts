@@ -220,6 +220,7 @@ export const emptyConfig = (): CrudGenerateConfig => {
         menus,
         paths,
         fields: [defaultPrimaryField()],
+        options: {},
         generateAuth: true,
         writeMode: 'skip',
         menuIcon: 'el:Folder',

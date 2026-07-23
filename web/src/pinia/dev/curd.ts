@@ -8,7 +8,7 @@ import {
     FIELD_TYPE_NEED_REMOTE,
     resolveFieldType,
 } from '@/views/dev/curd/constants/field'
-import { enumKeyOf, remoteApiOf } from '@/views/dev/curd/fieldExt'
+import { enumKeyOf, ensureOptionsForEnumFields, normalizeOptionsMap, remoteApiOf } from '@/views/dev/curd/fieldExt'
 import { buildFieldFromTemplate } from '@/views/dev/curd/fieldTemplate'
 import type { FieldTemplateId } from '@/views/dev/curd/types/intent'
 import { cloneConfig, emptyConfig, leafView, syncDerivedFields } from '@/views/dev/curd/helpers'
@@ -38,6 +38,9 @@ export const useDevCurd = defineStore('dev_curd', () => {
     /** assembleConfig 合并全局 + 字段配置 */
     const assembleConfig = (): CrudGenerateConfig => {
         const meta = useDevCurdGlobal().toMeta()
+        // options 必须是普通对象并挂在 store：数组 [] 上写具名键会被 JSON.stringify 丢掉
+        config.value.options = normalizeOptionsMap(config.value.options)
+        ensureOptionsForEnumFields(config.value)
         return {
             ...cloneConfig(config.value),
             ...meta,
@@ -49,6 +52,8 @@ export const useDevCurd = defineStore('dev_curd', () => {
     /** goBuild 进入构建页 */
     const goBuild = (cfg: CrudGenerateConfig) => {
         const next = cloneConfig(cfg)
+        next.options = normalizeOptionsMap(next.options)
+        ensureOptionsForEnumFields(next)
         config.value = next
         useDevCurdGlobal().hydrate(next)
         useDevCurdField().resetSelection()
@@ -137,6 +142,14 @@ export const useDevCurd = defineStore('dev_curd', () => {
                 const items = cfg.options?.[optKey]
                 if (!items?.length) {
                     return `字段「${f.label || f.prop}」的枚举「${optKey}」为空`
+                }
+            }
+            // 层开关改成枚举后可能未切换 uiType，仍须校验已绑定的 enum.key
+            const boundEnumKey = f.ext?.enum?.key?.trim()
+            if (boundEnumKey) {
+                const items = cfg.options?.[boundEnumKey]
+                if (!items?.length) {
+                    return `字段「${f.label || f.prop}」的枚举「${boundEnumKey}」为空`
                 }
             }
             if (type === 'remote_multi_select') {

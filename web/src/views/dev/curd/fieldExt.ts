@@ -11,6 +11,7 @@ import type {
     CrudFieldRemoteExt,
     CrudFieldSchema,
     CrudGenerateConfig,
+    CrudOptionItem,
     FormRenderType,
     ListRenderType,
 } from '@/views/dev/curd/types'
@@ -102,6 +103,62 @@ const ensureRemoteExt = (field: CrudFieldSchema): void => {
     ensureFieldRemoteExt(field)
 }
 
+/**
+ * normalizeOptionsMap 规范化 options 为普通对象（禁止数组：JSON.stringify 会丢掉数组上的具名属性）
+ */
+export const normalizeOptionsMap = (raw: unknown): Record<string, CrudOptionItem[]> => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return {}
+    }
+    const out: Record<string, CrudOptionItem[]> = {}
+    for (const [key, items] of Object.entries(raw as Record<string, unknown>)) {
+        if (!key.trim() || !Array.isArray(items)) continue
+        const list: CrudOptionItem[] = []
+        for (const item of items) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+            const row = item as Record<string, unknown>
+            if (!('value' in row)) continue
+            const label = String(row.label ?? row.value ?? '')
+            const next: CrudOptionItem = {
+                value: row.value as string | number,
+                label,
+            }
+            if (typeof row.type === 'string' && row.type) {
+                next.type = row.type
+            }
+            list.push(next)
+        }
+        if (list.length) {
+            out[key] = list
+        }
+    }
+    return out
+}
+
+/** defaultOptionsForRender 按控件类型取默认可跑 options */
+const defaultOptionsForRender = (render: FormRenderType | string): CrudOptionItem[] => {
+    if (render === FORM_RENDER.MULTI_SELECT || render === FORM_RENDER.CHECKBOX) {
+        return structuredClone(DEFAULT_OPTIONS)
+    }
+    if (render === FORM_RENDER.SELECT) {
+        return structuredClone(DEFAULT_SELECT_OPTIONS)
+    }
+    return structuredClone(DEFAULT_STATUS_OPTIONS)
+}
+
+/**
+ * ensureOptionsForEnumFields 为已绑定 enum.key 且 options 为空的字段补默认项
+ */
+export const ensureOptionsForEnumFields = (cfg: CrudGenerateConfig): void => {
+    cfg.options = normalizeOptionsMap(cfg.options)
+    for (const field of cfg.fields ?? []) {
+        const key = field.ext?.enum?.key?.trim()
+        if (!key || cfg.options[key]?.length) continue
+        const render = isLayerEnabled(field.form) ? field.form.render : 'radio'
+        cfg.options[key] = defaultOptionsForRender(render)
+    }
+}
+
 /** applyRenderExt 按 needEnum/needRemote 补 ext.enum / ext.remote */
 export const applyRenderExt = (
     field: CrudFieldSchema,
@@ -112,24 +169,17 @@ export const applyRenderExt = (
     const def = formRenderDefOf(render)
     const needEnum = flags?.needEnum ?? def?.needEnum
     const needRemote = flags?.needRemote ?? def?.needRemote
-    const prevEnumKey = field.ext?.enum?.key
+    const prevEnumKey = field.ext?.enum?.key?.trim() || ''
     const prevRemote = field.ext?.remote ? { ...field.ext.remote } : undefined
 
     if (needEnum) {
-        if (!cfg.options) cfg.options = {}
+        cfg.options = normalizeOptionsMap(cfg.options)
         const enumExt = ensureFieldEnumExt(field)
-        const key = enumExt.key || inferEnumKeyName(field)
+        const key = prevEnumKey || enumExt.key || inferEnumKeyName(field)
         enumExt.key = key
         if (!cfg.options[key]?.length) {
-            if (render === FORM_RENDER.MULTI_SELECT || render === FORM_RENDER.CHECKBOX) {
-                cfg.options[key] = structuredClone(DEFAULT_OPTIONS)
-            } else if (render === FORM_RENDER.SELECT) {
-                cfg.options[key] = structuredClone(DEFAULT_SELECT_OPTIONS)
-            } else {
-                cfg.options[key] = structuredClone(DEFAULT_STATUS_OPTIONS)
-            }
+            cfg.options[key] = defaultOptionsForRender(render)
         }
-        if (prevEnumKey) enumExt.key = prevEnumKey
     } else if (field.ext) {
         delete field.ext.enum
     }

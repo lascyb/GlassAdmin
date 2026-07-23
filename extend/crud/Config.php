@@ -108,12 +108,53 @@ class Config
             'table'        => $table,
             'title'        => $title,
             'fields'       => $fields,
-            'options'      => is_array($data['options'] ?? null) ? $data['options'] : [],
+            'options'      => self::normalizeOptions($data['options'] ?? null),
             'writeMode'    => $writeMode,
             'generateAuth' => !array_key_exists('generateAuth', $data) || (bool) $data['generateAuth'],
             'menus'        => $menus,
             'paths'        => $paths,
         ];
+    }
+
+    /**
+     * normalizeOptions 规范化 options 为关联数组（拒绝 JSON 空数组 [] 被当成 map）
+     *
+     * @return array<string, list<array{value: string|int, label: string, type?: string}>>
+     */
+    private static function normalizeOptions(mixed $raw): array
+    {
+        if (!is_array($raw) || $raw === []) {
+            return [];
+        }
+        // JSON [] 在 PHP 里是 list；具名枚举 map 不应是 list
+        if (array_is_list($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $key => $items) {
+            if (!is_string($key) || $key === '' || !is_array($items)) {
+                continue;
+            }
+            $list = [];
+            foreach ($items as $item) {
+                if (!is_array($item) || !array_key_exists('value', $item)) {
+                    continue;
+                }
+                $row = [
+                    'value' => $item['value'],
+                    'label' => (string) ($item['label'] ?? $item['value'] ?? ''),
+                ];
+                if (!empty($item['type']) && is_string($item['type'])) {
+                    $row['type'] = $item['type'];
+                }
+                $list[] = $row;
+            }
+            if ($list !== []) {
+                $out[$key] = $list;
+            }
+        }
+
+        return $out;
     }
 
     /**

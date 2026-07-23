@@ -90,7 +90,8 @@ class Context
             ];
         }
         $ctx->fields       = $config['fields'];
-        $ctx->options      = is_array($config['options'] ?? null) ? $config['options'] : [];
+        $ctx->options      = self::normalizeOptionsMap($config['options'] ?? null);
+        self::ensureDefaultEnumOptions($ctx);
 
         foreach ($ctx->fields as $f) {
             $prop = (string) ($f['prop'] ?? '');
@@ -132,6 +133,93 @@ class Context
         }
 
         return $ctx;
+    }
+
+    /**
+     * normalizeOptionsMap 规范化 options（拒绝 JSON [] list）
+     *
+     * @return array<string, list<array{value: string|int, label: string, type?: string}>>
+     */
+    private static function normalizeOptionsMap(mixed $raw): array
+    {
+        if (!is_array($raw) || $raw === []) {
+            return [];
+        }
+        if (array_is_list($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $key => $items) {
+            if (!is_string($key) || $key === '' || !is_array($items)) {
+                continue;
+            }
+            $list = [];
+            foreach ($items as $item) {
+                if (!is_array($item) || !array_key_exists('value', $item)) {
+                    continue;
+                }
+                $row = [
+                    'value' => $item['value'],
+                    'label' => (string) ($item['label'] ?? $item['value'] ?? ''),
+                ];
+                if (!empty($item['type']) && is_string($item['type'])) {
+                    $row['type'] = $item['type'];
+                }
+                $list[] = $row;
+            }
+            if ($list !== []) {
+                $out[$key] = $list;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * ensureDefaultEnumOptions 字段已绑 enum.key 但 options 为空时补默认可跑项
+     */
+    private static function ensureDefaultEnumOptions(self $ctx): void
+    {
+        foreach ($ctx->fields as $f) {
+            if (!is_array($f)) {
+                continue;
+            }
+            $key = self::enumKey($f);
+            if ($key === '' || !empty($ctx->options[$key])) {
+                continue;
+            }
+            $ctx->options[$key] = self::defaultEnumOptions($f);
+        }
+    }
+
+    /**
+     * defaultEnumOptions 按 form.render 返回默认可跑 options
+     *
+     * @param array<string, mixed> $field
+     * @return list<array{value: string|int, label: string, type?: string}>
+     */
+    private static function defaultEnumOptions(array $field): array
+    {
+        $render = self::formRender($field);
+        if (in_array($render, ['multi_select', 'checkbox'], true)) {
+            return [
+                ['value' => 'a', 'label' => '选项 A'],
+                ['value' => 'b', 'label' => '选项 B'],
+                ['value' => 'c', 'label' => '选项 C'],
+            ];
+        }
+        if ($render === 'select') {
+            return [
+                ['value' => 1, 'label' => '选项一', 'type' => 'info'],
+                ['value' => 2, 'label' => '选项二', 'type' => 'warning'],
+                ['value' => 3, 'label' => '选项三', 'type' => 'danger'],
+            ];
+        }
+
+        return [
+            ['value' => 1, 'label' => '启用', 'type' => 'success'],
+            ['value' => 0, 'label' => '禁用', 'type' => 'info'],
+        ];
     }
 
     /**
@@ -601,7 +689,30 @@ class Context
     /** needConstants 是否需要生成 constants.ts */
     public function needConstants(): bool
     {
-        return $this->options !== [];
+        return $this->constantNames() !== [];
+    }
+
+    /**
+     * constantNames 枚举常量名（options 键 ∪ 字段 ext.enum.key）
+     *
+     * @return list<string>
+     */
+    public function constantNames(): array
+    {
+        $names = array_keys($this->options);
+        foreach ($this->fields as $f) {
+            if (!is_array($f)) {
+                continue;
+            }
+            $key = self::enumKey($f);
+            if ($key !== '') {
+                $names[] = $key;
+            }
+        }
+        $names = array_values(array_unique(array_filter($names, static fn ($n): bool => is_string($n) && $n !== '')));
+        sort($names);
+
+        return $names;
     }
 
     /**

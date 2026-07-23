@@ -15,12 +15,16 @@ class ConstantsFile
     public function render(Context $ctx): string
     {
         $optionsBlock = '';
-        foreach ($ctx->options as $name => $opts) {
+        foreach ($ctx->constantNames() as $name) {
+            $opts = is_array($ctx->options[$name] ?? null) ? $ctx->options[$name] : [];
             $entries = [];
             foreach ($opts as $o) {
-                $v = $o['value'];
+                if (!is_array($o)) {
+                    continue;
+                }
+                $v = $o['value'] ?? '';
                 $vPhp = is_string($v) ? "'" . addslashes($v) . "'" : (string) $v;
-                $label = addslashes((string) $o['label']);
+                $label = addslashes((string) ($o['label'] ?? ''));
                 $type = isset($o['type']) ? ", type: '" . addslashes((string) $o['type']) . "'" : '';
                 $entries[] = "    { value: {$vPhp}, label: '{$label}'{$type} },";
             }

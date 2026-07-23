@@ -29,7 +29,9 @@ const ensureDefaults = () => {
     const f = field.value
     const key = boundKey.value
     if (!f || !key) return
-    if (!config.value.options) config.value.options = {}
+    if (!config.value.options || Array.isArray(config.value.options)) {
+        config.value.options = {}
+    }
     if (!config.value.options[key]?.length) {
         const type = resolveFieldType(f)
         if (isLayerEnabled(f.form) && (f.form.render === 'multi_select' || f.form.render === 'checkbox')) {
@@ -67,7 +69,9 @@ const parseOptionValue = (raw: string): string | number => {
 const writeRows = (next: Row[]) => {
     const key = boundKey.value
     if (!key) return
-    if (!config.value.options) config.value.options = {}
+    if (!config.value.options || Array.isArray(config.value.options)) {
+        config.value.options = {}
+    }
     config.value.options[key] = next
         .filter((r) => r.value.trim())
         .map(

@@ -13,7 +13,7 @@ class EditFile
 {
     public function render(Context $ctx): string
     {
-        $constImports = array_keys($ctx->options);
+        $constImports = $ctx->constantNames();
         $constImport = $constImports === []
             ? ''
             : 'import { ' . implode(', ', $constImports) . " } from '@/views/{$ctx->module}/{$ctx->entityFile}/constants'\n";
