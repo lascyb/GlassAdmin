@@ -166,8 +166,14 @@ class EditFile
         }
         if (Context::isEnumField($f)) {
             $vals = $ctx->enumValues($f);
+            if ($vals === []) {
+                return '0';
+            }
+            if (in_array(1, $vals, true)) {
+                return '1';
+            }
 
-            return in_array(1, $vals, true) ? '1' : (string) ($vals[0] ?? 0);
+            return Helper::jsLiteral($vals[0]);
         }
         if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint'], true)) {
             return '0';

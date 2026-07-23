@@ -116,10 +116,14 @@ class ControllerFile
                         'raw' => $raw,
                     ]);
                 } else {
+                    $castExpr = Helper::enumIsString($vals)
+                        ? '(string) ' . $raw
+                        : '(int) ' . $raw;
                     $listFilters .= Template::render('controller/filter/enum_bool.php.tpl', [
                         'prop' => $prop,
                         'raw' => $raw,
                         'valsPhp' => $valsPhp,
+                        'castExpr' => $castExpr,
                     ]);
                 }
             }

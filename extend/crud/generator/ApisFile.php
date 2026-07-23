@@ -25,10 +25,10 @@ class ApisFile
             $prop = (string) $f['prop'];
             $relation = Context::relationType($f);
             $form = Context::formConfig($f);
-            $ts = Helper::tsType($f, Context::isRequired($f));
+            $ts = Helper::tsType($f, Context::isRequired($f), $ctx);
 
             if (Context::isPrimary($f)) {
-                $ts = Helper::tsType($f, true);
+                $ts = Helper::tsType($f, true, $ctx);
                 $rowFields[] = "    {$prop}: {$ts}";
                 $col = Context::columnConfig($f);
                 $autoInc = !empty($col['autoIncrement']);
@@ -79,6 +79,11 @@ class ApisFile
                 $listParamFields[] = "    {$prop}_end?: {$rangeTs}";
             } elseif ($sr === 'input') {
                 $listParamFields[] = "    {$prop}?: string";
+            } elseif ($sr === 'select' || $sr === 'radio' || Context::isEnumField($f)) {
+                $vals = $ctx->enumValues($f);
+                $listParamFields[] = Helper::enumIsString($vals)
+                    ? "    {$prop}?: string"
+                    : "    {$prop}?: number";
             } else {
                 $listParamFields[] = "    {$prop}?: number";
             }

@@ -23,11 +23,33 @@ class Helper
     /** phpLiteral PHP 字面量（字符串自动加引号） */
     public static function phpLiteral(mixed $value): string
     {
-        if (is_int($value)) {
+        if (is_int($value) || is_float($value)) {
             return (string) $value;
         }
 
         return "'" . addslashes((string) $value) . "'";
+    }
+
+    /** jsLiteral TS/JS 字面量（字符串自动加引号） */
+    public static function jsLiteral(mixed $value): string
+    {
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return "'" . addslashes((string) $value) . "'";
+    }
+
+    /** jsLiteralList 枚举值列表转 JS 数组字面量 */
+    public static function jsLiteralList(array $values): string
+    {
+        return implode(', ', array_map([self::class, 'jsLiteral'], $values));
+    }
+
+    /** enumIsString 枚举值是否为字符串语义 */
+    public static function enumIsString(array $vals): bool
+    {
+        return $vals !== [] && is_string($vals[0]);
     }
 
     /** phpLiteralList 枚举值列表转 PHP 数组字面量 */
@@ -42,7 +64,7 @@ class Helper
         $vals = $ctx->enumValues($f);
         $valsPhp = self::phpLiteralList($vals);
         $default = self::phpLiteral($vals[0] ?? 1);
-        $isString = $vals !== [] && !is_int($vals[0]);
+        $isString = self::enumIsString($vals);
         if ($isString) {
             return "static fn (mixed \$v): string => in_array((string) \$v, [{$valsPhp}], true) ? (string) \$v : {$default}";
         }
@@ -50,14 +72,23 @@ class Helper
         return "static fn (mixed \$v): int => in_array((int) \$v, [{$valsPhp}], true) ? (int) \$v : {$default}";
     }
 
-    /** tsType 字段 TS 类型（按 column.type / form.render） */
-    public static function tsType(array $f, bool $required = false): string
+    /** tsType 字段 TS 类型（按 column.type / form.render / 枚举值类型） */
+    public static function tsType(array $f, bool $required = false, ?Context $ctx = null): string
     {
         $ct = Context::columnType($f);
         $render = Context::formRender($f);
 
-        if ($ct === 'json' || $render === 'multi_select') {
+        if ($ct === 'json' || $render === 'multi_select' || $render === 'checkbox') {
             return 'string[] | null';
+        }
+        // 枚举：按 options 值类型（可为 string 或 number）
+        if ($ctx !== null && Context::isEnumField($f)) {
+            $vals = $ctx->enumValues($f);
+            if (self::enumIsString($vals)) {
+                return $required ? 'string' : 'string | null';
+            }
+
+            return 'number';
         }
         // Unix 秒时间字段
         if (Context::isUnixDatetime($f)) {

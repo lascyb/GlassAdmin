@@ -114,12 +114,14 @@ class IndexFile
                 $queryLines[] = "    {$prop}: advanced.{$prop} === 0 || advanced.{$prop} === 1 ? advanced.{$prop} : undefined,";
             } elseif ($sr === 'select' || $sr === 'radio' || Context::isEnumField($f)) {
                 $vals = $ctx->enumValues($f);
-                $valsJs = implode(', ', $vals);
-                $advLines[] = "    {$prop}: undefined as number | undefined,";
+                $valsJs = Helper::jsLiteralList($vals);
+                $isString = Helper::enumIsString($vals);
+                $advType = $isString ? 'string | undefined' : 'number | undefined';
+                $advLines[] = "    {$prop}: undefined as {$advType},";
                 $resetLines[] = "    advanced.{$prop} = undefined";
                 $queryLines[] = $vals === []
                     ? "    {$prop}: advanced.{$prop},"
-                    : "    {$prop}: [{$valsJs}].includes(Number(advanced.{$prop})) ? advanced.{$prop} : undefined,";
+                    : "    {$prop}: [{$valsJs}].includes(advanced.{$prop} as never) ? advanced.{$prop} : undefined,";
             }
         }
 

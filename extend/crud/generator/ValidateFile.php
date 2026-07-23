@@ -46,7 +46,8 @@ class ValidateFile
                 $parts = ['in:0,1'];
             } elseif (Context::isEnumField($f)) {
                 $vals = $ctx->enumValues($f);
-                $parts[] = 'in:' . implode(',', $vals);
+                // ThinkPHP in: 规则用逗号分隔；字符串值原样拼接
+                $parts[] = 'in:' . implode(',', array_map(static fn ($v): string => (string) $v, $vals));
                 $messages[] = "        '{$prop}.in' => '{$f['label']}无效',";
             } elseif ($ct === 'decimal') {
                 $parts[] = 'float';

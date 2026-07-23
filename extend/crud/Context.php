@@ -837,7 +837,14 @@ class Context
             if ($v === null || $v === '') {
                 continue;
             }
-            $vals[] = is_numeric($v) ? (int) $v : $v;
+            if (is_int($v) || is_float($v)) {
+                $vals[] = $v;
+            } elseif (is_string($v) && preg_match('/^-?\d+$/', $v) === 1) {
+                // 纯整数字符串按 int（与 InlineOptionsEditor 写回一致）
+                $vals[] = (int) $v;
+            } else {
+                $vals[] = is_string($v) ? $v : (string) $v;
+            }
         }
 
         return $vals !== [] ? $vals : [0, 1];

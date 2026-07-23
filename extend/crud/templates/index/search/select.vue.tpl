@@ -3,7 +3,7 @@
                             <el-option
                                 v-for="o in <%optKey%>"
                                 :key="o.value"
-                                :value="Number(o.value)"
+                                :value="o.value"
                                 :label="o.label"
                             />
                         </el-select>
