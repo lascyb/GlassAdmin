@@ -10,6 +10,7 @@ use think\facade\Cache;
 /**
  * MenuService 侧栏菜单：按 role_ids 关联 auth_role_rule 取前端规则、组树、按角色组合缓存（对外均为 static）
  * 未授权的父级目录不出现在树中，其子页面提升到最近已授权祖先（或根）
+ * 下发 path 一律按库内原始祖先链拼成绝对路径（库仍存相对段）；超管与普通角色同一规则
  */
 class MenuService
 {
@@ -24,6 +25,9 @@ class MenuService
 
     /** 缓存有效期（秒），0 表示不过期（依赖 forget* 清理） */
     private const int CACHE_TTL = 60;
+
+    /** 可出现在侧栏的前端规则类型 */
+    private const array MENU_DISPLAY_TYPES = ['menu', 'view', 'page', 'route', 'link', 'iframe'];
 
     /**
      * getMenus 返回角色组合可见菜单树（读缓存或计算后写入）
@@ -84,6 +88,7 @@ class MenuService
     /**
      * buildMenusForRoles 根据多角色查询 auth_role_rule 得到前端 rule_id 并集后组树
      * 仅保留已授权节点；父级未授权时子节点提升到最近已授权祖先下（无则到根）
+     * 组树前将菜单类节点 path 转为绝对路径（按原始祖先链）
      *
      * @param list<int> $roleIds
      * @return list<array<string,mixed>>
@@ -101,9 +106,14 @@ class MenuService
             return [];
         }
 
+        $byId = [];
+        foreach ($pool as $r) {
+            $byId[(int) $r['id']] = $r;
+        }
+
         if (in_array(self::SUPER_ROLE_ID, $roleIds, true)) {
-            $filteredRows = $pool;
-            $tree = self::buildTreeFromRows($filteredRows, 0);
+            $filteredRows = self::applyAbsolutePaths($pool, $byId);
+            $tree         = self::buildTreeFromRows($filteredRows, 0);
         } else {
             $ruleIds = [];
             foreach ($roleIds as $roleId) {
@@ -127,14 +137,91 @@ class MenuService
                     return in_array((string) ($r['type'] ?? ''), self::MENU_DISPLAY_TYPES, true);
                 }
             ));
-            $tree = self::buildTreePromotingOrphans($filteredRows, $pool);
+            $filteredRows = self::applyAbsolutePaths($filteredRows, $byId);
+            $tree         = self::buildTreePromotingOrphans($filteredRows, $pool);
         }
 
         return self::menuNodes($tree);
     }
 
-    /** 可出现在侧栏的前端规则类型 */
-    private const array MENU_DISPLAY_TYPES = ['menu', 'view', 'page', 'route', 'link', 'iframe'];
+    /**
+     * applyAbsolutePaths 菜单类节点 path 按原始祖先链转为绝对路径（不写库）
+     *
+     * @param list<array<string,mixed>> $rows
+     * @param array<int, array<string,mixed>> $byId
+     * @return list<array<string,mixed>>
+     */
+    private static function applyAbsolutePaths(array $rows, array $byId): array
+    {
+        $out = [];
+        foreach ($rows as $r) {
+            $type = (string) ($r['type'] ?? '');
+            if (in_array($type, self::MENU_DISPLAY_TYPES, true)) {
+                $r['path'] = self::absolutePath($r, $byId);
+            }
+            $out[] = $r;
+        }
+
+        return $out;
+    }
+
+    /**
+     * absolutePath 按库内原始 pid 链拼绝对 path；已绝对或外链则规范化/原样返回
+     *
+     * @param array<string,mixed> $row
+     * @param array<int, array<string,mixed>> $byId
+     */
+    private static function absolutePath(array $row, array $byId): string
+    {
+        $path = (string) ($row['path'] ?? '');
+        if (self::isExternalPath($path)) {
+            return $path;
+        }
+        if (str_starts_with($path, '/')) {
+            return self::normalizeAbsPath($path);
+        }
+
+        $segments = [];
+        $cur      = $row;
+        $guard    = 0;
+        while ($cur !== null && $guard++ < 64) {
+            $p = (string) ($cur['path'] ?? '');
+            if (self::isExternalPath($p)) {
+                return $p;
+            }
+            if (str_starts_with($p, '/')) {
+                $base = self::normalizeAbsPath($p);
+
+                return $segments === []
+                    ? $base
+                    : self::normalizeAbsPath($base . '/' . implode('/', $segments));
+            }
+            if ($p !== '') {
+                array_unshift($segments, $p);
+            }
+            $pid = (int) ($cur['pid'] ?? 0);
+            if ($pid <= 0 || !isset($byId[$pid])) {
+                break;
+            }
+            $cur = $byId[$pid];
+        }
+
+        return $segments === [] ? '/' : '/' . implode('/', $segments);
+    }
+
+    /** isExternalPath 是否为外链 */
+    private static function isExternalPath(string $path): bool
+    {
+        return (bool) preg_match('#^(https?:)?//#i', $path) || str_starts_with($path, '://');
+    }
+
+    /** normalizeAbsPath 规范化绝对 path（合并多余斜杠） */
+    private static function normalizeAbsPath(string $path): string
+    {
+        $parts = array_values(array_filter(explode('/', $path), static fn (string $s): bool => $s !== ''));
+
+        return '/' . implode('/', $parts);
+    }
 
     /**
      * buildTreePromotingOrphans 仅用已授权节点组树；父级不在集合内则提升到最近已授权祖先（否则根）
