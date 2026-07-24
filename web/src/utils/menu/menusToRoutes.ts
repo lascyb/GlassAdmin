@@ -22,7 +22,7 @@ const isExternalPath = (path: string): boolean =>
     /^(https?:)?\/\//.test(path) || path.startsWith('://')
 
 /**
- * resolveFullPath 计算菜单完整路径
+ * resolveFullPath 计算菜单完整路径（供 path_full / el-menu 跳转，始终以 / 开头）
  * 绝对 path 原样规范化；相对 path 拼到 parentPath 下
  */
 const resolveFullPath = (path: string, parentPath: string): string => {
@@ -37,9 +37,16 @@ const resolveFullPath = (path: string, parentPath: string): string => {
 }
 
 /**
+ * toRoutePath 挂到 root(`/`) 下的 route.path：去掉前导 /
+ * 避免绝对 path 子路由在兄弟页之间跳转后 matched 异常导致白屏
+ */
+const toRoutePath = (fullPath: string): string => fullPath.replace(/^\//, '')
+
+/**
  * menusToRoutes 将菜单数据转换为路由配置
- * - 始终写回 menu.path_full
- * - 无 component 的节点不注册路由；其子路由提升到同级
+ * - 始终写回 menu.path_full（绝对路径，供侧栏）
+ * - route.path 用不带前导 / 的相对段（作为 root 子路由）
+ * - 有 component 才注册；子路由一律提升到同级（不嵌套，页面组件无 router-view）
  * - 外链不入路由表
  */
 export const menusToRoutes = (
@@ -62,10 +69,15 @@ export const menusToRoutes = (
         if (menu.type === 'iframe') {
             items.push({
                 name: String(menu.id),
-                path: fullPath,
+                path: toRoutePath(fullPath),
                 component: iframeView,
                 meta: { name: menu.name },
             })
+            // iframe 下若仍有子路由，同样提升到同级
+            const childRoutes = menusToRoutes(menu.children, fullPath)
+            if (childRoutes?.length) {
+                items.push(...childRoutes)
+            }
             continue
         }
 
@@ -75,13 +87,13 @@ export const menusToRoutes = (
             if (component) {
                 items.push({
                     name: String(menu.id),
-                    path: fullPath,
-                    children: childRoutes,
+                    path: toRoutePath(fullPath),
                     component,
                     meta: { name: menu.name },
                 })
-            } else if (childRoutes?.length) {
-                // 纯目录：不注册自身，子路由提升到同级
+            }
+            // 无论自身是否注册，子路由都提到同级（避免嵌进无 router-view 的页面组件）
+            if (childRoutes?.length) {
                 items.push(...childRoutes)
             }
         }

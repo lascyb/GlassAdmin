@@ -28,10 +28,12 @@ export const routes: RouteRecordRaw[] = [
                 component: () => import('@/views/account/profile.vue'),
                 meta: { title: '个人信息' },
             },
+            // 动态路由由 menus.init addRoute("root", ...) 插入；404 须排在其后（见 pinia/layout/menus）
             {
-                path: ":404*", component: () => import("@/layouts/components/error/404.vue") // 默认 404 页面
+                name: 'root-not-found',
+                path: ':404*',
+                component: () => import('@/layouts/components/error/404.vue'),
             },
-            //动态路由插入点
         ],
     },
     {name: "login", path: '/login', component: () => import("@/views/login.vue"),},

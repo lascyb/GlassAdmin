@@ -7,7 +7,6 @@ import { useSystemConfig } from "@/pinia/system/config";
 import { router } from "@/router";
 import { ElMessage } from "element-plus";
 import { defineAsyncComponent, onMounted, ref, } from "vue";
-import { useRoute } from "vue-router";
 import GaLoading from "./components/loading.vue";
 
 defineOptions({
@@ -28,8 +27,8 @@ onMounted(() => {
     if (menus.length === 0) {
       void router.replace({ name: 'account-profile' })
     } else {
-      // 使用 replace 避免在历史记录中添加新条目，让 Vue Router 使用新添加的路由重新匹配
-      void router.replace(useRoute())
+      // 只用 fullPath 触发重新匹配；传入 useRoute() 整对象会带上 addRoute 前的旧 matched，易导致后续跳转白屏
+      void router.replace(router.currentRoute.value.fullPath)
     }
     loading.value = false
   }).catch((e: unknown) => {

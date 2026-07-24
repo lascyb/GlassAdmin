@@ -11,6 +11,7 @@ const mainRefresh = useMainViewRefresh()
         <transition name="ga-page" mode="out-in">
           <keep-alive>
             <component
+              v-if="Component"
               :is="Component"
               :key="`${route.fullPath}:${mainRefresh.nonceFor(route.fullPath)}`"
             />

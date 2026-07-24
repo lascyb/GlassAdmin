@@ -18,15 +18,23 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
     const collapse = ref<boolean>(false)
 
     const init = (data: Menu[]) => {
-        let routes = menusToRoutes(data);
+        const routes = menusToRoutes(data)
         if (routes) {
-            for (const route of routes) {
-                console.log("route", route)
-                router.addRoute("root", route)
+            // 先移除旧 404，动态路由加完后再挂到最后，避免 catch-all 抢匹配
+            if (router.hasRoute('root-not-found')) {
+                router.removeRoute('root-not-found')
             }
+            for (const route of routes) {
+                router.addRoute('root', route)
+            }
+            router.addRoute('root', {
+                name: 'root-not-found',
+                path: ':404*',
+                component: () => import('@/layouts/components/error/404.vue'),
+            })
         }
 
-        menus.value = data;
+        menus.value = data
     }
 
     const find = (path: string): FindResult | undefined => {
