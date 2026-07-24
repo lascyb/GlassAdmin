@@ -17,6 +17,7 @@ use think\db\exception\DbException;
  * - auth_rule_api 绑定
  *
  * 若 frontend view 已存在：更新 view/btn 字段，并覆盖重建该 view 子树的 frontend_api 绑定。
+ * 远程关联 list API：已存在则只绑定不改 pid；不存在则挂到远程模块自身的接口组下。
  */
 class AuthInstaller
 {
@@ -294,33 +295,14 @@ class AuthInstaller
             if ($remote === null) {
                 continue;
             }
-            $rPath = $remote['url'];
-            $remoteId = $this->ensureRule(
-                [
-                    'scope'  => 'backend',
-                    'type'   => 'api',
-                    'path'   => $rPath,
-                    'method' => 'GET',
-                ],
-                [
-                    'scope'       => 'backend',
-                    'type'        => 'api',
-                    'pid'         => $apiGroupId,
-                    'name'        => ((string) ($f['label'] ?? $remote['entity'])) . '列表',
-                    'path'        => $rPath,
-                    'method'      => 'GET',
-                    'component'   => null,
-                    'icon'        => null,
-                    'sort'        => $remoteSort++,
-                    'status'      => 1,
-                    'create_time' => $now,
-                    'update_time' => $now,
-                ],
-                "backend.api:{$rPath} GET",
+            $remoteId = $this->ensureRemoteListApi(
+                $remote,
+                (string) ($f['label'] ?? $remote['entity']),
+                $remoteSort++,
+                $now,
                 $created,
                 $updated,
                 $reused,
-                true
             );
             $bindings[] = [$frontViewId, $remoteId];
         }
@@ -516,6 +498,160 @@ class AuthInstaller
         }
 
         return $isView ? 'el:Document' : 'el:Folder';
+    }
+
+    /**
+     * ensureRemoteListApi 确保远程 list API 规则存在并返回 id
+     * 已存在：只复用，不改 pid/其它字段；不存在：挂到远程模块自身接口组下新建
+     *
+     * @param array{module: string, entity: string, url: string} $remote
+     * @param list<string> $created
+     * @param list<string> $updated
+     * @param list<string> $reused
+     */
+    private function ensureRemoteListApi(
+        array $remote,
+        string $label,
+        int $sort,
+        string $now,
+        array &$created,
+        array &$updated,
+        array &$reused,
+    ): int {
+        $rPath = $remote['url'];
+        $where = [
+            'scope'  => 'backend',
+            'type'   => 'api',
+            'path'   => $rPath,
+            'method' => 'GET',
+        ];
+        $existingId = $this->findRuleId($where);
+        if ($existingId > 0) {
+            $reused[] = "backend.api:{$rPath} GET";
+
+            return $existingId;
+        }
+
+        $groupId = $this->resolveRemoteApiGroupId($remote, $now, $created, $updated, $reused);
+
+        return $this->ensureRule(
+            $where,
+            [
+                'scope'       => 'backend',
+                'type'        => 'api',
+                'pid'         => $groupId,
+                'name'        => $label . '列表',
+                'path'        => $rPath,
+                'method'      => 'GET',
+                'component'   => null,
+                'icon'        => null,
+                'sort'        => $sort,
+                'status'      => 1,
+                'create_time' => $now,
+                'update_time' => $now,
+            ],
+            "backend.api:{$rPath} GET",
+            $created,
+            $updated,
+            $reused,
+            false
+        );
+    }
+
+    /**
+     * resolveRemoteApiGroupId 解析远程 API 应挂靠的接口组 id
+     * 优先复用同控制器前缀下已有 API 的 pid；否则按 module 路径创建/复用「{Entity}接口」组
+     *
+     * @param array{module: string, entity: string, url: string} $remote
+     * @param list<string> $created
+     * @param list<string> $updated
+     * @param list<string> $reused
+     */
+    private function resolveRemoteApiGroupId(
+        array $remote,
+        string $now,
+        array &$created,
+        array &$updated,
+        array &$reused,
+    ): int {
+        $base = preg_replace('/\/[^\/]+$/', '', $remote['url']) ?? $remote['url'];
+        if ($base !== '') {
+            $siblingPid = (int) Rule::where('scope', 'backend')
+                ->where('type', 'api')
+                ->whereLike('path', $base . '/%')
+                ->where('pid', '>', 0)
+                ->order('id', 'asc')
+                ->value('pid');
+            if ($siblingPid > 0) {
+                return $siblingPid;
+            }
+        }
+
+        // 按 module 路径（如 ass、test/ft）确保后端 menu 链，再挂 Entity 接口组
+        $pid = 1;
+        $pathTrail = [];
+        $segments = array_values(array_filter(explode('/', str_replace('\\', '/', $remote['module']))));
+        foreach ($segments as $segment) {
+            $pathTrail[] = $segment;
+            $pid = $this->ensureRule(
+                [
+                    'scope' => 'backend',
+                    'type'  => 'menu',
+                    'pid'   => $pid,
+                    'path'  => $segment,
+                ],
+                [
+                    'scope'       => 'backend',
+                    'type'        => 'menu',
+                    'pid'         => $pid,
+                    'name'        => $segment,
+                    'path'        => $segment,
+                    'method'      => null,
+                    'component'   => null,
+                    'icon'        => null,
+                    'sort'        => 0,
+                    'status'      => 1,
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ],
+                'backend.menu:' . implode('/', $pathTrail),
+                $created,
+                $updated,
+                $reused,
+                false
+            );
+        }
+
+        $groupName = $remote['entity'] . '接口';
+        $pathTrail[] = 'api';
+
+        return $this->ensureRule(
+            [
+                'scope' => 'backend',
+                'type'  => 'menu',
+                'pid'   => $pid,
+                'name'  => $groupName,
+            ],
+            [
+                'scope'       => 'backend',
+                'type'        => 'menu',
+                'pid'         => $pid,
+                'name'        => $groupName,
+                'path'        => null,
+                'method'      => null,
+                'component'   => null,
+                'icon'        => null,
+                'sort'        => 0,
+                'status'      => 1,
+                'create_time' => $now,
+                'update_time' => $now,
+            ],
+            'backend.menu:' . implode('/', $pathTrail),
+            $created,
+            $updated,
+            $reused,
+            false
+        );
     }
 
     /**

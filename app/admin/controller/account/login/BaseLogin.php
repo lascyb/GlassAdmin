@@ -44,7 +44,7 @@ abstract class BaseLogin extends BaseController
         $roles = AdminRole::rolesPayload($adminId);
         $roleIds = array_column(array_filter($roles,static function ($item) {
             return $item["enabled"] == 1;
-        }),"role_id");
+        }),"id");
         $pair = AdminTokenService::issuePair($adminId, $roleIds, $remember);
 
         $user->save(['last_login_time' => time()]);

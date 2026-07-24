@@ -26,7 +26,8 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
 <template>
   <template v-for="menu in props.menus">
     <template v-if="menu.type == 'menu' && menu.children && menu.children.length > 0">
-      <el-sub-menu :index="menu.path_full" :key="menu.id">
+      <!-- index 用 id：仅负责展开态，避免 path_full 与父级撞名导致收起子菜单时父级一并收起 -->
+      <el-sub-menu :index="String(menu.id)" :key="menu.id">
         <template #title>
           <GaIcon :icon="menu.icon" />
           <span>{{ menu.name }}</span>
