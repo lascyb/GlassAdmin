@@ -9,6 +9,7 @@ use think\facade\Cache;
 
 /**
  * MenuService 侧栏菜单：按 role_ids 关联 auth_role_rule 取前端规则、组树、按角色组合缓存（对外均为 static）
+ * 未授权的父级目录不出现在树中，其子页面提升到最近已授权祖先（或根）
  */
 class MenuService
 {
@@ -81,7 +82,8 @@ class MenuService
     }
 
     /**
-     * buildMenusForRoles 根据多角色查询 auth_role_rule 得到前端 rule_id 并集，补全祖先节点后组树
+     * buildMenusForRoles 根据多角色查询 auth_role_rule 得到前端 rule_id 并集后组树
+     * 仅保留已授权节点；父级未授权时子节点提升到最近已授权祖先下（无则到根）
      *
      * @param list<int> $roleIds
      * @return list<array<string,mixed>>
@@ -101,6 +103,7 @@ class MenuService
 
         if (in_array(self::SUPER_ROLE_ID, $roleIds, true)) {
             $filteredRows = $pool;
+            $tree = self::buildTreeFromRows($filteredRows, 0);
         } else {
             $ruleIds = [];
             foreach ($roleIds as $roleId) {
@@ -113,41 +116,55 @@ class MenuService
             if ($seedIds === []) {
                 return [];
             }
-            $allowed = self::expandWithAncestors($pool, $seedIds);
             $filteredRows = array_values(array_filter(
                 $pool,
-                static fn (array $r): bool => in_array((int) $r['id'], $allowed, true)
+                static function (array $r) use ($ruleIds): bool {
+                    $id = (int) $r['id'];
+                    if (!isset($ruleIds[$id])) {
+                        return false;
+                    }
+                    // 侧栏只展示菜单类节点；纯按钮权限不进树
+                    return in_array((string) ($r['type'] ?? ''), self::MENU_DISPLAY_TYPES, true);
+                }
             ));
+            $tree = self::buildTreePromotingOrphans($filteredRows, $pool);
         }
-
-        $tree = self::buildTreeFromRows($filteredRows, 0);
 
         return self::menuNodes($tree);
     }
 
+    /** 可出现在侧栏的前端规则类型 */
+    private const array MENU_DISPLAY_TYPES = ['menu', 'view', 'page', 'route', 'link', 'iframe'];
+
     /**
-     * expandWithAncestors 将已授权节点 id 集合并入其祖先 id（在前端规则池中向上追溯 pid）
+     * buildTreePromotingOrphans 仅用已授权节点组树；父级不在集合内则提升到最近已授权祖先（否则根）
      *
-     * @param list<array<string,mixed>> $rows
-     * @param list<int> $seedIds
-     * @return list<int>
+     * @param list<array<string,mixed>> $grantedRows
+     * @param list<array<string,mixed>> $pool
+     * @return list<array<string,mixed>>
      */
-    private static function expandWithAncestors(array $rows, array $seedIds): array
+    private static function buildTreePromotingOrphans(array $grantedRows, array $pool): array
     {
         $byId = [];
-        foreach ($rows as $r) {
+        foreach ($pool as $r) {
             $byId[(int) $r['id']] = $r;
         }
-        $keep = [];
-        foreach ($seedIds as $sid) {
-            $cur = $sid;
-            while ($cur > 0 && isset($byId[$cur])) {
-                $keep[$cur] = true;
-                $cur = (int) $byId[$cur]['pid'];
-            }
+        $granted = [];
+        foreach ($grantedRows as $r) {
+            $granted[(int) $r['id']] = true;
         }
 
-        return array_map('intval', array_keys($keep));
+        $adjusted = [];
+        foreach ($grantedRows as $r) {
+            $pid = (int) ($r['pid'] ?? 0);
+            while ($pid > 0 && !isset($granted[$pid])) {
+                $pid = isset($byId[$pid]) ? (int) $byId[$pid]['pid'] : 0;
+            }
+            $r['pid'] = $pid;
+            $adjusted[] = $r;
+        }
+
+        return self::buildTreeFromRows($adjusted, 0);
     }
 
     /**
