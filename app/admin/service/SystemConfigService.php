@@ -6,9 +6,10 @@ namespace app\admin\service;
 use app\admin\model\system\Config;
 use think\facade\Cache;
 use think\facade\Db;
+use think\Paginator;
 
 /**
- * SystemConfigService 系统配置服务层（含 Redis 缓存）
+ * SystemConfigService 系统配置服务（缓存 + 写操作编排）
  */
 class SystemConfigService
 {
@@ -34,11 +35,10 @@ class SystemConfigService
         if (is_string($cached)) {
             return $cached;
         }
-        $row = Config::where('key', $key)->whereIn('status', [1, 2])->field('value')->find();
-        if (!$row) {
+        $value = Config::findValueByKey($key);
+        if ($value === null) {
             return null;
         }
-        $value = (string) $row->getAttr('value');
         Cache::tag(self::CACHE_TAG)->set($cacheKey, $value, self::CACHE_TTL);
 
         return $value;
@@ -62,13 +62,7 @@ class SystemConfigService
             }
         }
         if ($miss !== []) {
-            $rows = Config::where('key', 'in', $miss)
-                ->whereIn('status', [1, 2])
-                ->field('key,value')
-                ->select();
-            foreach ($rows as $row) {
-                $k     = (string) $row->getAttr('key');
-                $v     = (string) $row->getAttr('value');
+            foreach (Config::findValuesByKeys($miss) as $k => $v) {
                 $result[$k] = $v;
                 Cache::tag(self::CACHE_TAG)->set(self::CACHE_KEY_PREFIX . $k, $v, self::CACHE_TTL);
             }
@@ -88,9 +82,8 @@ class SystemConfigService
         if (is_array($cached)) {
             return $cached;
         }
-        $rows = Config::whereIn('status', [1, 2])->field('key,value,group')->select();
         $result = [];
-        foreach ($rows as $row) {
+        foreach (Config::findActiveRows() as $row) {
             $group = (string) $row->getAttr('group');
             if (!isset($result[$group])) {
                 $result[$group] = [];
@@ -104,24 +97,10 @@ class SystemConfigService
 
     /**
      * getList 配置列表（分页 + 筛选）
-     *
-     * @return \think\Paginator
      */
-    public static function getList(int $page, int $limit, string $group = '', string $keyword = '')
+    public static function getList(int $page, int $limit, string $group = '', string $keyword = ''): Paginator
     {
-        $q = Config::order('group', 'asc')->order('sort', 'asc')->order('id', 'asc');
-        if ($group !== '') {
-            $q->where('group', $group);
-        }
-        if ($keyword !== '') {
-            $kw = addcslashes($keyword, '%_\\');
-            $q->where('key|name', 'like', '%' . $kw . '%');
-        }
-
-        return $q->paginate([
-            'list_rows' => $limit,
-            'page'      => $page,
-        ]);
+        return Config::paginateList($page, $limit, $group, $keyword);
     }
 
     /**
@@ -131,11 +110,13 @@ class SystemConfigService
      */
     public static function getGroups(): array
     {
-        return Config::distinct(true)->whereIn('status', [1, 2])->order('group', 'asc')->column('group');
+        return Config::findGroups();
     }
 
     /**
      * saveConfig 保存配置（创建或更新，使用事务）
+     *
+     * @param array<string, mixed> $data
      */
     public static function saveConfig(array $data, ?int $id = null): int
     {
@@ -149,12 +130,10 @@ class SystemConfigService
                 $row->save($data);
                 self::forgetConfigCache($oldKey);
                 if (isset($data['key']) && $data['key'] !== $oldKey) {
-                    self::forgetConfigCache($data['key']);
+                    self::forgetConfigCache((string) $data['key']);
                 }
             } else {
-                $m = new Config();
-                $m->save($data);
-                $id = (int) $m->getAttr('id');
+                $id = Config::createRow($data);
             }
             self::forgetAllConfigCache();
 
@@ -190,22 +169,8 @@ class SystemConfigService
     {
         Db::transaction(function () use ($group, $pairs) {
             foreach ($pairs as $key => $value) {
-                $row = Config::where('key', $key)->find();
-                if ($row) {
-                    $row->save(['value' => $value]);
-                } else {
-                    $m = new Config();
-                    $m->save([
-                        'key'   => $key,
-                        'value' => $value,
-                        'group' => $group,
-                        'name'  => $key,
-                        'type'  => 'input',
-                        'sort'  => 0,
-                        'status' => 1,
-                    ]);
-                }
-                self::forgetConfigCache($key);
+                Config::upsertValueByKey((string) $key, (string) $value, $group);
+                self::forgetConfigCache((string) $key);
             }
             self::forgetAllConfigCache();
         });

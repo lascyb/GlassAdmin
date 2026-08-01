@@ -112,6 +112,7 @@ const parentRoleTreeData = computed((): RoleRow[] => {
 
 const loadMeta = async () => {
   roleTree.value = await roleApi.fetchTree()
+  roleTree.value.unshift({id: 0, pid: 0, code: "", name: "作为顶级角色", sort: 0, status: 1})
   permTree.value = await ruleApi.fetchTree('frontend')
 }
 
