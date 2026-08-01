@@ -3,8 +3,12 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use crud\Context;
 use crud\Template;
+use crud\generator\ui\Registry;
+use crud\generator\ui\resolve\FilterKey;
 
 /**
  * ControllerFile 生成 Controller.php
@@ -34,7 +38,7 @@ class ControllerFile
             $uses[] = 'use think\\file\\UploadedFile;';
         }
         foreach ($manyForWrite as $f) {
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             if ($remote) {
                 $remoteNs = Helper::modelNamespace($remote['module']);
                 $uses[] = "use {$remoteNs}\\{$remote['entity']} as {$remote['entity']}Model;";
@@ -52,97 +56,31 @@ class ControllerFile
         $listParams = [];
         $listFilters = '';
         if ($keywordExpr !== '') {
-            $listParams[] = "        \$keyword = trim((string) \$request->get('keyword', ''));";
-            $listFilters .= Template::render('controller/filter/keyword.php.tpl', [
-                'keywordExpr' => $keywordExpr,
-            ]);
+            $kw = Registry::filter('keyword');
+            if ($kw !== null) {
+                $part = $kw->render(['_keywordExpr' => $keywordExpr], $ctx);
+                foreach ($part['params'] as $line) {
+                    $listParams[] = $line;
+                }
+                $listFilters .= $part['filter'];
+            }
         }
         foreach ($ctx->advancedFields as $f) {
-            $prop = (string) $f['prop'];
-            $relation = Context::relationType($f);
-            $sr = Context::searchRender($f);
-            $var = '$' . Context::toCamel($prop);
-            if ($relation === 'belongs_to_many' || $sr === 'remote_multi_select') {
-                $listParams[] = "        {$var} = CrudHelper::parseIdList(\$request->get('{$prop}'));";
-                $rel = Context::relationConfig($f) ?? [];
-                $listFilters .= Template::render('controller/filter/belongs_to_many.php.tpl', [
-                    'var' => $var,
-                    'pivot' => (string) ($rel['pivotTable'] ?? ''),
-                    'fk' => (string) ($rel['foreignKey'] ?? ''),
-                    'rk' => (string) ($rel['relatedKey'] ?? ''),
-                    'pk' => $ctx->primaryKey(),
-                ]);
-            } elseif ($sr === 'number_range') {
-                $minVar = '$' . Context::toCamel($prop) . 'Min';
-                $maxVar = '$' . Context::toCamel($prop) . 'Max';
-                $listParams[] = "        {$minVar} = \$request->get('{$prop}_min');";
-                $listParams[] = "        {$maxVar} = \$request->get('{$prop}_max');";
-                $listFilters .= Template::render('controller/filter/number_range.php.tpl', [
-                    'prop' => $prop,
-                    'minVar' => $minVar,
-                    'maxVar' => $maxVar,
-                ]);
-            } elseif ($sr === 'date_range' || $sr === 'datetime_range') {
-                $startVar = '$' . Context::toCamel($prop) . 'Start';
-                $endVar = '$' . Context::toCamel($prop) . 'End';
-                $listParams[] = "        {$startVar} = \$request->get('{$prop}_start');";
-                $listParams[] = "        {$endVar} = \$request->get('{$prop}_end');";
-                // Unix 秒走 int 比较；date / MySQL datetime 走字符串比较
-                $rangeTpl = Context::isUnixDatetime($f)
-                    ? 'controller/filter/datetime_range.php.tpl'
-                    : 'controller/filter/date_range.php.tpl';
-                $listFilters .= Template::render($rangeTpl, [
-                    'prop' => $prop,
-                    'startVar' => $startVar,
-                    'endVar' => $endVar,
-                ]);
-            } elseif ($relation === 'belongs_to' || $sr === 'remote_select') {
-                if (Helper::remoteValueIsString($f)) {
-                    $listParams[] = "        {$var} = trim((string) \$request->get('{$prop}', ''));";
-                    $check = "{$var} !== ''";
-                } else {
-                    $listParams[] = "        {$var} = (int) \$request->get('{$prop}', 0);";
-                    $check = "{$var} > 0";
-                }
-                $listFilters .= Template::render('controller/filter/remote_select.php.tpl', [
-                    'prop' => $prop,
-                    'var' => $var,
-                    'check' => $check,
-                ]);
-            } elseif ($sr === 'input') {
-                $listParams[] = "        {$var} = trim((string) \$request->get('{$prop}', ''));";
-                $listFilters .= Template::render('controller/filter/input.php.tpl', [
-                    'prop' => $prop,
-                    'var' => $var,
-                ]);
-            } elseif ($sr === 'bool' || $sr === 'select' || $sr === 'radio' || Context::isBoolField($f) || Context::isEnumField($f)) {
-                $raw = '$' . Context::toCamel($prop) . 'Raw';
-                $listParams[] = "        {$raw} = \$request->get('{$prop}');";
-                $vals = ($sr === 'bool' || Context::isBoolField($f)) ? [0, 1] : $ctx->enumValues($f);
-                $valsPhp = Helper::phpLiteralList($vals);
-                if ($valsPhp === '') {
-                    $listFilters .= Template::render('controller/filter/enum_bool_any.php.tpl', [
-                        'prop' => $prop,
-                        'raw' => $raw,
-                    ]);
-                } else {
-                    $castExpr = Helper::enumIsString($vals)
-                        ? '(string) ' . $raw
-                        : '(int) ' . $raw;
-                    $listFilters .= Template::render('controller/filter/enum_bool.php.tpl', [
-                        'prop' => $prop,
-                        'raw' => $raw,
-                        'valsPhp' => $valsPhp,
-                        'castExpr' => $castExpr,
-                    ]);
-                }
+            $filterUi = Registry::filter(FilterKey::resolve($f));
+            if ($filterUi === null) {
+                continue;
             }
+            $part = $filterUi->render($f, $ctx);
+            foreach ($part['params'] as $line) {
+                $listParams[] = $line;
+            }
+            $listFilters .= $part['filter'];
         }
 
         $listMapExtra = '';
         foreach ($listManyFields as $f) {
             $listMapExtra .= Template::render('controller/list_map_many.php.tpl', [
-                'method' => Context::relationMethodName($f),
+                'method' => Naming::relationMethodName($f),
                 'prop' => (string) $f['prop'],
             ]);
         }
@@ -172,10 +110,10 @@ class ControllerFile
         $manyRead = '';
         foreach ($manyForWrite as $f) {
             $prop = (string) $f['prop'];
-            $method = Context::relationMethodName($f);
+            $method = Naming::relationMethodName($f);
             $sync = 'sync' . ucfirst($method);
             $idsFor = Helper::idsForMethodName((string) $f['prop']);
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             $relatedModel = ($remote['entity'] ?? 'Related') . 'Model';
             $manyUpdate .= Template::render('controller/many_update.php.tpl', [
                 'prop' => $prop,
@@ -196,7 +134,7 @@ class ControllerFile
 
         $uniqueUpdate = '';
         foreach ($ctx->fields as $f) {
-            if (Context::isUnique($f)) {
+            if (FieldMeta::isUnique($f)) {
                 $uniqueUpdate = Template::render('controller/unique_update.php.tpl', [
                     'prop' => (string) $f['prop'],
                     'modelAlias' => $modelAlias,
@@ -210,21 +148,21 @@ class ControllerFile
         $payloadLines = [];
         foreach ($ctx->writableFields as $f) {
             $prop = (string) $f['prop'];
-            $ct = Context::columnType($f);
-            $relation = Context::relationType($f);
-            $render = Context::formRender($f);
+            $ct = FieldMeta::columnType($f);
+            $relation = FieldMeta::relationType($f);
+            $render = FieldMeta::formRender($f);
             $fn = match (true) {
                 $relation === 'belongs_to' => Helper::remotePayloadFn($f),
-                Context::isBoolField($f) => "static fn (mixed \$v): int => (int) \$v === 1 ? 1 : 0",
+                FieldMeta::isBoolField($f) => "static fn (mixed \$v): int => (int) \$v === 1 ? 1 : 0",
                 $ct === 'json' || $render === 'multi_select' => 'fn (mixed $v): ?array => CrudHelper::normalizeStringList($v)',
-                Context::isEnumField($f) => Helper::enumPayloadFn($ctx, $f),
-                $ct === 'decimal' => 'static fn (mixed $v): float => round((float) $v, ' . Context::decimalScale($f) . ')',
+                FieldMeta::isEnumField($f) => Helper::enumPayloadFn($ctx, $f),
+                $ct === 'decimal' => 'static fn (mixed $v): float => round((float) $v, ' . FieldMeta::decimalScale($f) . ')',
                 $ct === 'float' => 'static fn (mixed $v): float => (float) $v',
-                Context::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime') => 'static fn (mixed $v): ?int => ($ts = (int) $v) > 0 ? $ts : null',
+                FieldMeta::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime') => 'static fn (mixed $v): ?int => ($ts = (int) $v) > 0 ? $ts : null',
                 in_array($ct, ['bigint', 'int', 'tinyint'], true) || $render === 'number' => 'static fn (mixed $v): int => (int) $v',
                 default => 'fn (mixed $v): ?string => CrudHelper::nullableString($v)',
             };
-            if (Context::isRequired($f) && Context::isStringColumn($f) && $render === 'input') {
+            if (FieldMeta::isRequired($f) && FieldMeta::isStringColumn($f) && $render === 'input') {
                 $fn = 'static fn (mixed $v): string => trim((string) $v)';
             }
             $payloadLines[] = "            '{$prop}' => {$fn},";
@@ -232,13 +170,13 @@ class ControllerFile
 
         $uploadMethods = '';
         foreach ($ctx->imageFields as $f) {
-            $render = Context::formRender($f);
-            $action = Context::uploadActionName((string) $f['prop']);
+            $render = FieldMeta::formRender($f);
+            $action = Naming::uploadActionName((string) $f['prop']);
             $uploadMethods .= "\n" . Template::render('controller/upload.php.tpl', [
                 'action'  => $action,
                 'label'   => (string) $f['label'],
                 'dir'     => $ctx->module !== '' ? $ctx->module : 'default',
-                'factory' => $render === 'file' ? 'default' : 'image',
+                'factory' => $render === 'file' ? 'default' : 'image', // file 走通用上传；image/image_upload 走图片
                 'api'     => $ctx->apiBase . '/' . $action,
             ]);
         }
@@ -265,7 +203,7 @@ class ControllerFile
         $createManyAfter = '';
         foreach ($manyForWrite as $f) {
             $prop = (string) $f['prop'];
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             $relatedModel = ($remote['entity'] ?? 'Related') . 'Model';
             $createManyBefore .= Template::render('controller/create_many_before.php.tpl', [
                 'prop' => $prop,
@@ -273,7 +211,7 @@ class ControllerFile
             ]);
             $createManyAfter .= Template::render('controller/create_many_after.php.tpl', [
                 'modelAlias' => $modelAlias,
-                'sync' => 'sync' . ucfirst(Context::relationMethodName($f)),
+                'sync' => 'sync' . ucfirst(Naming::relationMethodName($f)),
                 'prop' => $prop,
             ]);
         }
@@ -338,15 +276,15 @@ class ControllerFile
             if ($prop === '' || $prop === $pk) {
                 continue;
             }
-            if (Context::relationType($f) === 'belongs_to_many') {
+            if (FieldMeta::relationType($f) === 'belongs_to_many') {
                 continue;
             }
             // belongs_to 有外键列；其余须 column.enabled
-            if (Context::relationType($f) === 'belongs_to') {
+            if (FieldMeta::relationType($f) === 'belongs_to') {
                 $props[] = $prop;
                 continue;
             }
-            if (Context::columnConfig($f) === null) {
+            if (FieldMeta::columnConfig($f) === null) {
                 continue;
             }
             $props[] = $prop;
@@ -364,15 +302,15 @@ class ControllerFile
     {
         $parts = [];
         foreach ($fields as $f) {
-            $rel = Context::relationType($f);
+            $rel = FieldMeta::relationType($f);
             if ($rel !== 'belongs_to' && $rel !== 'belongs_to_many') {
                 continue;
             }
-            $vf = Context::remoteValueField($f);
-            $lf = Context::remoteLabelField($f);
+            $vf = FieldMeta::remoteValueField($f);
+            $lf = FieldMeta::remoteLabelField($f);
             $fields = $vf === $lf ? $vf : "{$vf},{$lf}";
             $parts[] = rtrim(Template::render('controller/with_closure.php.tpl', [
-                'method' => Context::relationMethodName($f),
+                'method' => Naming::relationMethodName($f),
                 'fields' => $fields,
             ]));
         }
@@ -390,7 +328,7 @@ class ControllerFile
     {
         $out = [];
         foreach ($fields as $f) {
-            if (Context::relationType($f) === $type) {
+            if (FieldMeta::relationType($f) === $type) {
                 $out[] = $f;
             }
         }

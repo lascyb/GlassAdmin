@@ -347,7 +347,7 @@ class TableSchema
             $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'bool'];
             $form = ['enabled' => true, 'render' => 'switch'];
             if (self::commentLooksLikeEnum($comment)) {
-                $list = ['enabled' => true, 'render' => 'status', 'width' => 100];
+                $list = ['enabled' => true, 'render' => 'enum_tag', 'width' => 100];
                 $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'select'];
                 $form = ['enabled' => true, 'render' => 'radio'];
                 $ext = ['enum' => ['key' => 'STATUS_MAP']];
@@ -392,7 +392,7 @@ class TableSchema
             if (str_contains($prop, 'image') || str_contains($prop, 'cover') || str_contains($prop, 'avatar') || str_contains($prop, 'logo')) {
                 $list = ['enabled' => true, 'render' => 'image', 'width' => 80];
                 $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];
-                $form = ['enabled' => true, 'render' => 'image'];
+                $form = ['enabled' => true, 'render' => 'image_upload'];
             } elseif (str_contains($prop, 'color')) {
                 $list = ['enabled' => true, 'render' => 'color', 'width' => 90];
                 $search = ['enabled' => false, 'keyword' => false, 'advanced' => false];

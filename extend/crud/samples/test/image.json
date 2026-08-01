@@ -90,7 +90,7 @@
         "enabled": false
       },
       "form": {
-        "render": "image",
+        "render": "image_upload",
         "enabled": true
       }
     }

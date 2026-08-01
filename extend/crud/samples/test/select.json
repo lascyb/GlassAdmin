@@ -79,7 +79,7 @@
         "enabled": false
       },
       "list": {
-        "render": "tag",
+        "render": "enum_tag",
         "width": 88,
         "enabled": true
       },

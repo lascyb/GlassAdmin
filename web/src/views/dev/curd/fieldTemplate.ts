@@ -42,7 +42,7 @@ export const buildFieldFromTemplate = (
                 uiType: 'radio',
                 column: { type: 'tinyint', nullable: false, default: 1 },
                 relation: { type: 'belongs_to', enabled: false },
-                list: { render: 'status', width: 88 },
+                list: { render: 'enum_tag', width: 88 },
                 search: { advanced: true },
                 form: { render: 'radio' },
             }
@@ -67,7 +67,7 @@ export const buildFieldFromTemplate = (
                 uiType: 'remote_select',
                 column: { type: 'bigint', unsigned: true, nullable: true, default: null },
                 relation: { type: 'belongs_to' },
-                list: { render: 'tag', relationProp: 'category.name', width: 110 },
+                list: { render: 'enum_tag', relationProp: 'category.name', width: 110 },
                 search: { advanced: true },
                 form: { render: 'remote_select' },
                 ext: { remote: { api: 'test.ft.Text/list', valueField: 'id', labelField: 'title' } },
@@ -126,7 +126,7 @@ export const buildFieldFromTemplate = (
                 relation: { type: 'belongs_to', enabled: false },
                 list: { render: 'image', width: 88 },
                 search: { keyword: true, enabled: false },
-                form: { render: 'image' },
+                form: { render: 'image_upload' },
             }
             break
         case 'blank':

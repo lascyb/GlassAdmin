@@ -108,10 +108,10 @@ export type FormColorFieldParam = FormFieldParamBase & {
     render: typeof FORM_RENDER.COLOR
 }
 
-/** FormImageFieldParam image 图片上传参数 */
+/** FormImageFieldParam image_upload 图片上传参数 */
 export type FormImageFieldParam = FormFieldParamBase & {
     /** render 表单控件类型 */
-    render: typeof FORM_RENDER.IMAGE
+    render: typeof FORM_RENDER.IMAGE_UPLOAD
 }
 
 /** FormFileFieldParam file 文件上传参数 */
@@ -189,7 +189,7 @@ export type FormFieldRenderParamMap = {
     [FORM_RENDER.DATETIME]: FormDatetimeFieldParam
     [FORM_RENDER.TIME]: FormTimeFieldParam
     [FORM_RENDER.COLOR]: FormColorFieldParam
-    [FORM_RENDER.IMAGE]: FormImageFieldParam
+    [FORM_RENDER.IMAGE_UPLOAD]: FormImageFieldParam
     [FORM_RENDER.FILE]: FormFileFieldParam
     [FORM_RENDER.READONLY]: FormReadonlyFieldParam
     [FORM_RENDER.HIDDEN]: FormHiddenFieldParam

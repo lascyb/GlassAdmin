@@ -406,7 +406,7 @@ const onConfirm = () => {
 
     f.list.enabled = true
     if (!f.list.render) {
-        f.list.render = isMulti.value ? 'tags' : 'tag'
+        f.list.render = isMulti.value ? 'tags' : 'enum_tag'
         f.list.minWidth = 120
     }
     const rel = relatedNameFromProp(f.prop)

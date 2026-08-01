@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use crud\Context;
 
 /**
@@ -14,10 +16,10 @@ class Helper
     public static function idsForMethodName(string $prop): string
     {
         if (str_ends_with($prop, '_ids')) {
-            return Context::toCamel(substr($prop, 0, -4) . '_ids') . 'For';
+            return Naming::toCamel(substr($prop, 0, -4) . '_ids') . 'For';
         }
 
-        return Context::toCamel($prop) . 'IdsFor';
+        return Naming::toCamel($prop) . 'IdsFor';
     }
 
     /** phpLiteral PHP 字面量（字符串自动加引号） */
@@ -55,7 +57,7 @@ class Helper
     /** remoteValueIsString 远程关联存值是否为字符串（按本地列类型） */
     public static function remoteValueIsString(array $f): bool
     {
-        return Context::isStringColumn($f);
+        return FieldMeta::isStringColumn($f);
     }
 
     /** remoteValueTsType 远程/关联字段 TS 类型 */
@@ -69,8 +71,8 @@ class Helper
     /** remoteRelatedRowTs 远程回显选项行 TS 类型 */
     public static function remoteRelatedRowTs(array $f): string
     {
-        $vf = Context::remoteValueField($f);
-        $lf = Context::remoteLabelField($f);
+        $vf = FieldMeta::remoteValueField($f);
+        $lf = FieldMeta::remoteLabelField($f);
         $vTs = self::remoteValueIsString($f) ? 'string' : 'number';
         if ($vf === $lf) {
             return "{ {$vf}: {$vTs} }";
@@ -112,14 +114,14 @@ class Helper
     /** tsType 字段 TS 类型（按 column.type / form.render / 枚举值类型） */
     public static function tsType(array $f, bool $required = false, ?Context $ctx = null): string
     {
-        $ct = Context::columnType($f);
-        $render = Context::formRender($f);
+        $ct = FieldMeta::columnType($f);
+        $render = FieldMeta::formRender($f);
 
         if ($ct === 'json' || $render === 'multi_select' || $render === 'checkbox') {
             return 'string[] | null';
         }
         // 枚举：按 options 值类型（可为 string 或 number）
-        if ($ctx !== null && Context::isEnumField($f)) {
+        if ($ctx !== null && FieldMeta::isEnumField($f)) {
             $vals = $ctx->enumValues($f);
             if (self::enumIsString($vals)) {
                 return $required ? 'string' : 'string | null';
@@ -128,11 +130,11 @@ class Helper
             return 'number';
         }
         // 远程关联：按本地列类型
-        if (Context::isRemoteField($f) || $render === 'remote_select' || Context::relationType($f) === 'belongs_to') {
+        if (FieldMeta::isRemoteField($f) || $render === 'remote_select' || FieldMeta::relationType($f) === 'belongs_to') {
             return self::remoteValueTsType($f, !$required);
         }
         // Unix 秒时间字段
-        if (Context::isUnixDatetime($f)) {
+        if (FieldMeta::isUnixDatetime($f)) {
             return 'number';
         }
         // MySQL date/datetime/timestamp 存字符串
@@ -159,7 +161,7 @@ class Helper
     public static function hasFormRender(Context $ctx, string $type): bool
     {
         foreach ($ctx->fields as $f) {
-            if (Context::formRender($f) === $type) {
+            if (FieldMeta::formRender($f) === $type) {
                 return true;
             }
         }
@@ -176,7 +178,7 @@ class Helper
             }
         }
         foreach ($ctx->fields as $f) {
-            if (Context::isRequired($f) && Context::isStringColumn($f)) {
+            if (FieldMeta::isRequired($f) && FieldMeta::isStringColumn($f)) {
                 return (string) $f['prop'];
             }
         }

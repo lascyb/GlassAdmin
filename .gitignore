@@ -13,7 +13,6 @@ Thumbs.db
 /.codebuddy
 /public/storage/
 /php-cli.ini
-/.cursor/*
-!/.cursor/rules/
-!/.cursor/rules/**
 /runtime
+/.cursor/
+/.codex/

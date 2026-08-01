@@ -9,23 +9,25 @@ import {
 } from '../../constants/list-render'
 import {
     SEARCH_CONTROL_GROUPS,
-    SEARCH_CONTROL_NEED_ENUM,
     SEARCH_CONTROL_NEED_MATCH,
-    SEARCH_CONTROL_NEED_REMOTE,
     SEARCH_CONTROL_OPTIONS,
 } from '../../constants/search-render'
-import { isRemoteField, listRenderNeedsEnum } from '../../fieldExt'
+import { isRemoteField } from '../../fieldExt'
 import { inferSearchRender } from '../../helpers'
 import InlineOptionsEditor from '../InlineOptionsEditor.vue'
 import RemoteConfigDialog from '../RemoteConfigDialog.vue'
+import {
+    listParamCanonical,
+    resolveListParamComponent,
+    resolveSearchParamComponent,
+    searchParamCanonical,
+} from '../render-params/registry'
 
 const fieldStore = useDevCurdField()
 const { selectedField: field, hasList } = storeToRefs(fieldStore)
 
 const renderValueSet = new Set(LIST_COLUMN_RENDER_OPTIONS.map((o) => o.value))
 const controlValueSet = new Set(SEARCH_CONTROL_OPTIONS.map((o) => o.value))
-const searchEnumNeedSet = new Set<string>(SEARCH_CONTROL_NEED_ENUM)
-const searchRemoteNeedSet = new Set<string>(SEARCH_CONTROL_NEED_REMOTE)
 const matchControlSet = new Set<string>(SEARCH_CONTROL_NEED_MATCH)
 
 const enumVisible = ref(false)
@@ -61,6 +63,14 @@ const listRenderDisplay = computed((): string | undefined => {
     return render && renderValueSet.has(render) ? render : undefined
 })
 
+/** listParamKey 列表入参组件规范键 */
+const listParamKey = computed(() =>
+    listRenderDisplay.value ? listParamCanonical(listRenderDisplay.value) : '_empty',
+)
+
+/** listParamComp 当前列表入参组件 */
+const listParamComp = computed(() => resolveListParamComponent(listRenderDisplay.value))
+
 /** searchAdvanced 是否启用高级搜索 */
 const searchAdvanced = computed(() => field.value?.search.advanced === true)
 
@@ -71,32 +81,13 @@ const searchControlDisplay = computed((): string | undefined => {
     return sr && controlValueSet.has(sr) ? sr : undefined
 })
 
-const showSearchMatch = computed(
-    () => searchAdvanced.value && !!searchControlDisplay.value && matchControlSet.has(searchControlDisplay.value),
+/** searchParamKey 搜索入参组件规范键 */
+const searchParamKey = computed(() =>
+    searchControlDisplay.value ? searchParamCanonical(searchControlDisplay.value) : '_empty',
 )
 
-/** searchMatch 文本匹配方式 {fuzzy:模糊,exact:精确} */
-const searchMatch = computed({
-    get: (): 'fuzzy' | 'exact' => field.value?.search.match ?? 'fuzzy',
-    set: (v: 'fuzzy' | 'exact') => {
-        if (field.value) field.value.search.match = v
-    },
-})
-
-/** showListEnumEdit 当前列渲染是否需要编辑枚举（远程 tag/tags 不需要） */
-const showListEnumEdit = computed(
-    () => !!listRenderDisplay.value && listRenderNeedsEnum(field.value, listRenderDisplay.value),
-)
-
-/** showSearchEnumEdit 当前搜索控件是否需要编辑枚举 */
-const showSearchEnumEdit = computed(
-    () => !!searchControlDisplay.value && searchEnumNeedSet.has(searchControlDisplay.value),
-)
-
-/** showSearchRemoteEdit 当前搜索控件是否需要编辑远程 */
-const showSearchRemoteEdit = computed(
-    () => !!searchControlDisplay.value && searchRemoteNeedSet.has(searchControlDisplay.value),
-)
+/** searchParamComp 当前搜索入参组件 */
+const searchParamComp = computed(() => resolveSearchParamComponent(searchControlDisplay.value))
 
 /** onListRenderChange 写回 list.render */
 const onListRenderChange = (v: string | undefined) => {
@@ -168,102 +159,84 @@ const onSearchControlChange = (v: string | undefined) => {
             <section class="space-y-2">
                 <el-form size="small">
                     <el-form-item label="列渲染" required>
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                            <el-select
-                                :model-value="listRenderDisplay"
-                                class="!w-20"
-                                clearable
-                                placeholder="列渲染"
-                                popper-class="field-type-select-popper"
-                                @update:model-value="onListRenderChange"
+                        <el-select
+                            :model-value="listRenderDisplay"
+                            class="!w-36"
+                            clearable
+                            placeholder="列渲染"
+                            popper-class="field-type-select-popper"
+                            @update:model-value="onListRenderChange"
+                        >
+                            <el-option-group
+                                v-for="g in LIST_COLUMN_RENDER_GROUPS"
+                                :key="g.label"
+                                :label="g.label"
                             >
-                                <el-option-group
-                                    v-for="g in LIST_COLUMN_RENDER_GROUPS"
-                                    :key="g.label"
-                                    :label="g.label"
-                                >
-                                    <el-option
-                                        v-for="o in g.options"
-                                        :key="o.value"
-                                        :label="o.label"
-                                        :value="o.value"
-                                    />
-                                </el-option-group>
-                            </el-select>
-                            <el-button
-                                v-if="showListEnumEdit"
-                                size="small"
-                                type="primary"
-                                link
-                                @click="enumVisible = true"
-                            >
-                                编辑枚举
-                            </el-button>
-                        </div>
+                                <el-option
+                                    v-for="o in g.options"
+                                    :key="o.value"
+                                    :label="o.label"
+                                    :value="o.value"
+                                />
+                            </el-option-group>
+                        </el-select>
                     </el-form-item>
+                </el-form>
+                <component
+                    :is="listParamComp"
+                    :key="listParamKey"
+                    @edit-enum="enumVisible = true"
+                />
+            </section>
+
+            <section class="space-y-2">
+                <el-form size="small">
                     <el-form-item label="搜索配置">
                         <el-checkbox
-                                :model-value="!keywordDisabled && field.search.keyword === true"
-                                :disabled="keywordDisabled"
-                                @update:model-value="onKeywordChange"
-                            >
-                                启用关键词搜索
+                            :model-value="!keywordDisabled && field.search.keyword === true"
+                            :disabled="keywordDisabled"
+                            @update:model-value="onKeywordChange"
+                        >
+                            启用关键词搜索
                         </el-checkbox>
                         <el-checkbox
                             :model-value="field.search.advanced === true"
                             @update:model-value="onAdvancedChange"
                         >
-                                启用高级搜索
+                            启用高级搜索
                         </el-checkbox>
                     </el-form-item>
-                    <el-form-item v-if="searchAdvanced"  label="搜索控件" >
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                            <el-select
-                                :model-value="searchControlDisplay"
-                                class="!w-25 max-w-full"
-                                clearable
-                                placeholder="搜索控件"
-                                popper-class="field-type-select-popper"
-                                @update:model-value="onSearchControlChange"
+                    <el-form-item v-if="searchAdvanced" label="搜索控件">
+                        <el-select
+                            :model-value="searchControlDisplay"
+                            class="!w-40 max-w-full"
+                            clearable
+                            placeholder="搜索控件"
+                            popper-class="field-type-select-popper"
+                            @update:model-value="onSearchControlChange"
+                        >
+                            <el-option-group
+                                v-for="g in SEARCH_CONTROL_GROUPS"
+                                :key="g.label"
+                                :label="g.label"
                             >
-                                <el-option-group
-                                    v-for="g in SEARCH_CONTROL_GROUPS"
-                                    :key="g.label"
-                                    :label="g.label"
-                                >
-                                    <el-option
-                                        v-for="o in g.options"
-                                        :key="o.value"
-                                        :label="o.label"
-                                        :value="o.value"
-                                    />
-                                </el-option-group>
-                            </el-select>
-                            <el-button
-                                v-if="showSearchEnumEdit"
-                                size="small"
-                                type="primary"
-                                link
-                                @click="enumVisible = true"
-                            >
-                                编辑枚举
-                            </el-button>
-                            <el-button
-                                v-if="showSearchRemoteEdit"
-                                size="small"
-                                type="primary"
-                                link
-                                @click="remoteVisible = true"
-                            >
-                                编辑远程
-                            </el-button>
-                            <el-radio-group v-if="showSearchMatch" v-model="searchMatch" size="small">
-                                <el-radio value="fuzzy">模糊搜索</el-radio>
-                                <el-radio value="exact">精确搜索</el-radio>
-                            </el-radio-group>
-                        </div>
+                                <el-option
+                                    v-for="o in g.options"
+                                    :key="o.value"
+                                    :label="o.label"
+                                    :value="o.value"
+                                />
+                            </el-option-group>
+                        </el-select>
                     </el-form-item>
                 </el-form>
+                <component
+                    v-if="searchAdvanced"
+                    :is="searchParamComp"
+                    :key="searchParamKey"
+                    @edit-enum="enumVisible = true"
+                    @edit-remote="remoteVisible = true"
+                />
             </section>
         </div>
 

@@ -5,7 +5,10 @@
                         v-model="form.<%prop%>"
                         :remote-url="'<%url%>'"
                         :props="{ value: '<%valueField%>', label: '<%labelField%>' }"
-                        :init-options="<%initVar%>"<%multiAttrs%>
+                        :init-options="<%initVar%>"
+                        multiple
+                        collapse-tags
+                        collapse-tags-tooltip
                         clearable
                         placeholder="<%placeholder%>"
                         class="w-full"

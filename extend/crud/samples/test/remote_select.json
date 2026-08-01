@@ -80,7 +80,7 @@
         "enabled": true
       },
       "list": {
-        "render": "tag",
+        "render": "enum_tag",
         "relationProp": "category.title",
         "width": 110,
         "enabled": true

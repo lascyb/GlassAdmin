@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace crud;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use app\admin\model\auth\Rule;
 use app\admin\model\auth\RuleApi;
 use crud\Context;
@@ -122,7 +124,7 @@ class AuthInstaller
         $sort = 5;
         $uploadActions = [];
         foreach ($ctx->imageFields as $f) {
-            $action = Context::uploadActionName((string) $f['prop']);
+            $action = Naming::uploadActionName((string) $f['prop']);
             $apis[] = [$action, 'POST', "上传{$f['label']}", $sort++];
             $uploadActions[] = $action;
         }
@@ -291,7 +293,7 @@ class AuthInstaller
 
         $remoteSort = $sort;
         foreach (array_merge($ctx->belongsToFields, $ctx->belongsToManyFields) as $f) {
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             if ($remote === null) {
                 continue;
             }
@@ -440,14 +442,14 @@ class AuthInstaller
         $items[] = ['name' => "backend.api:{$ctx->apiBase}/update PUT", 'status' => 'planned'];
         $items[] = ['name' => "backend.api:{$ctx->apiBase}/delete DELETE", 'status' => 'planned'];
         foreach ($ctx->imageFields as $f) {
-            $action = Context::uploadActionName((string) $f['prop']);
+            $action = Naming::uploadActionName((string) $f['prop']);
             $items[] = ['name' => "backend.api:{$ctx->apiBase}/{$action} POST", 'status' => 'planned'];
         }
         $items[] = ['name' => 'frontend.btn:add', 'status' => 'planned'];
         $items[] = ['name' => 'frontend.btn:edit', 'status' => 'planned'];
         $items[] = ['name' => 'frontend.btn:del', 'status' => 'planned'];
         foreach (array_merge($ctx->belongsToFields, $ctx->belongsToManyFields) as $f) {
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             if ($remote !== null) {
                 $items[] = ['name' => "backend.api:{$remote['url']} GET", 'status' => 'planned'];
             }

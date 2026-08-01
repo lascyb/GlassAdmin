@@ -88,7 +88,7 @@ export const FIELD_TYPE_DEFS = [
         needEnum: true,
         inference: {
             column: { type: 'tinyint', nullable: false, default: 1 },
-            list: { render: 'status', width: 88 },
+            list: { render: 'enum_tag', width: 88 },
             search: { advanced: true, render: 'select' },
             form: { render: 'radio' },
         },
@@ -112,7 +112,7 @@ export const FIELD_TYPE_DEFS = [
         needEnum: true,
         inference: {
             column: { type: 'tinyint', nullable: false, default: 1 },
-            list: { render: 'tag', width: 88 },
+            list: { render: 'enum_tag', width: 88 },
             search: { advanced: true, render: 'select' },
             form: { render: 'select' },
         },
@@ -137,7 +137,7 @@ export const FIELD_TYPE_DEFS = [
         inference: {
             column: { type: 'bigint', unsigned: true, nullable: true, default: null },
             relation: { type: 'belongs_to' },
-            list: { render: 'tag', width: 110 },
+            list: { render: 'enum_tag', width: 110 },
             search: { advanced: true, render: 'remote_select' },
             form: { render: 'remote_select' },
         },
@@ -196,7 +196,7 @@ export const FIELD_TYPE_DEFS = [
             column: { type: 'varchar', length: 255, nullable: true, default: null },
             list: { render: 'image', width: 88 },
             search: false,
-            form: { render: 'image' },
+            form: { render: 'image_upload' },
         },
     },
     {

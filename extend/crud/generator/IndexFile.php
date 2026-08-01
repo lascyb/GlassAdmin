@@ -3,8 +3,12 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
 use crud\Context;
 use crud\Template;
+use crud\generator\ui\Registry;
+use crud\generator\ui\resolve\ListKey;
+use crud\generator\ui\resolve\SearchKey;
 
 /**
  * IndexFile 生成 index.vue
@@ -23,15 +27,14 @@ class IndexFile
         $needFormat = false;
         $needStorage = false;
         foreach ($ctx->listFields as $f) {
-            $lr = Context::listRender($f);
-            $list = Context::listConfig($f) ?? [];
-            if ($lr === 'status' || ($lr === 'tag' && Context::enumKey($f) !== '')) {
+            $key = ListKey::resolve($f);
+            if ($key === 'enum_tag') {
                 $needStatus = true;
             }
-            if ($lr === 'datetime' && Context::isUnixDatetime($f)) {
+            if ($key === 'datetime') {
                 $needFormat = true;
             }
-            if ($lr === 'image') {
+            if ($key === 'image') {
                 $needStorage = true;
             }
         }
@@ -74,8 +77,8 @@ class IndexFile
         }
         foreach ($ctx->advancedFields as $f) {
             $prop = (string) $f['prop'];
-            $relation = Context::relationType($f);
-            $sr = Context::searchRender($f);
+            $relation = FieldMeta::relationType($f);
+            $sr = FieldMeta::searchRender($f);
             if ($relation === 'belongs_to_many' || $sr === 'remote_multi_select') {
                 $advLines[] = "    {$prop}: [] as number[],";
                 $resetLines[] = "    advanced.{$prop} = []";
@@ -93,8 +96,7 @@ class IndexFile
                 $queryLines[] = "    {$prop}_start: advanced.{$prop}?.[0] || undefined,";
                 $queryLines[] = "    {$prop}_end: advanced.{$prop}?.[1] || undefined,";
             } elseif ($sr === 'datetime_range') {
-                // Unix 秒用 number；MySQL datetime/timestamp 用字符串
-                $advLines[] = Context::isUnixDatetime($f)
+                $advLines[] = FieldMeta::isUnixDatetime($f)
                     ? "    {$prop}: null as [number, number] | null,"
                     : "    {$prop}: null as [string, string] | null,";
                 $resetLines[] = "    advanced.{$prop} = null";
@@ -109,11 +111,11 @@ class IndexFile
                 $advLines[] = "    {$prop}: '',";
                 $resetLines[] = "    advanced.{$prop} = ''";
                 $queryLines[] = "    {$prop}: advanced.{$prop}.trim() || undefined,";
-            } elseif ($sr === 'bool' || Context::isBoolField($f)) {
+            } elseif ($sr === 'bool' || FieldMeta::isBoolField($f)) {
                 $advLines[] = "    {$prop}: undefined as number | undefined,";
                 $resetLines[] = "    advanced.{$prop} = undefined";
                 $queryLines[] = "    {$prop}: advanced.{$prop} === 0 || advanced.{$prop} === 1 ? advanced.{$prop} : undefined,";
-            } elseif ($sr === 'select' || $sr === 'radio' || Context::isEnumField($f)) {
+            } elseif ($sr === 'select' || $sr === 'radio' || FieldMeta::isEnumField($f)) {
                 $vals = $ctx->enumValues($f);
                 $valsJs = Helper::jsLiteralList($vals);
                 $isString = Helper::enumIsString($vals);
@@ -135,11 +137,14 @@ class IndexFile
 
         $advancedTpl = '';
         foreach ($ctx->advancedFields as $f) {
-            $advancedTpl .= $this->renderAdvancedItem($f, $ctx);
+            $renderer = Registry::search(SearchKey::resolve($f));
+            if ($renderer !== null) {
+                $advancedTpl .= $renderer->render($f, $ctx);
+            }
         }
         $columns = '';
         foreach ($ctx->listFields as $f) {
-            $columns .= $this->renderListColumn($f, $ctx);
+            $columns .= Registry::list(ListKey::resolve($f))->render($f, $ctx);
         }
 
         $advancedSlot = $advancedTpl === ''
@@ -168,115 +173,5 @@ class IndexFile
             'advancedSlot' => $advancedSlot,
             'columns' => $columns,
         ]);
-    }
-
-    /** renderAdvancedItem 高级搜索表单项 */
-    private function renderAdvancedItem(array $f, Context $ctx): string
-    {
-        $prop = (string) $f['prop'];
-        $label = (string) $f['label'];
-        $sr = Context::searchRender($f);
-        $optKey = Context::enumKey($f);
-        $url = Context::remoteApi($f);
-
-        if ($sr === 'remote_select' || $sr === 'remote_multi_select') {
-            return Template::render('index/search/remote.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-                'url' => $url,
-                'valueField' => Context::remoteValueField($f),
-                'labelField' => Context::remoteLabelField($f),
-                'multiAttrs' => $sr === 'remote_multi_select' ? "\n                            multiple\n                            collapse-tags" : '',
-                'placeholder' => Context::searchPlaceholder($f, $sr),
-                'className' => $sr === 'remote_multi_select' ? '!w-48' : '!w-40',
-            ]) . "\n";
-        }
-        if ($sr === 'number_range') {
-            return Template::render('index/search/number_range.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-            ]) . "\n";
-        }
-        if ($sr === 'date_range') {
-            return Template::render('index/search/date_range.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-            ]) . "\n";
-        }
-        if ($sr === 'datetime_range') {
-            return Template::render('index/search/datetime_range.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-                'valueFormat' => Context::isUnixDatetime($f) ? 'X' : 'YYYY-MM-DD HH:mm:ss',
-            ]) . "\n";
-        }
-        if ($sr === 'input') {
-            return Template::render('index/search/input.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-                'placeholder' => Context::searchPlaceholder($f, $sr),
-            ]) . "\n";
-        }
-        if ($sr === 'bool') {
-            return Template::render('index/search/bool.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-            ]) . "\n";
-        }
-        if (($sr === 'select' || $sr === 'radio') && $optKey !== '') {
-            return Template::render('index/search/select.vue.tpl', [
-                'label' => $label,
-                'prop' => $prop,
-                'optKey' => $optKey,
-            ]) . "\n";
-        }
-
-        return '';
-    }
-
-    /** renderListColumn 列表列 */
-    private function renderListColumn(array $f, Context $ctx): string
-    {
-        $prop = (string) $f['prop'];
-        $label = (string) $f['label'];
-        $lr = Context::listRender($f);
-        $list = Context::listConfig($f) ?? [];
-        $width = isset($list['width']) ? " width=\"{$list['width']}\"" : '';
-        $minWidth = isset($list['minWidth']) ? " min-width=\"{$list['minWidth']}\"" : '';
-        $relation = Context::relationType($f);
-        $optKey = Context::enumKey($f);
-        $base = ['label' => $label, 'width' => $width, 'minWidth' => $minWidth, 'prop' => $prop];
-
-        if ($relation === 'belongs_to') {
-            return Template::render('index/col/belongs_to.vue.tpl', array_merge($base, [
-                'method' => Context::relationMethodName($f),
-                'labelField' => Context::remoteLabelField($f),
-            ])) . "\n";
-        }
-        if ($relation === 'belongs_to_many') {
-            return Template::render('index/col/belongs_to_many.vue.tpl', array_merge($base, [
-                'method' => Context::relationMethodName($f),
-                'labelField' => Context::remoteLabelField($f),
-            ])) . "\n";
-        }
-
-        return match ($lr) {
-            'bool' => Template::render('index/col/bool.vue.tpl', $base) . "\n",
-            'status', 'tag' => $optKey !== ''
-                ? Template::render('index/col/status.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n"
-                : Template::render('index/col/prop.vue.tpl', array_merge($base, ['overflow' => ''])) . "\n",
-            'color' => Template::render('index/col/color.vue.tpl', $base) . "\n",
-            'image' => Template::render('index/col/image.vue.tpl', $base) . "\n",
-            'datetime' => Context::isUnixDatetime($f)
-                ? Template::render('index/col/datetime.vue.tpl', $base) . "\n"
-                : Template::render('index/col/prop.vue.tpl', array_merge($base, ['overflow' => ''])) . "\n",
-            'tags' => Template::render('index/col/tags.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
-            'number' => Template::render('index/col/number.vue.tpl', $base) . "\n",
-            default => Template::render('index/col/prop.vue.tpl', array_merge($base, [
-                'overflow' => ((isset($list['minWidth']) || $lr === 'text') && $prop !== 'id')
-                    ? ' show-overflow-tooltip'
-                    : '',
-            ])) . "\n",
-        };
     }
 }

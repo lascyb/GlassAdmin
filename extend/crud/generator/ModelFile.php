@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use crud\Context;
 use crud\Template;
 
@@ -17,10 +19,10 @@ class ModelFile
         $typeLines = [];
         foreach ($ctx->fields as $f) {
             $prop = (string) $f['prop'];
-            if (Context::relationType($f) === 'belongs_to_many') {
+            if (FieldMeta::relationType($f) === 'belongs_to_many') {
                 continue;
             }
-            $col = Context::columnConfig($f);
+            $col = FieldMeta::columnConfig($f);
             if ($col === null) {
                 continue;
             }
@@ -49,8 +51,8 @@ class ModelFile
         }
 
         foreach ($ctx->belongsToFields as $f) {
-            $method = Context::relationMethodName($f);
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $method = Naming::relationMethodName($f);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             $relatedEntity = $remote['entity'] ?? ucfirst($method);
             $relatedModule = $remote['module'] ?? $ctx->module;
             if ($relatedModule !== $ctx->module) {
@@ -61,16 +63,16 @@ class ModelFile
                 'label' => (string) $f['label'],
                 'relatedClass' => $relatedEntity,
                 'fk' => (string) $f['prop'],
-                'localKey' => Context::remoteValueField($f),
+                'localKey' => FieldMeta::remoteValueField($f),
             ]);
         }
 
         foreach ($ctx->belongsToManyFields as $f) {
-            $method = Context::relationMethodName($f);
-            $remote = Context::parseRemoteApi(Context::remoteApi($f) ?: null);
+            $method = Naming::relationMethodName($f);
+            $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($f) ?: null);
             $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
             $relatedModule = $remote['module'] ?? $ctx->module;
-            $rel = Context::relationConfig($f) ?? [];
+            $rel = FieldMeta::relationConfig($f) ?? [];
             $pivot = (string) ($rel['pivotTable'] ?? ($ctx->table . '_' . rtrim($method, 's')));
             $fk = (string) ($rel['foreignKey'] ?? (strtolower($ctx->entity) . '_id'));
             $rk = (string) ($rel['relatedKey'] ?? (strtolower($relatedEntity) . '_id'));

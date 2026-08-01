@@ -3,8 +3,12 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use crud\Context;
 use crud\Template;
+use crud\generator\ui\Registry;
+use crud\generator\ui\resolve\FormKey;
 
 /**
  * EditFile 生成 edit.vue
@@ -20,7 +24,10 @@ class EditFile
 
         $needRemote = $ctx->belongsToFields !== [] || $ctx->belongsToManyFields !== [];
         $needUpload = $ctx->imageFields !== [];
-        $needStorage = $needUpload || Helper::hasFormRender($ctx, 'image');
+        $needStorage = $needUpload
+            || Helper::hasFormRender($ctx, 'image_upload')
+            || Helper::hasFormRender($ctx, 'image')
+            || Helper::hasFormRender($ctx, 'file');
 
         $imports = [
             "import * as apis from '@/apis/{$ctx->module}/{$ctx->entityFile}'",
@@ -50,44 +57,44 @@ class EditFile
 
         foreach ($ctx->formFields as $f) {
             $prop = (string) $f['prop'];
-            $ct = Context::columnType($f);
-            $relation = Context::relationType($f);
-            $render = Context::formRender($f);
+            $ct = FieldMeta::columnType($f);
+            $relation = FieldMeta::relationType($f);
+            $render = FieldMeta::formRender($f);
+            $uiKey = FormKey::resolve($f);
             $def = $this->formDefault($f, $ctx);
             $formLines[] = "    {$prop}: {$def},";
             $resetLines[] = "        {$prop}: {$def},";
 
             if ($relation === 'belongs_to') {
-                $method = Context::relationMethodName($f);
-                $initVar = Context::toCamel($method) . 'Init';
+                $method = Naming::relationMethodName($f);
+                $initVar = Naming::toCamel($method) . 'Init';
                 $rowTs = Helper::remoteRelatedRowTs($f);
-                $vf = Context::remoteValueField($f);
                 $initRefs[] = "const {$initVar} = ref<Array<{$rowTs}> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
                 $assignLines[] = "                {$prop}: d.{$prop} ?? undefined,";
                 $initAssign[] = "            {$initVar}.value = d.{$method} ? [d.{$method}] : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop} ?? null,";
             } elseif ($relation === 'belongs_to_many') {
-                $method = Context::relationMethodName($f);
-                $initVar = Context::toCamel($method) . 'Init';
+                $method = Naming::relationMethodName($f);
+                $initVar = Naming::toCamel($method) . 'Init';
                 $rowTs = Helper::remoteRelatedRowTs($f);
-                $vf = Context::remoteValueField($f);
+                $vf = FieldMeta::remoteValueField($f);
                 $initRefs[] = "const {$initVar} = ref<Array<{$rowTs}> | undefined>()";
                 $initReset[] = "    {$initVar}.value = undefined";
                 $assignLines[] = "                {$prop}: d.{$prop} ?? d.{$method}?.map((t) => t.{$vf}) ?? [],";
                 $initAssign[] = "            {$initVar}.value = d.{$method}?.length ? d.{$method} : undefined";
                 $payloadLines[] = "            {$prop}: form.{$prop},";
-            } elseif (Context::isStringColumn($f) && in_array($render, ['input', 'password', 'textarea', 'color'], true)) {
+            } elseif (FieldMeta::isStringColumn($f) && in_array($render, ['input', 'password', 'textarea', 'color'], true)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? '',";
                 $payloadLines[] = $render === 'color'
                     ? "            {$prop}: form.{$prop},"
                     : "            {$prop}: form.{$prop}.trim(),";
-            } elseif ($ct === 'date' || $render === 'date' || in_array($render, ['image', 'file'], true)) {
+            } elseif ($ct === 'date' || $render === 'date' || $uiKey === 'image_upload') {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? '',";
                 $payloadLines[] = $render === 'date'
                     ? "            {$prop}: form.{$prop} || undefined,"
                     : "            {$prop}: form.{$prop},";
-            } elseif (Context::isUnixDatetime($f)) {
+            } elseif (FieldMeta::isUnixDatetime($f)) {
                 $assignLines[] = "                {$prop}: d.{$prop} ?? null,";
                 $payloadLines[] = "            {$prop}: form.{$prop} ?? undefined,";
             } elseif (in_array($render, ['datetime', 'time'], true) || in_array($ct, ['datetime', 'timestamp'], true)) {
@@ -104,7 +111,7 @@ class EditFile
 
         $formItems = '';
         foreach ($ctx->formFields as $f) {
-            $formItems .= $this->renderFormItem($f, $ctx);
+            $formItems .= Registry::form(FormKey::resolve($f))->render($f, $ctx);
         }
 
         $uploadFns = '';
@@ -119,7 +126,7 @@ class EditFile
 
         $requiredChecks = '';
         foreach ($ctx->formFields as $f) {
-            if (Context::isRequired($f) && Context::isStringColumn($f) && Context::formRender($f) === 'input') {
+            if (FieldMeta::isRequired($f) && FieldMeta::isStringColumn($f) && FieldMeta::formRender($f) === 'input') {
                 $requiredChecks .= Template::render('edit/required_check.ts.tpl', [
                     'prop' => (string) $f['prop'],
                     'label' => (string) $f['label'],
@@ -151,9 +158,9 @@ class EditFile
     /** formDefault 表单默认值字面量 */
     private function formDefault(array $f, Context $ctx): string
     {
-        $ct = Context::columnType($f);
-        $relation = Context::relationType($f);
-        $render = Context::formRender($f);
+        $ct = FieldMeta::columnType($f);
+        $relation = FieldMeta::relationType($f);
+        $render = FieldMeta::formRender($f);
         if ($relation === 'belongs_to' || $render === 'remote_select') {
             return Helper::remoteValueIsString($f)
                 ? 'undefined as string | undefined'
@@ -165,10 +172,10 @@ class EditFile
         if ($render === 'color') {
             return "'#409EFF'";
         }
-        if (Context::isBoolField($f)) {
+        if (FieldMeta::isBoolField($f)) {
             return '0';
         }
-        if (Context::isEnumField($f)) {
+        if (FieldMeta::isEnumField($f)) {
             $vals = $ctx->enumValues($f);
             if ($vals === []) {
                 return '0';
@@ -182,7 +189,7 @@ class EditFile
         if ($ct === 'decimal' || $render === 'number' || in_array($ct, ['int', 'tinyint', 'float'], true)) {
             return '0';
         }
-        if (Context::isUnixDatetime($f)) {
+        if (FieldMeta::isUnixDatetime($f)) {
             return 'null as number | null';
         }
         if (in_array($render, ['datetime', 'time'], true) || in_array($ct, ['datetime', 'timestamp'], true)) {
@@ -190,103 +197,5 @@ class EditFile
         }
 
         return "''";
-    }
-
-    /** renderFormItem 表单项 */
-    private function renderFormItem(array $f, Context $ctx): string
-    {
-        $prop = (string) $f['prop'];
-        $label = (string) $f['label'];
-        $form = Context::formConfig($f) ?? [];
-        $render = (string) ($form['render'] ?? 'input');
-        $required = !empty($form['required']) ? ' required' : '';
-        $maxLen = Context::formMaxLength($f);
-        $max = $maxLen !== null ? " maxlength=\"{$maxLen}\" show-word-limit" : '';
-        $mapKey = Context::enumKey($f);
-        $optKey = Context::enumKey($f);
-        $remoteUrl = Context::remoteApi($f);
-        $relation = Context::relationType($f);
-        $base = [
-            'label' => $label,
-            'prop' => $prop,
-            'required' => $required,
-            'placeholder' => Context::formPlaceholder($f),
-        ];
-
-        if ($relation === 'belongs_to' || $relation === 'belongs_to_many'
-            || in_array($render, ['remote_select', 'remote_multi_select'], true)
-        ) {
-            $method = Context::relationMethodName($f);
-            $multi = ($relation === 'belongs_to_many' || $render === 'remote_multi_select');
-
-            $valueField = Context::remoteValueField($f);
-            $labelField = Context::remoteLabelField($f);
-
-            return Template::render('edit/field/remote.vue.tpl', array_merge($base, [
-                'key' => $multi ? 'tag' : 'rel',
-                'url' => $remoteUrl,
-                'valueField' => $valueField,
-                'labelField' => $labelField,
-                'initVar' => Context::toCamel($method) . 'Init',
-                'multiAttrs' => $multi
-                    ? "\n                        multiple\n                        collapse-tags\n                        collapse-tags-tooltip"
-                    : '',
-            ])) . "\n";
-        }
-
-        return match ($render) {
-            'textarea' => Template::render('edit/field/textarea.vue.tpl', array_merge($base, ['max' => $max])) . "\n",
-            'number' => $this->renderNumberItem($f),
-            'switch' => Template::render('edit/field/switch.vue.tpl', $base) . "\n",
-            'radio' => Template::render('edit/field/radio.vue.tpl', array_merge($base, ['optKey' => $mapKey])) . "\n",
-            'select' => Template::render('edit/field/select.vue.tpl', array_merge($base, ['optKey' => $mapKey])) . "\n",
-            'multi_select', 'checkbox' => Template::render('edit/field/multi_select.vue.tpl', array_merge($base, ['optKey' => $optKey])) . "\n",
-            'color' => Template::render('edit/field/color.vue.tpl', $base) . "\n",
-            'image', 'file' => $this->renderImageItem($f),
-            'datetime', 'time' => Template::render('edit/field/datetime.vue.tpl', array_merge($base, [
-                'valueFormat' => Context::isUnixDatetime($f) ? 'X' : 'YYYY-MM-DD HH:mm:ss',
-            ])) . "\n",
-            'date' => Template::render('edit/field/date.vue.tpl', $base) . "\n",
-            default => Template::render('edit/field/input.vue.tpl', array_merge($base, ['max' => $max])) . "\n",
-        };
-    }
-
-    /** renderNumberItem number 表单项 */
-    private function renderNumberItem(array $f): string
-    {
-        $form = Context::formConfig($f) ?? [];
-        $attrs = '';
-        if (isset($form['numberMin'])) {
-            $attrs .= ' :min="' . $form['numberMin'] . '"';
-        }
-        if (isset($form['numberMax'])) {
-            $attrs .= ' :max="' . $form['numberMax'] . '"';
-        }
-        if (isset($form['numberStep'])) {
-            $attrs .= ' :step="' . $form['numberStep'] . '"';
-        }
-        if (Context::columnType($f) === 'decimal') {
-            $attrs .= ' :precision="' . Context::decimalScale($f) . '"';
-        }
-
-        return Template::render('edit/field/number.vue.tpl', [
-            'label' => (string) $f['label'],
-            'prop' => (string) $f['prop'],
-            'required' => !empty($form['required']) ? ' required' : '',
-            'attrs' => $attrs,
-            'placeholder' => Context::formPlaceholder($f),
-        ]) . "\n";
-    }
-
-    /** renderImageItem image 表单项 */
-    private function renderImageItem(array $f): string
-    {
-        $prop = (string) $f['prop'];
-
-        return Template::render('edit/field/image.vue.tpl', [
-            'label' => (string) $f['label'],
-            'prop' => $prop,
-            'uploadFn' => 'onUpload' . str_replace(' ', '', ucwords(str_replace('_', ' ', $prop))),
-        ]) . "\n";
     }
 }

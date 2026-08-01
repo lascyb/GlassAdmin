@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace crud\generator;
 
+use crud\field\FieldMeta;
 use crud\Context;
 use crud\Template;
 
@@ -20,16 +21,16 @@ class ValidateFile
 
         foreach ($ctx->fields as $f) {
             $prop = (string) $f['prop'];
-            $form = Context::formConfig($f);
+            $form = FieldMeta::formConfig($f);
             if ($form === null) {
                 continue;
             }
-            $ct = Context::columnType($f);
-            $relation = Context::relationType($f);
-            $render = Context::formRender($f);
+            $ct = FieldMeta::columnType($f);
+            $relation = FieldMeta::relationType($f);
+            $render = FieldMeta::formRender($f);
             $only[] = "'{$prop}'";
             $parts = [];
-            if (Context::isRequired($f)) {
+            if (FieldMeta::isRequired($f)) {
                 $parts[] = 'require';
                 $messages[] = "        '{$prop}.require' => '{$f['label']}不能为空',";
             }
@@ -37,7 +38,7 @@ class ValidateFile
                 $parts[] = 'array';
             } elseif ($relation === 'belongs_to' || $render === 'remote_select') {
                 if (Helper::remoteValueIsString($f)) {
-                    $maxLen = Context::formMaxLength($f) ?? 255;
+                    $maxLen = FieldMeta::formMaxLength($f) ?? 255;
                     $parts[] = 'max:' . $maxLen;
                 } else {
                     $parts[] = 'integer';
@@ -47,9 +48,9 @@ class ValidateFile
                         $parts[] = 'gt:0';
                     }
                 }
-            } elseif (Context::isBoolField($f)) {
+            } elseif (FieldMeta::isBoolField($f)) {
                 $parts = ['in:0,1'];
-            } elseif (Context::isEnumField($f)) {
+            } elseif (FieldMeta::isEnumField($f)) {
                 $vals = $ctx->enumValues($f);
                 // ThinkPHP in: 规则用逗号分隔；字符串值原样拼接
                 $parts[] = 'in:' . implode(',', array_map(static fn ($v): string => (string) $v, $vals));
@@ -59,7 +60,7 @@ class ValidateFile
                 if (isset($form['numberMin'])) {
                     $parts[] = 'egt:' . (float) $form['numberMin'];
                 }
-            } elseif (Context::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime')) {
+            } elseif (FieldMeta::isUnixDatetime($f) || ($ct === 'bigint' && $render === 'datetime')) {
                 $parts[] = 'integer';
                 $parts[] = 'egt:0';
             } elseif (in_array($ct, ['bigint', 'int', 'tinyint'], true) || $render === 'number') {
@@ -74,11 +75,11 @@ class ValidateFile
             } elseif ($render === 'image') {
                 $parts[] = 'max:255';
             } else {
-                $maxLen = Context::formMaxLength($f);
+                $maxLen = FieldMeta::formMaxLength($f);
                 if ($maxLen !== null) {
                     $parts[] = 'max:' . $maxLen;
                 }
-                if (Context::isUnique($f) || $prop === 'code') {
+                if (FieldMeta::isUnique($f) || $prop === 'code') {
                     $parts[] = 'alphaDash';
                     $messages[] = "        '{$prop}.alphaDash' => '{$f['label']}仅允许字母、数字、下划线和中划线',";
                 }
@@ -92,7 +93,7 @@ class ValidateFile
         $onlyList = implode(', ', $only);
         $uniqueProp = null;
         foreach ($ctx->fields as $f) {
-            if (Context::isUnique($f)) {
+            if (FieldMeta::isUnique($f)) {
                 $uniqueProp = (string) $f['prop'];
                 break;
             }

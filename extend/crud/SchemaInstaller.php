@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace crud;
 
+use crud\field\FieldMeta;
+use crud\field\Naming;
 use think\db\exception\DbException;
 use think\facade\Db;
 
@@ -265,7 +267,7 @@ class SchemaInstaller
     {
         $out = [];
         foreach ($ctx->fields as $f) {
-            $col = Context::columnConfig($f);
+            $col = FieldMeta::columnConfig($f);
             if ($col === null) {
                 continue;
             }
@@ -277,7 +279,7 @@ class SchemaInstaller
             if (!empty($col['unique'])) {
                 $indexes[] = "UNIQUE INDEX `uk_{$prop}`(`{$prop}` ASC) USING BTREE";
             }
-            if (Context::relationType($f) === 'belongs_to') {
+            if (FieldMeta::relationType($f) === 'belongs_to') {
                 $indexes[] = "INDEX `idx_{$prop}`(`{$prop}` ASC) USING BTREE";
             }
             $out[$prop] = [
@@ -299,9 +301,9 @@ class SchemaInstaller
      */
     private function desiredPivotColumns(Context $ctx, array $field): array
     {
-        $method = Context::relationMethodName($field);
-        $rel = Context::relationConfig($field) ?? [];
-        $remote = Context::parseRemoteApi(Context::remoteApi($field) ?: null);
+        $method = Naming::relationMethodName($field);
+        $rel = FieldMeta::relationConfig($field) ?? [];
+        $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($field) ?: null);
         $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
         $fk = (string) ($rel['foreignKey'] ?? (strtolower($ctx->entity) . '_id'));
         $rk = (string) ($rel['relatedKey'] ?? (strtolower($relatedEntity) . '_id'));
@@ -385,7 +387,7 @@ class SchemaInstaller
      */
     private function desiredFingerprint(Context $ctx, array $field): string
     {
-        $col = Context::columnConfig($field);
+        $col = FieldMeta::columnConfig($field);
         if ($col === null) {
             throw new \InvalidArgumentException('缺少 column');
         }
@@ -527,7 +529,7 @@ class SchemaInstaller
         $pk = null;
 
         foreach ($ctx->fields as $f) {
-            $col = Context::columnConfig($f);
+            $col = FieldMeta::columnConfig($f);
             if ($col === null) {
                 continue;
             }
@@ -545,7 +547,7 @@ class SchemaInstaller
             if (!empty($col['unique'])) {
                 $indexes[] = "  UNIQUE INDEX `uk_{$prop}`(`{$prop}` ASC) USING BTREE";
             }
-            if (Context::relationType($f) === 'belongs_to') {
+            if (FieldMeta::relationType($f) === 'belongs_to') {
                 $indexes[] = "  INDEX `idx_{$prop}`(`{$prop}` ASC) USING BTREE";
             }
         }
@@ -574,9 +576,9 @@ class SchemaInstaller
      */
     private function buildPivotTableSql(Context $ctx, array $field, string $pivot): string
     {
-        $method = Context::relationMethodName($field);
-        $rel = Context::relationConfig($field) ?? [];
-        $remote = Context::parseRemoteApi(Context::remoteApi($field) ?: null);
+        $method = Naming::relationMethodName($field);
+        $rel = FieldMeta::relationConfig($field) ?? [];
+        $remote = Naming::parseRemoteApi(FieldMeta::remoteApi($field) ?: null);
         $relatedEntity = $remote['entity'] ?? ucfirst(rtrim($method, 's'));
         $fk = (string) ($rel['foreignKey'] ?? (strtolower($ctx->entity) . '_id'));
         $rk = (string) ($rel['relatedKey'] ?? (strtolower($relatedEntity) . '_id'));
@@ -606,7 +608,7 @@ class SchemaInstaller
     private function columnDefinition(Context $ctx, array $field): string
     {
         $prop = (string) $field['prop'];
-        $col = Context::columnConfig($field);
+        $col = FieldMeta::columnConfig($field);
         if ($col === null) {
             throw new \InvalidArgumentException("字段 {$prop} 缺少 column");
         }
@@ -776,11 +778,11 @@ class SchemaInstaller
         if (!empty($col['comment'])) {
             return (string) $col['comment'];
         }
-        if (Context::isBoolField($field)) {
+        if (FieldMeta::isBoolField($field)) {
             return '{1:是,0:否}';
         }
-        if (Context::isEnumField($field)) {
-            $key = Context::enumKey($field);
+        if (FieldMeta::isEnumField($field)) {
+            $key = FieldMeta::enumKey($field);
             if ($key !== '' && isset($ctx->options[$key]) && is_array($ctx->options[$key])) {
                 $parts = [];
                 foreach ($ctx->options[$key] as $item) {
@@ -796,10 +798,10 @@ class SchemaInstaller
                 }
             }
         }
-        if (Context::isUnixDatetime($field)) {
+        if (FieldMeta::isUnixDatetime($field)) {
             return $label . '（Unix 秒）';
         }
-        if (Context::formRender($field) === 'image') {
+        if (in_array(FieldMeta::formRender($field), ['image', 'file', 'image_upload'], true)) {
             return $label . '相对路径';
         }
         if (!empty($col['unique'])) {
@@ -816,8 +818,8 @@ class SchemaInstaller
      */
     private function pivotTableName(Context $ctx, array $field): string
     {
-        $method = Context::relationMethodName($field);
-        $rel = Context::relationConfig($field) ?? [];
+        $method = Naming::relationMethodName($field);
+        $rel = FieldMeta::relationConfig($field) ?? [];
         $pivot = (string) ($rel['pivotTable'] ?? ($ctx->table . '_' . rtrim($method, 's')));
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $pivot)) {
             throw new \InvalidArgumentException("非法中间表名: {$pivot}");

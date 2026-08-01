@@ -2,9 +2,11 @@
                         <ga-select-remote
                             v-model="advanced.<%prop%>"
                             :remote-url="'<%url%>'"
-                            :props="{ value: '<%valueField%>', label: '<%labelField%>' }"<%multiAttrs%>
+                            :props="{ value: '<%valueField%>', label: '<%labelField%>' }"
+                            multiple
+                            collapse-tags
                             clearable
                             placeholder="<%placeholder%>"
-                            class="<%className%>"
+                            class="!w-48"
                         />
                     </el-form-item>
