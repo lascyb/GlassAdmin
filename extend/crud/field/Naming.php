@@ -24,6 +24,20 @@ class Naming
             'url'    => $optionsKey,
         ];
     }
+
+    /**
+     * enumOptionsKey 由字段 prop 生成枚举常量名（field_enmu → FIELD_ENMU_OPTIONS）
+     */
+    public static function enumOptionsKey(string $prop): string
+    {
+        $raw = $prop !== '' ? $prop : 'field';
+        $base = strtoupper((string) (preg_replace('/[^a-zA-Z0-9_]/', '_', $raw) ?? $raw));
+        if ($base === '') {
+            $base = 'FIELD';
+        }
+
+        return str_ends_with($base, '_OPTIONS') ? $base : $base . '_OPTIONS';
+    }
     public static function relationMethodName(array $field): string
     {
         $prop = (string) ($field['prop'] ?? '');

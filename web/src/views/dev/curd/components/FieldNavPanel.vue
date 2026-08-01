@@ -14,6 +14,7 @@ import {
     FIELD_TYPE_OPTIONS,
     resolveFieldType,
 } from '../constants/field'
+import { syncEnumKeyFromProp } from '../fieldExt'
 import { applyFieldType } from '../helpers'
 import InlineOptionsEditor from './InlineOptionsEditor.vue'
 import RemoteConfigDialog from './RemoteConfigDialog.vue'
@@ -48,6 +49,13 @@ const onFieldTypeChange = (index: number, type: string | undefined) => {
     const field = config.value.fields[index]
     if (!field) return
     applyFieldType(field, type, store.assembleConfig())
+}
+
+/** onPropChange prop 变更时同步枚举常量名 */
+const onPropChange = (index: number) => {
+    const field = config.value.fields[index]
+    if (!field?.ext?.enum) return
+    syncEnumKeyFromProp(field, store.assembleConfig())
 }
 
 /** 字段行稳定 key（避免 :key="index" 导致落地回弹） */
@@ -231,7 +239,12 @@ const openRemoteDialog = (index: number) => {
                             </span>
                         </td>
                         <td>
-                            <el-input v-model="field.prop" size="small" placeholder="prop" />
+                            <el-input
+                                v-model="field.prop"
+                                size="small"
+                                placeholder="prop"
+                                @change="() => onPropChange(index)"
+                            />
                         </td>
                         <td>
                             <el-input

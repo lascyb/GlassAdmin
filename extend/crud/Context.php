@@ -94,6 +94,7 @@ class Context
         }
         $ctx->fields       = $config['fields'];
         $ctx->options      = self::normalizeOptionsMap($config['options'] ?? null);
+        self::syncEnumKeysFromProp($ctx);
         self::ensureDefaultEnumOptions($ctx);
 
         foreach ($ctx->fields as $f) {
@@ -176,6 +177,44 @@ class Context
         }
 
         return $out;
+    }
+
+    /**
+     * syncEnumKeysFromProp 枚举常量名按字段 prop 对齐（field_enmu → FIELD_ENMU_OPTIONS），并迁移 options
+     */
+    private static function syncEnumKeysFromProp(self $ctx): void
+    {
+        foreach ($ctx->fields as $i => $f) {
+            if (!is_array($f) || FieldMeta::isRemoteField($f)) {
+                continue;
+            }
+            $enum = FieldMeta::enumExt($f);
+            if ($enum === null || empty($enum['key'])) {
+                continue;
+            }
+            $prev = (string) $enum['key'];
+            $next = Naming::enumOptionsKey((string) ($f['prop'] ?? ''));
+            if ($prev === $next) {
+                continue;
+            }
+            $ctx->fields[$i]['ext']['enum']['key'] = $next;
+            if ($prev !== '' && !empty($ctx->options[$prev]) && empty($ctx->options[$next])) {
+                $ctx->options[$next] = $ctx->options[$prev];
+            }
+            $stillUsed = false;
+            foreach ($ctx->fields as $j => $other) {
+                if ($j === $i || !is_array($other)) {
+                    continue;
+                }
+                if ((string) ($ctx->fields[$j]['ext']['enum']['key'] ?? '') === $prev) {
+                    $stillUsed = true;
+                    break;
+                }
+            }
+            if (!$stillUsed) {
+                unset($ctx->options[$prev]);
+            }
+        }
     }
 
     /**

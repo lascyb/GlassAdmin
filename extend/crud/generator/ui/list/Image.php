@@ -42,6 +42,13 @@ class Image implements UiRenderer
     public static function validate(array $field): void
     {
         $p = self::fromField($field);
+        if (FieldMeta::isPrimary($field) || ($field['uiType'] ?? '') === 'primary_key') {
+            throw new \InvalidArgumentException("字段 {$p->prop}（list:image）：主键不可使用图片列");
+        }
+        $ct = FieldMeta::columnType($field);
+        if (in_array($ct, ['int', 'bigint', 'tinyint', 'smallint', 'mediumint', 'decimal', 'float', 'double'], true)) {
+            throw new \InvalidArgumentException("字段 {$p->prop}（list:image）：数值列不可使用图片渲染");
+        }
         $list = FieldMeta::listConfig($field) ?? [];
         foreach (['width', 'minWidth'] as $k) {
             if (isset($list[$k]) && !is_numeric($list[$k])) {

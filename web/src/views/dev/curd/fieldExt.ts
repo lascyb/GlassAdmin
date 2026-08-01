@@ -18,15 +18,9 @@ import type {
 import { isLayerEnabled } from '@/views/dev/curd/types'
 import { LIST_RENDER_NEED_ENUM } from '@/views/dev/curd/constants/list-render'
 
-/** mapKeyFromProp 由 prop 生成 STATUS_MAP 风格键名 */
-const mapKeyFromProp = (prop: string): string => {
-    const base = (prop || 'field').replace(/[^a-zA-Z0-9_]/g, '_').toUpperCase()
-    return base.endsWith('_MAP') ? base : `${base}_MAP`
-}
-
-/** optionsKeyFromProp 由 prop 生成 OPTIONS 键名 */
-const optionsKeyFromProp = (prop: string): string => {
-    const base = (prop || 'field').replace(/[^a-zA-Z0-9_]/g, '_').toUpperCase()
+/** optionsKeyFromProp 由 prop 生成枚举常量名（field_enmu → FIELD_ENMU_OPTIONS） */
+export const optionsKeyFromProp = (prop: string): string => {
+    const base = (prop || 'field').replace(/[^a-zA-Z0-9_]/g, '_').toUpperCase() || 'FIELD'
     return base.endsWith('_OPTIONS') ? base : `${base}_OPTIONS`
 }
 
@@ -36,13 +30,8 @@ const ensureFieldExt = (field: CrudFieldSchema): CrudFieldExtConfig => {
     return field.ext
 }
 
-/** inferEnumKeyName 由字段推测 options 键名 */
-const inferEnumKeyName = (field: CrudFieldSchema): string => {
-    if (isLayerEnabled(field.form) && (field.form.render === 'multi_select' || field.form.render === 'checkbox')) {
-        return optionsKeyFromProp(field.prop)
-    }
-    return mapKeyFromProp(field.prop)
-}
+/** inferEnumKeyName 由字段 prop 推测 options 键名 */
+const inferEnumKeyName = (field: CrudFieldSchema): string => optionsKeyFromProp(field.prop)
 
 /** ensureFieldEnumExt 保证 ext.enum 存在 */
 export const ensureFieldEnumExt = (field: CrudFieldSchema): CrudFieldEnumExt => {
@@ -78,11 +67,34 @@ export const isRemoteField = (field: CrudFieldSchema | null | undefined): boolea
     return false
 }
 
+/**
+ * syncEnumKeyFromProp 将 enum.key 对齐为 prop 派生名，并迁移 options
+ */
+export const syncEnumKeyFromProp = (field: CrudFieldSchema, cfg: CrudGenerateConfig): void => {
+    if (isRemoteField(field) || !field.ext?.enum) return
+    const prev = field.ext.enum.key?.trim() || ''
+    const next = inferEnumKeyName(field)
+    if (!next || prev === next) {
+        if (!prev) field.ext.enum.key = next
+        return
+    }
+    cfg.options = normalizeOptionsMap(cfg.options)
+    if (prev && cfg.options[prev]?.length && !cfg.options[next]?.length) {
+        cfg.options[next] = cfg.options[prev]
+    }
+    field.ext.enum.key = next
+    const stillUsed = (cfg.fields ?? []).some((f) => f !== field && f.ext?.enum?.key === prev)
+    if (prev && !stillUsed) {
+        delete cfg.options[prev]
+    }
+}
+
 /** enumKeyOf 取字段枚举键名（远程字段不推测枚举） */
 export const enumKeyOf = (field: CrudFieldSchema | null | undefined): string => {
     if (!field || isRemoteField(field)) return ''
-    if (field.ext?.enum?.key) return field.ext.enum.key
-    return inferEnumKeyName(field)
+    if (field.ext?.enum?.key?.trim()) return field.ext.enum.key.trim()
+    if (field.ext?.enum) return inferEnumKeyName(field)
+    return ''
 }
 
 /** listRenderNeedsEnum 列表 tag/tags 等是否需要本地枚举（远程字段排除） */
@@ -147,12 +159,14 @@ const defaultOptionsForRender = (render: FormRenderType | string): CrudOptionIte
 }
 
 /**
- * ensureOptionsForEnumFields 为已绑定 enum.key 且 options 为空的字段补默认项
+ * ensureOptionsForEnumFields 对齐 enum.key 与 prop，并为空 options 补默认项
  */
 export const ensureOptionsForEnumFields = (cfg: CrudGenerateConfig): void => {
     cfg.options = normalizeOptionsMap(cfg.options)
     for (const field of cfg.fields ?? []) {
-        const key = field.ext?.enum?.key?.trim()
+        if (!field.ext?.enum) continue
+        syncEnumKeyFromProp(field, cfg)
+        const key = field.ext.enum.key?.trim()
         if (!key || cfg.options[key]?.length) continue
         const render = isLayerEnabled(field.form) ? field.form.render : 'radio'
         cfg.options[key] = defaultOptionsForRender(render)
@@ -175,10 +189,17 @@ export const applyRenderExt = (
     if (needEnum) {
         cfg.options = normalizeOptionsMap(cfg.options)
         const enumExt = ensureFieldEnumExt(field)
-        const key = prevEnumKey || enumExt.key || inferEnumKeyName(field)
+        const key = inferEnumKeyName(field)
         enumExt.key = key
+        if (prevEnumKey && prevEnumKey !== key && cfg.options[prevEnumKey]?.length && !cfg.options[key]?.length) {
+            cfg.options[key] = cfg.options[prevEnumKey]
+        }
         if (!cfg.options[key]?.length) {
             cfg.options[key] = defaultOptionsForRender(render)
+        }
+        if (prevEnumKey && prevEnumKey !== key) {
+            const stillUsed = (cfg.fields ?? []).some((f) => f !== field && f.ext?.enum?.key === prevEnumKey)
+            if (!stillUsed) delete cfg.options[prevEnumKey]
         }
     } else if (field.ext) {
         delete field.ext.enum

@@ -466,7 +466,7 @@ const onConfirm = () => {
             <el-form-item label="控制器" required>
                 <el-select
                     :model-value="selectedKey"
-                    class="!w-full"
+                    class="w-full!"
                     filterable
                     clearable
                     placeholder="选择 admin 控制器，如 auth/Admin"
@@ -503,7 +503,7 @@ const onConfirm = () => {
             <el-form-item v-if="remoteCfg" label="Value 字段">
                 <el-select
                     v-model="remoteCfg.valueField"
-                    class="!w-full"
+                    class="w-full!"
                     filterable
                     :loading="columnsLoading"
                     :disabled="!fieldOptions.length"
@@ -520,7 +520,7 @@ const onConfirm = () => {
             <el-form-item v-if="remoteCfg" label="Label 字段">
                 <el-select
                     v-model="remoteCfg.labelField"
-                    class="!w-full"
+                    class="w-full!"
                     filterable
                     :loading="columnsLoading"
                     :disabled="!fieldOptions.length"
@@ -541,7 +541,7 @@ const onConfirm = () => {
                 <el-form-item label="中间表">
                     <el-select
                         :model-value="field.relation.pivotTable"
-                        class="!w-full"
+                        class="w-full!"
                         filterable
                         clearable
                         allow-create

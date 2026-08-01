@@ -14,6 +14,13 @@ class ListKey
     /** resolve 解析规范键 */
     public static function resolve(array $field): string
     {
+        // 主键列禁止走 image 等媒体渲染（误配时回退 text）
+        if (FieldMeta::isPrimary($field) || ($field['uiType'] ?? '') === 'primary_key') {
+            $lr = FieldMeta::listRender($field);
+            if (in_array($lr, ['image', 'color', 'tags'], true)) {
+                return 'text';
+            }
+        }
         $relation = FieldMeta::relationType($field);
         if ($relation === 'belongs_to') {
             return 'belongs_to';

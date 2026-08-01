@@ -4,6 +4,6 @@
                         type="datetime"
                         value-format="<%valueFormat%>"
                         placeholder="<%placeholder%>"
-                        class="!w-full"
+                        class="w-full!"
                     />
                 </el-form-item>

@@ -4,6 +4,6 @@
                         type="date"
                         value-format="YYYY-MM-DD"
                         placeholder="<%placeholder%>"
-                        class="!w-full"
+                        class="w-full!"
                     />
                 </el-form-item>

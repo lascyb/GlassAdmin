@@ -7,7 +7,7 @@ import { Delete, Plus } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { DEFAULT_OPTIONS, DEFAULT_SELECT_OPTIONS, DEFAULT_STATUS_OPTIONS, resolveFieldType } from '../constants'
-import { ensureFieldEnumExt, enumKeyOf } from '../fieldExt'
+import { ensureFieldEnumExt, enumKeyOf, syncEnumKeyFromProp } from '../fieldExt'
 
 type Row = { value: string; label: string; type: string }
 
@@ -27,6 +27,10 @@ const bindEnumKey = (key: string) => {
 /** ensureDefaults 无数据时写入默认可跑项 */
 const ensureDefaults = () => {
     const f = field.value
+    if (!f) return
+    if (f.ext?.enum) {
+        syncEnumKeyFromProp(f, config.value)
+    }
     const key = boundKey.value
     if (!f || !key) return
     if (!config.value.options || Array.isArray(config.value.options)) {

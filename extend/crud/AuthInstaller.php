@@ -316,6 +316,16 @@ class AuthInstaller
             $btnIds['del'] ?? 0,
         ], static fn (int $id): bool => $id > 0));
 
+        // 多远程字段可指向同一 list API，绑定时按 (front,back) 去重，避免覆盖写入撞主键
+        $uniqueBindings = [];
+        foreach ($bindings as [$frontId, $backId]) {
+            if ($frontId <= 0 || $backId <= 0) {
+                continue;
+            }
+            $uniqueBindings[$frontId . ':' . $backId] = [$frontId, $backId];
+        }
+        $bindings = array_values($uniqueBindings);
+
         $bindingsCleared = 0;
         if ($viewExisted && $frontRuleIds !== []) {
             // 已有 view：覆盖权限绑定（先清后写）
@@ -325,9 +335,6 @@ class AuthInstaller
 
         $bindCount = 0;
         foreach ($bindings as [$frontId, $backId]) {
-            if ($frontId <= 0 || $backId <= 0) {
-                continue;
-            }
             if (!$viewExisted) {
                 $exists = RuleApi::where('frontend_rule_id', $frontId)
                     ->where('backend_rule_id', $backId)

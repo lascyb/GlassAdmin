@@ -78,9 +78,9 @@ class Remote extends AdminController
         if ($table === '' || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
             return $this->fail(400, 'table 无效');
         }
-        if ($this->isSystemTable($table)) {
-            return $this->fail(400, '系统表不可用于远程配置');
-        }
+//        if ($this->isSystemTable($table)) {
+//            return $this->fail(400, '系统表不可用于远程配置');
+//        }
 
         $prefix = (string) Db::getConfig('prefix');
         $full = $prefix . $table;

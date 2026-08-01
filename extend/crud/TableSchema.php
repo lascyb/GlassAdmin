@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace crud;
 
+use crud\field\Naming;
+
 /**
  * TableSchema 数据表结构反推为 CrudGenerateConfig 草稿
  */
@@ -350,7 +352,7 @@ class TableSchema
                 $list = ['enabled' => true, 'render' => 'enum_tag', 'width' => 100];
                 $search = ['enabled' => true, 'keyword' => false, 'advanced' => true, 'render' => 'select'];
                 $form = ['enabled' => true, 'render' => 'radio'];
-                $ext = ['enum' => ['key' => 'STATUS_MAP']];
+                $ext = ['enum' => ['key' => Naming::enumOptionsKey($prop)]];
             }
         } elseif (in_array($type, ['int', 'bigint', 'decimal'], true)) {
             $list = ['enabled' => true, 'render' => 'number', 'width' => 100];
