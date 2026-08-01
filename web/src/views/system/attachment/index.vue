@@ -8,6 +8,7 @@ import { usePaginatedList } from '@/composables/usePaginatedList'
 import { formatUnixTime } from '@/utils/formatUnixTime'
 import { Delete, View } from '@element-plus/icons-vue'
 import { computed, reactive, ref } from 'vue'
+import DetailDialog from './DetailDialog.vue'
 
 const keyword = ref('')
 
@@ -29,8 +30,15 @@ const { list, total, page, limit, loading, load, search } = usePaginatedList<Att
 
 const { confirm } = useConfirmAction({ successMsg: '已删除', onSuccess: load })
 
-const detailVisible = ref(false)
-const detail = ref<AttachmentRow | null>(null)
+const detailController = reactive<{
+    show: boolean
+    id: number
+    seed: AttachmentRow | null
+}>({
+    show: false,
+    id: 0,
+    seed: null,
+})
 
 /** formatBytes 字节可读化 */
 const formatBytes = (n: number | null | undefined) => {
@@ -57,15 +65,11 @@ const resetAdvanced = () => {
     advanced.mime = ''
 }
 
-/** openDetail 打开详情 */
-const openDetail = async (row: AttachmentRow) => {
-    try {
-        detail.value = await attachmentApi.fetchRead(row.id)
-        detailVisible.value = true
-    } catch {
-        detail.value = row
-        detailVisible.value = true
-    }
+/** openDetail 打开详情弹窗 */
+const openDetail = (row: AttachmentRow) => {
+    detailController.id = row.id
+    detailController.seed = row
+    detailController.show = true
 }
 
 /** clickDel 删除附件 */
@@ -163,43 +167,12 @@ const clickDel = (row: AttachmentRow) => {
         </el-table-column>
 
         <template #footer>
-            <el-dialog v-model="detailVisible" title="附件详情" width="560px" destroy-on-close>
-                <template v-if="detail">
-                    <div v-if="isImageMime(detail.mime) && detail.url" class="mb-4 flex justify-center">
-                        <el-image :src="detail.url" fit="contain" class="max-h-48" />
-                    </div>
-                    <el-descriptions :column="1" border>
-                        <el-descriptions-item label="ID">{{ detail.id }}</el-descriptions-item>
-                        <el-descriptions-item label="文件名">{{ detail.name }}</el-descriptions-item>
-                        <el-descriptions-item label="路径">{{ detail.path }}</el-descriptions-item>
-                        <el-descriptions-item label="磁盘">{{ detail.disk }}</el-descriptions-item>
-                        <el-descriptions-item label="接口">{{ detail.scene }}</el-descriptions-item>
-                        <el-descriptions-item label="MIME">{{ detail.mime || '—' }}</el-descriptions-item>
-                        <el-descriptions-item label="扩展名">{{ detail.ext || '—' }}</el-descriptions-item>
-                        <el-descriptions-item label="大小">{{ formatBytes(detail.size) }}</el-descriptions-item>
-                        <el-descriptions-item label="SHA1">{{ detail.sha1 || '—' }}</el-descriptions-item>
-                        <el-descriptions-item label="文件">
-                            {{ detail.file_deleted === 1 ? '物理文件已删除' : '在盘' }}
-                        </el-descriptions-item>
-                        <el-descriptions-item label="上传人">{{ adminLabel(detail) }}</el-descriptions-item>
-                        <el-descriptions-item label="URL">
-                            <a
-                                v-if="detail.url"
-                                :href="detail.url"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="text-primary"
-                            >
-                                {{ detail.url }}
-                            </a>
-                            <span v-else>—</span>
-                        </el-descriptions-item>
-                        <el-descriptions-item label="创建时间">
-                            {{ formatUnixTime(detail.create_time) }}
-                        </el-descriptions-item>
-                    </el-descriptions>
-                </template>
-            </el-dialog>
+            <DetailDialog
+                v-if="detailController.show"
+                v-model="detailController.show"
+                :id="detailController.id"
+                :seed="detailController.seed"
+            />
         </template>
     </ga-table-page>
 </template>

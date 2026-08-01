@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { OperationLogRow } from '@/apis/account'
-import * as accountApi from '@/apis/account'
-import GaPasswordInput from '@/components/ga-password-input/index.vue'
-import GaTablePage from '@/components/ga-table-page/index.vue'
-import GaUploadAvatar from '@/components/ga-upload-avatar/index.vue'
-import { usePaginatedList } from '@/composables/usePaginatedList'
+import type { OperationLogRow } from '@/apis/account.ts'
+import * as accountApi from '@/apis/account.ts'
+import GaPasswordInput from '@components/ga-password-input/index.vue'
+import GaTablePage from '@components/ga-table-page/index.vue'
+import GaUpload from '@components/ga-upload/index.vue'
+import { usePaginatedList } from '@/composables/usePaginatedList.ts'
 import { useAdmin } from '@/pinia/admin'
+import { resolveStorageUrl } from '@/utils/storageUrl'
+import { Loading, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -65,6 +67,20 @@ const onAvatarSuccess = (avatar: string) => {
     }
 }
 
+/** uploadAvatar 上传头像并返回存储路径 */
+const uploadAvatar = async (file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await accountApi.uploadProfileAvatar(fd)
+    return res.avatar
+}
+
+/** avatarDisplayUrl 头像展示 URL */
+const avatarDisplayUrl = computed(() => resolveStorageUrl(avatarPath.value))
+
+/** onAvatarImgError 图片无效时回退插槽文字 */
+const onAvatarImgError = (): boolean => true
+
 const openPwdDialog = () => {
     pwdForm.password = ''
     pwdDialogVisible.value = true
@@ -117,11 +133,46 @@ const submitPassword = async () => {
                     <template #header>个人信息</template>
                     <el-form label-width="88px" @submit.prevent>
                         <el-form-item label="头像">
-                            <ga-upload-avatar
+                            <ga-upload
                                 v-model="avatarPath"
-                                :initial="avatarInitial"
+                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                :max-size="2 * 1024 * 1024"
+                                tip="支持 JPG、PNG、GIF、WebP，最大 2MB"
+                                max-size-hint-url="https://lascyb.github.io/tools/src/%E5%9B%BE%E7%89%87%E5%8E%8B%E7%BC%A9%E5%B7%A5%E5%85%B7.html"
+                                :http-request="uploadAvatar"
                                 @success="onAvatarSuccess"
-                            />
+                            >
+                                <template #trigger="{ uploading }">
+                                    <div class="avatar-uploader__trigger">
+                                        <el-avatar
+                                            :size="96"
+                                            shape="circle"
+                                            fit="cover"
+                                            :src="avatarDisplayUrl || undefined"
+                                            @error="onAvatarImgError"
+                                        >
+                                            {{ avatarInitial }}
+                                        </el-avatar>
+                                        <div
+                                            class="avatar-uploader__overlay"
+                                            :class="{ 'is-busy': uploading }"
+                                        >
+                                            <el-icon
+                                                v-if="uploading"
+                                                class="is-loading avatar-uploader__icon-lg"
+                                            >
+                                                <Loading />
+                                            </el-icon>
+                                            <template v-else>
+                                                <el-icon class="avatar-uploader__icon-lg">
+                                                    <Plus />
+                                                </el-icon>
+                                                <span class="avatar-uploader__hint">点击更换</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </ga-upload>
                         </el-form-item>
                         <el-form-item label="用户名">
                             <el-input v-model="form.username" disabled />
@@ -185,3 +236,51 @@ const submitPassword = async () => {
         </el-dialog>
     </div>
 </template>
+
+<style scoped>
+.avatar-uploader__trigger {
+    position: relative;
+    line-height: 0;
+    border: 1px dashed var(--el-border-color);
+    border-radius: 50%;
+    overflow: hidden;
+    transition: border-color var(--el-transition-duration-fast);
+}
+
+:deep(.ga-upload:not(.is-disabled):hover) .avatar-uploader__trigger {
+    border-color: var(--el-color-primary);
+}
+
+.avatar-uploader__overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #fff;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity var(--el-transition-duration-fast);
+    pointer-events: none;
+}
+
+:deep(.ga-upload:not(.is-disabled):hover) .avatar-uploader__overlay:not(.is-busy) {
+    opacity: 1;
+}
+
+.avatar-uploader__overlay.is-busy {
+    opacity: 1;
+}
+
+.avatar-uploader__icon-lg {
+    font-size: 22px;
+}
+
+.avatar-uploader__hint {
+    line-height: 1;
+}
+</style>

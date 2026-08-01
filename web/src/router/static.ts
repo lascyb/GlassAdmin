@@ -25,7 +25,7 @@ export const routes: RouteRecordRaw[] = [
             {
                 name: 'account-profile',
                 path: 'account/profile',
-                component: () => import('@/views/account/profile.vue'),
+                component: () => import('@/views/system/account/profile.vue'),
                 meta: { title: '个人信息' },
             },
             // 动态路由由 menus.init addRoute("root", ...) 插入；404 须排在其后（见 pinia/layout/menus）
