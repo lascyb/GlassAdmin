@@ -114,12 +114,28 @@ class SystemConfigService
     }
 
     /**
+     * normalizeValue 配置值统一为字符串（多选数组转 JSON）
+     */
+    private static function normalizeValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            return json_encode(array_values($value), JSON_UNESCAPED_UNICODE) ?: '[]';
+        }
+
+        return (string) $value;
+    }
+
+    /**
      * saveConfig 保存配置（创建或更新，使用事务）
      *
      * @param array<string, mixed> $data
      */
     public static function saveConfig(array $data, ?int $id = null): int
     {
+        if (array_key_exists('value', $data)) {
+            $data['value'] = self::normalizeValue($data['value']);
+        }
+
         return Db::transaction(function () use ($data, $id) {
             if ($id !== null && $id > 0) {
                 $row = Config::find($id);

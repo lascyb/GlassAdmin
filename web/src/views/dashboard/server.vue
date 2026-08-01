@@ -12,6 +12,7 @@ const HISTORY_MAX = 60
 
 const loading = ref(false)
 const autoRefresh = ref(true)
+const includeHgfs = ref(false)
 const data = ref<ServerOverview | null>(null)
 
 type HistoryPoint = { t: string; cpu: number | null; mem: number | null; disk: number | null }
@@ -168,7 +169,7 @@ const resizeCharts = () => {
 const load = async (silent = false) => {
     if (!silent) loading.value = true
     try {
-        const snap = await dashboardApi.fetchServerOverview()
+        const snap = await dashboardApi.fetchServerOverview(includeHgfs.value)
         data.value = snap
         pushHistory(snap)
         await nextTick(renderCharts)
@@ -198,6 +199,9 @@ const stopTimer = () => {
 const { width } = useWindowSize()
 watch(width, resizeCharts)
 watch(autoRefresh, startTimer)
+watch(includeHgfs, () => {
+    void load(true)
+})
 
 onMounted(() => {
     void load().then(startTimer)
@@ -316,7 +320,16 @@ onUnmounted(() => {
 
             <el-row v-if="data" :gutter="12">
                 <el-col :xs="24" :lg="14" class="mb-3">
-                    <el-card shadow="never" header="磁盘分区">
+                    <el-card shadow="never">
+                        <template #header>
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span>磁盘分区</span>
+                                <div class="flex items-center gap-2 text-sm font-normal text-gray-500">
+                                    <span>含 HGFS</span>
+                                    <el-switch v-model="includeHgfs" />
+                                </div>
+                            </div>
+                        </template>
                         <el-table :data="data.disks" size="small" empty-text="暂无数据">
                             <el-table-column prop="mount" label="挂载点" min-width="120" />
                             <el-table-column label="已用" width="100" align="right">

@@ -16,6 +16,9 @@ const typeLabels: Record<string, string> = {
     color: '颜色选择',
 }
 
+/** CONFIG_GROUP_SORT_KEY 分组排序配置键（值为分号分隔的分组名） */
+const CONFIG_GROUP_SORT_KEY = 'config_group_sort'
+
 const configs = ref<SystemConfigRow[]>([])
 const groups = ref<string[]>([])
 const activeGroup = ref('')
@@ -39,14 +42,32 @@ const groupConfigs = computed(() => {
     return map
 })
 
+/**
+ * sortGroups 按 config_group_sort 排序分组；未出现在排序配置中的分组排到后面
+ */
+const sortGroups = (names: string[], sortValue?: string | null): string[] => {
+    const order = (sortValue ?? '')
+        .split(/[;；]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    const rank = new Map(order.map((g, i) => [g, i]))
+    return [...names].sort((a, b) => {
+        const ia = rank.has(a) ? rank.get(a)! : Number.MAX_SAFE_INTEGER
+        const ib = rank.has(b) ? rank.get(b)! : Number.MAX_SAFE_INTEGER
+        if (ia !== ib) return ia - ib
+        return a.localeCompare(b, 'zh-CN')
+    })
+}
+
 const load = async () => {
     loading.value = true
     try {
         const res = await systemApi.fetchList({ page: 1, limit: 999 })
         configs.value = res.list
-        const set = new Set(res.list.map(c => c.group))
-        groups.value = Array.from(set)
-        if (groups.value.length && !activeGroup.value) {
+        const sortRow = res.list.find((c) => c.key === CONFIG_GROUP_SORT_KEY)
+        const set = new Set(res.list.map((c) => c.group))
+        groups.value = sortGroups(Array.from(set), sortRow?.value)
+        if (groups.value.length && !groups.value.includes(activeGroup.value)) {
             activeGroup.value = groups.value[0]!
         }
     } catch (e: unknown) {
@@ -90,6 +111,17 @@ const displayValue = (row: SystemConfigRow): string => {
     const v = row.value
     if (v === '' || v === null) return '—'
     if (row.type === 'switch') return v === '1' ? '开启' : '关闭'
+    if (row.type === 'multi_select') {
+        try {
+            const arr = JSON.parse(v) as unknown
+            if (Array.isArray(arr)) {
+                const text = arr.map(String).join('、')
+                return text || '—'
+            }
+        } catch {
+            /* fallthrough */
+        }
+    }
     return v.length > 50 ? v.slice(0, 50) + '…' : v
 }
 </script>

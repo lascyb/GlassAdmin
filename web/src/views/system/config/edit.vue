@@ -2,7 +2,7 @@
 import type { SystemConfigRow } from '@/apis/system/config'
 import * as systemApi from '@/apis/system/config'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, computed } from 'vue'
+import { onMounted, reactive, ref, computed, watch } from 'vue'
 
 const props = defineProps<{
     id?: number
@@ -30,7 +30,7 @@ const isBuiltin = computed(() => form.status === 2 && !!props.id)
 
 const form = reactive<{
     key: string
-    value: string
+    value: string | string[]
     group: string
     name: string
     description: string
@@ -50,12 +50,74 @@ const form = reactive<{
     status: 1,
 })
 
+/** parseMultiValue 将库内字符串解析为多选数组 */
+const parseMultiValue = (raw: string): string[] => {
+    const s = raw.trim()
+    if (!s) return []
+    if (s.startsWith('[')) {
+        try {
+            const arr = JSON.parse(s) as unknown
+            if (Array.isArray(arr)) return arr.map((v) => String(v))
+        } catch {
+            /* fallthrough */
+        }
+    }
+    return s
+        .split(/[;；,]/)
+        .map((x) => x.trim())
+        .filter(Boolean)
+}
+
+/** serializeValue 提交前将 value 规范为字符串（多选存 JSON 数组） */
+const serializeValue = (type: SystemConfigRow['type'], value: string | string[]): string => {
+    if (type === 'multi_select') {
+        const arr = Array.isArray(value) ? value.map(String) : parseMultiValue(String(value ?? ''))
+        return JSON.stringify(arr)
+    }
+    return Array.isArray(value) ? value.join(';') : String(value ?? '')
+}
+
+/** optionList 下拉选项列表 */
+const optionList = computed((): string[] => {
+    const raw = form.options.trim()
+    if (!raw) return []
+    try {
+        const arr = JSON.parse(raw) as unknown
+        if (Array.isArray(arr)) return arr.map((v) => String(v))
+    } catch {
+        /* ignore */
+    }
+    return []
+})
+
+watch(
+    () => form.type,
+    (type, prev) => {
+        if (type === 'multi_select') {
+            form.value = Array.isArray(form.value)
+                ? form.value
+                : parseMultiValue(String(form.value ?? ''))
+            return
+        }
+        if (prev === 'multi_select' && Array.isArray(form.value)) {
+            form.value = JSON.stringify(form.value)
+        }
+    },
+)
+
 const loadDetail = async () => {
     if (!props.id) {
         title.value = '新增配置'
         Object.assign(form, {
-            key: '', value: '', group: '', name: '', description: '',
-            type: 'input', options: '', sort: 0, status: 1,
+            key: '',
+            value: '',
+            group: '',
+            name: '',
+            description: '',
+            type: 'input',
+            options: '',
+            sort: 0,
+            status: 1,
         })
         return
     }
@@ -65,7 +127,7 @@ const loadDetail = async () => {
         const d = await systemApi.fetchRead(props.id)
         Object.assign(form, {
             key: d.key,
-            value: d.value,
+            value: d.type === 'multi_select' ? parseMultiValue(d.value ?? '') : d.value,
             group: d.group,
             name: d.name,
             description: d.description ?? '',
@@ -82,11 +144,13 @@ const loadDetail = async () => {
 onMounted(loadDetail)
 
 const submit = async () => {
+    const value = serializeValue(form.type, form.value)
+
     if (isBuiltin.value) {
         saving.value = true
         try {
             await systemApi.updateConfig(props.id!, {
-                value: form.value,
+                value,
                 description: form.description.trim() || undefined,
                 sort: form.sort,
             })
@@ -117,7 +181,7 @@ const submit = async () => {
     try {
         const payload = {
             key: form.key.trim(),
-            value: form.value,
+            value,
             group: form.group.trim(),
             name: form.name.trim(),
             description: form.description.trim() || undefined,
@@ -176,10 +240,10 @@ const submit = async () => {
                     <el-color-picker v-else-if="form.type === 'color'" v-model="form.value" />
                     <el-switch v-else-if="form.type === 'switch'" v-model="form.value" :active-value="'1'" :inactive-value="'0'" />
                     <el-select v-else-if="form.type === 'select'" v-model="form.value" placeholder="请选择" clearable>
-                        <el-option v-for="opt in (form.options ? JSON.parse(form.options) : [])" :key="opt" :label="opt" :value="opt" />
+                        <el-option v-for="opt in optionList" :key="opt" :label="opt" :value="opt" />
                     </el-select>
-                    <el-select v-else-if="form.type === 'multi_select'" v-model="form.value" multiple placeholder="请选择">
-                        <el-option v-for="opt in (form.options ? JSON.parse(form.options) : [])" :key="opt" :label="opt" :value="opt" />
+                    <el-select v-else-if="form.type === 'multi_select'" v-model="form.value" multiple collapse-tags collapse-tags-tooltip placeholder="请选择">
+                        <el-option v-for="opt in optionList" :key="opt" :label="opt" :value="opt" />
                     </el-select>
                     <el-input v-else v-model="form.value" placeholder="请输入" clearable />
                 </el-form-item>

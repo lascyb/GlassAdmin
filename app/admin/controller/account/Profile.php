@@ -7,10 +7,13 @@ use app\admin\model\auth\Admin as AdminModel;
 use app\admin\model\auth\AdminOperationLog;
 use app\admin\model\auth\AdminRole;
 use app\admin\model\auth\oauth2\Feishu;
+use app\admin\model\system\Attachment;
+use app\admin\model\system\AttachmentUploadOptions;
 use app\admin\service\AdminTokenService;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
-use think\exception\FileException;
+use InvalidArgumentException;
+use RuntimeException;
 use think\facade\Db;
 use think\file\UploadedFile;
 use think\Request;
@@ -35,9 +38,6 @@ class Profile extends AdminController
 
     /** password 明文最小长度（与 auth.Admin 一致） */
     private const int PASSWORD_MIN_LEN = 6;
-
-    /** avatarMaxBytes 头像上传最大字节数 */
-    private const int AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 
     /** operationLogsMax 操作日志单页 limit 上限 */
     private const int OPERATION_LOGS_MAX = 100;
@@ -178,7 +178,7 @@ class Profile extends AdminController
     }
 
     /**
-     * uploadAvatar 上传当前用户头像（表单字段 file，存于 public/storage/avatar/）
+     * uploadAvatar 上传当前用户头像（表单字段 file；落盘与附件表由 Attachment::upload 统一处理）
      */
     public function uploadAvatar(Request $request): Response
     {
@@ -189,26 +189,6 @@ class Profile extends AdminController
         if (!$upload instanceof UploadedFile) {
             return $this->fail(400, '请上传文件');
         }
-        if (!$upload->isValid()) {
-            return $this->fail(400, '文件无效或过大');
-        }
-        $size = (int) $upload->getSize();
-        if ($size <= 0 || $size > self::AVATAR_MAX_BYTES) {
-            return $this->fail(400, '文件大小需在 1B～2MB');
-        }
-        $rawExt = strtolower($upload->extension());
-        if ($rawExt === 'jpeg') {
-            $rawExt = 'jpg';
-        }
-        $allowed = ['jpg', 'png', 'gif', 'webp'];
-        if (!in_array($rawExt, $allowed, true)) {
-            return $this->fail(400, '仅支持 jpg、png、gif、webp');
-        }
-        $mime = $upload->getMime();
-        $mimeOk = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($mime, $mimeOk, true)) {
-            return $this->fail(400, '文件类型与扩展名不符');
-        }
 
         $id  = $this->auth->adminId;
         $row = AdminModel::find($id);
@@ -216,22 +196,26 @@ class Profile extends AdminController
             return $this->fail(404, '用户不存在');
         }
 
-        $dir      = rtrim(root_path('public/storage/avatar'), DIRECTORY_SEPARATOR);
-        $baseName = bin2hex(random_bytes(16)) . '.' . $rawExt;
         try {
-            $saved = $upload->move($dir, $baseName);
-        } catch (FileException) {
-            return $this->fail(500, '保存失败');
+            $att = Attachment::upload($upload, AttachmentUploadOptions::avatar(
+                'public',
+                'account.Profile/uploadAvatar',
+                $id,
+            ));
+        } catch (InvalidArgumentException $e) {
+            return $this->fail(400, $e->getMessage());
+        } catch (RuntimeException $e) {
+            return $this->fail(500, $e->getMessage());
         }
-        $relative = 'avatar/' . $saved->getFilename();
 
+        $relative = (string) $att->getAttr('path');
         $old = (string) ($row->getOrigin('avatar') ?? '');
         if ($old !== '' && $old !== $relative) {
-            AdminModel::deletePublicStorageAvatar($old);
+            Attachment::deleteByPath($old, 'public');
         }
         $row->save(['avatar' => $relative]);
 
-        return $this->ok(['avatar' => AdminModel::avatarPublicUrl($relative)]);
+        return $this->ok(['avatar' => $att->getAttr('url') ?? Attachment::publicUrl($relative)]);
     }
 
     /**

@@ -130,7 +130,11 @@ export type ServerOverview = {
 
 /**
  * fetchServerOverview 服务器性能仪表盘数据
+ *
+ * @param includeHgfs 是否采集 HGFS 共享挂载
  */
-export const fetchServerOverview = async () => {
-    return getData<ServerOverview>('dashboard.Server/index')
+export const fetchServerOverview = async (includeHgfs = false) => {
+    return getData<ServerOverview>('dashboard.Server/index', {
+        include_hgfs: includeHgfs ? 1 : 0,
+    })
 }

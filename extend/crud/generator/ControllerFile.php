@@ -27,7 +27,10 @@ class ControllerFile
             'use think\\Response;',
         ];
         if ($ctx->imageFields !== []) {
-            $uses[] = 'use Symfony\\Component\\Filesystem\\Exception\\FileException;';
+            $uses[] = 'use app\\admin\\model\\system\\Attachment;';
+            $uses[] = 'use app\\admin\\model\\system\\AttachmentUploadOptions;';
+            $uses[] = 'use InvalidArgumentException;';
+            $uses[] = 'use RuntimeException;';
             $uses[] = 'use think\\file\\UploadedFile;';
         }
         foreach ($manyForWrite as $f) {
@@ -229,16 +232,18 @@ class ControllerFile
 
         $uploadMethods = '';
         foreach ($ctx->imageFields as $f) {
+            $render = Context::formRender($f);
+            $action = Context::uploadActionName((string) $f['prop']);
             $uploadMethods .= "\n" . Template::render('controller/upload.php.tpl', [
-                'action' => Context::uploadActionName((string) $f['prop']),
-                'label' => (string) $f['label'],
-                'dir' => $ctx->module,
+                'action'  => $action,
+                'label'   => (string) $f['label'],
+                'dir'     => $ctx->module !== '' ? $ctx->module : 'default',
+                'factory' => $render === 'file' ? 'default' : 'image',
+                'api'     => $ctx->apiBase . '/' . $action,
             ]);
         }
 
-        $uploadConst = $ctx->imageFields !== []
-            ? Template::render('controller/upload_const.php.tpl')
-            : '';
+        $uploadConst = '';
 
         $listFieldExpr = $this->fieldExpr($ctx, $ctx->listFields);
         $readFieldExpr = $this->fieldExpr($ctx, $ctx->formFields);

@@ -18,6 +18,8 @@ class Server extends AdminController
 
     /**
      * index 服务器性能快照
+     *
+     * 查询参数 include_hgfs：{0:不含HGFS,1:含HGFS共享挂载}
      */
     public function index(Request $request): Response
     {
@@ -25,9 +27,10 @@ class Server extends AdminController
             return $this->fail(405, '仅支持 GET');
         }
 
+        $includeHgfs = in_array((string) $request->param('include_hgfs', '0'), ['1', 'true'], true);
         $cpu    = self::collectCpu();
         $memory = self::collectMemory();
-        $disks  = self::collectDisks();
+        $disks  = self::collectDisks($includeHgfs);
         $phpMem = memory_get_usage(true);
         $phpPeak = memory_get_peak_usage(true);
 
@@ -290,8 +293,10 @@ class Server extends AdminController
      *
      * @return list<array{mount: string, total: int, used: int, free: int, usage_percent: float|null}>
      */
-    private static function collectDisks(): array
+    private static function collectDisks(bool $includeHgfs = false): array
     {
+        $localFs = ['ext4', 'ext3', 'xfs', 'btrfs', 'vfat', 'ntfs', 'fuseblk'];
+
         $mounts = [];
         if (PHP_OS_FAMILY === 'Windows') {
             foreach (range('C', 'Z') as $letter) {
@@ -309,17 +314,19 @@ class Server extends AdminController
                         continue;
                     }
                     [$device, $mount, $fs] = $parts;
-                    if (!str_starts_with($device, '/') || !str_starts_with($mount, '/')) {
+                    if (!str_starts_with($mount, '/')) {
                         continue;
                     }
-                    if (in_array($fs, ['ext4', 'ext3', 'xfs', 'btrfs', 'vfat', 'ntfs', 'fuseblk'], true)
-                        && !in_array($mount, $mounts, true)) {
+                    $isLocal = str_starts_with($device, '/') && in_array($fs, $localFs, true);
+                    $isHgfs = $includeHgfs && self::isHgfsMount($device, $fs);
+                    if (($isLocal || $isHgfs) && !in_array($mount, $mounts, true)) {
                         $mounts[] = $mount;
                     }
                 }
             }
         }
 
+        $limit = $includeHgfs ? 16 : 8;
         $result = [];
         foreach ($mounts as $mount) {
             $total = @disk_total_space($mount);
@@ -337,12 +344,28 @@ class Server extends AdminController
                 'free'          => $free,
                 'usage_percent' => round($used / $total * 100, 1),
             ];
-            if (count($result) >= 8) {
+            if (count($result) >= $limit) {
                 break;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * isHgfsMount 是否为 VMware HGFS / vmhgfs-fuse 类共享挂载
+     */
+    private static function isHgfsMount(string $device, string $fs): bool
+    {
+        $fs = strtolower($fs);
+        if ($fs === 'fuse.vmhgfs-fuse' || $fs === 'vmhgfs-fuse' || str_contains($fs, 'hgfs')) {
+            return true;
+        }
+        if (str_starts_with($device, '.host:') || str_contains(strtolower($device), 'hgfs')) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
