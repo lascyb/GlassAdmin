@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
-import { menusForDisplay } from "@/utils/menu/menusForDisplay";
+import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import type { MenuItemClicked } from "element-plus";
 import { type PropType, computed } from "vue";
 import { type NavigationFailure, useRoute } from "vue-router";

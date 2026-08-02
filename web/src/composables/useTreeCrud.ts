@@ -1,5 +1,5 @@
-import type { TreeEditController } from '@/composables/types'
-import { useConfirmAction } from '@/composables/useConfirmAction'
+import type { TreeEditController } from '@/composables/types.ts'
+import { useConfirmAction } from '@/composables/useConfirmAction.ts'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, shallowRef, type Ref } from 'vue'
 

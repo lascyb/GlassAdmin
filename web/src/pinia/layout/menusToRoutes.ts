@@ -2,7 +2,7 @@ import type { Menu } from '@/layouts/components/menus/types.ts'
 import { views } from '@/router/views.ts'
 import type { RouteRecordRaw } from 'vue-router'
 
-const iframeView = () => import('./../../layouts/router-view/iframe.vue')
+const iframeView = () => import('@/layouts/router-view/iframe.vue')
 
 /** getComponent 按菜单 component 字段解析懒加载视图 */
 const getComponent = (component: string | undefined): (() => Promise<unknown>) | undefined => {

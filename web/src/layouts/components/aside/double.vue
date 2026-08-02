@@ -4,7 +4,7 @@ import GaLogo from '../logo.vue'
 import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
-import { menusForDisplay } from '@/utils/menu/menusForDisplay'
+import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import { useRoute, useRouter } from 'vue-router'
 import GaIcon from "@components/ga-icon/index.vue";
 

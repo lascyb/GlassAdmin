@@ -1,6 +1,6 @@
 import type { ApiEnvelope } from '@/apis/envelope'
 import { ApiError, unwrap } from '@/apis/envelope'
-import { del, get, post, postFormData, put } from '@/utils/request'
+import { del, get, post, postFormData, put } from '@/apis/request'
 
 export { ApiError, unwrap } from '@/apis/envelope'
 

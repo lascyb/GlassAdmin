@@ -1,8 +1,8 @@
 import {defineStore} from 'pinia'
 import {ref, shallowRef} from "vue";
 import type {Menu} from "@/layouts/components/menus/types.ts";
-import {menusToRoutes} from "@/utils/menu/menusToRoutes.ts";
-import {findMenuByPath} from "@/utils/menu/findMenuByPath.ts";
+import { menusToRoutes } from '@/pinia/layout/menusToRoutes.ts'
+import { findMenuByPath } from '@/pinia/layout/findMenuByPath.ts'
 import {router} from "@/router";
 
 type FindResult = {

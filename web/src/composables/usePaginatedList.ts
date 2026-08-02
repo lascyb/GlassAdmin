@@ -1,4 +1,4 @@
-import type { PaginatedParams, PaginatedResult } from '@/composables/types'
+import type { PaginatedParams, PaginatedResult } from '@/composables/types.ts'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, unref, type MaybeRefOrGetter, type Ref } from 'vue'
 

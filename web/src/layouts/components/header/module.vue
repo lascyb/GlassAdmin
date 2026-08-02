@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
-import { menusForDisplay } from '@/utils/menu/menusForDisplay'
+import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import GaIcon from '@components/ga-icon/index.vue'
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
