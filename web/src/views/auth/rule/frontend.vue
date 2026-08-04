@@ -59,7 +59,16 @@ onMounted(load)
                     <span v-if="data.path" class="text-xs text-gray-500">{{ data.path }}</span>
                     <el-tag v-if="data.component" type="info">{{ data.component }}</el-tag>
                     <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
-                        <el-button v-auth="'add'" text type="primary" :icon="Plus" @click.stop="openAdd(data.id, data.type)">子节点</el-button>
+                        <el-button
+                            v-if="data.type !== 'link' && data.type !== 'iframe' && data.type !== 'btn'"
+                            v-auth="'add'"
+                            text
+                            type="primary"
+                            :icon="Plus"
+                            @click.stop="openAdd(data.id, data.type)"
+                        >
+                            子节点
+                        </el-button>
                         <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
                         <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>
                     </el-button-group>

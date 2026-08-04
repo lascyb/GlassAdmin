@@ -16,10 +16,6 @@ const emit = defineEmits<{
 const router = useRouter()
 
 const open = (item: WorkbenchRecent) => {
-    if (item.type === 'link') {
-        window.open(item.path_full, '_blank')
-        return
-    }
     void router.push(item.path_full)
 }
 </script>

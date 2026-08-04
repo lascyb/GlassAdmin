@@ -3,6 +3,7 @@ import { views } from '@/router/views.ts'
 import type { RouteRecordRaw } from 'vue-router'
 
 const iframeView = () => import('@/layouts/router-view/iframe.vue')
+const linkView = () => import('@/layouts/router-view/link.vue')
 
 /** getComponent 按菜单 component 字段解析懒加载视图 */
 const getComponent = (component: string | undefined): (() => Promise<unknown>) | undefined => {
@@ -17,7 +18,7 @@ const getComponent = (component: string | undefined): (() => Promise<unknown>) |
     return views[component]
 }
 
-/** isExternalPath 是否为外链（不入 vue-router） */
+/** isExternalPath 是否为外链 URL（不作为 vue-router path） */
 const isExternalPath = (path: string): boolean =>
     /^(https?:)?\/\//.test(path) || path.startsWith('://')
 
@@ -46,8 +47,8 @@ const toRoutePath = (fullPath: string): string => fullPath.replace(/^\//, '')
  * menusToRoutes 将菜单数据转换为路由配置
  * - 始终写回 menu.path_full（绝对路径，供侧栏）
  * - route.path 用不带前导 / 的相对段（作为 root 子路由）
- * - 有 component 才注册；子路由一律提升到同级（不嵌套，页面组件无 router-view）
- * - 外链不入路由表
+ * - view：component 为 views 下页面；link/iframe：component 为目标 URL，统一走 router-view 组件
+ * - 纯外链 URL 作 path 时不入路由表（兼容旧数据）
  */
 export const menusToRoutes = (
     menus: Menu[] | undefined,
@@ -66,14 +67,17 @@ export const menusToRoutes = (
             continue
         }
 
-        if (menu.type === 'iframe') {
+        if (menu.type === 'iframe' || menu.type === 'link') {
             items.push({
                 name: String(menu.id),
                 path: toRoutePath(fullPath),
-                component: iframeView,
-                meta: { name: menu.name },
+                component: menu.type === 'iframe' ? iframeView : linkView,
+                meta: {
+                    name: menu.name,
+                    /** url 外链/内嵌目标地址（存于 auth_rule.component） */
+                    url: menu.component ?? '',
+                },
             })
-            // iframe 下若仍有子路由，同样提升到同级
             const childRoutes = menusToRoutes(menu.children, fullPath)
             if (childRoutes?.length) {
                 items.push(...childRoutes)
@@ -92,7 +96,6 @@ export const menusToRoutes = (
                     meta: { name: menu.name },
                 })
             }
-            // 无论自身是否注册，子路由都提到同级（避免嵌进无 router-view 的页面组件）
             if (childRoutes?.length) {
                 items.push(...childRoutes)
             }

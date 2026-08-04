@@ -395,14 +395,20 @@ class Rule extends AdminController
         if ($scope === 'backend' && !in_array($type, ['menu', 'api'], true)) {
             return 'backend 下 type 仅支持 menu、api';
         }
-        if ($scope === 'frontend' && !in_array($type, ['menu', 'view', 'btn'], true)) {
-            return 'frontend 下 type 仅支持 menu、view、btn';
+        if ($scope === 'frontend' && !in_array($type, ['menu', 'view', 'btn', 'link', 'iframe'], true)) {
+            return 'frontend 下 type 仅支持 menu、view、btn、link、iframe';
         }
         if ($type === 'api' && $scope !== 'backend') {
             return 'api 仅属于 backend';
         }
-        if (in_array($type, ['view', 'btn'], true) && $scope !== 'frontend') {
-            return 'view/btn 仅属于 frontend';
+        if (in_array($type, ['view', 'btn', 'link', 'iframe'], true) && $scope !== 'frontend') {
+            return 'view/btn/link/iframe 仅属于 frontend';
+        }
+        if (in_array($type, ['link', 'iframe'], true) && trim((string) ($p['path'] ?? '')) === '') {
+            return '外链/内嵌须填写路由 path';
+        }
+        if (in_array($type, ['link', 'iframe'], true) && trim((string) ($p['component'] ?? '')) === '') {
+            return '外链/内嵌须填写目标地址';
         }
         if (($p['name'] ?? '') === '') {
             return '名称必填';

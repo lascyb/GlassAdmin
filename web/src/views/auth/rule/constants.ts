@@ -13,7 +13,6 @@ export const FRONTEND_RULE_TYPE_MAP: Record<string, FrontendRuleTypeItem> = {
     view: { label: '页面', type: 'success' },
     btn: { label: '按钮', type: 'warning' },
     page: { label: '页面', type: 'info' },
-    route: { label: '路由', type: 'info' },
     link: { label: '外链', type: 'info' },
     iframe: { label: '内嵌', type: 'danger' },
 }

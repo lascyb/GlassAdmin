@@ -16,10 +16,7 @@ const emit = defineEmits<{
 const router = useRouter()
 
 const open = (item: WorkbenchShortcut) => {
-    if (item.type === 'link') {
-        window.open(item.path_full, '_blank')
-        return
-    }
+    // link / iframe 均走内部路由，由 link.vue / iframe.vue 统一渲染
     void router.push(item.path_full)
 }
 </script>

@@ -208,6 +208,10 @@ async function openEdit(row: RuleRow) {
 function ruleEditValidate(): string | void {
     if (!form.name.trim()) return '请输入名称'
     if (props.scope === 'backend' && form.type === 'api' && !form.path.trim()) return '接口须填写 path'
+    if (props.scope === 'frontend' && (form.type === 'link' || form.type === 'iframe')) {
+        if (!form.path.trim()) return '请填写路由 path'
+        if (!form.component.trim()) return form.type === 'link' ? '请填写外链地址' : '请填写内嵌地址'
+    }
 }
 
 /**
@@ -241,7 +245,10 @@ async function ruleEditSubmit() {
                 name: form.name.trim(),
                 path: form.path.trim() || null,
                 method: form.method === 'route' ? 'route' : null,
-                component: form.type === 'view' ? form.component.trim() || null : null,
+                component:
+                    form.type === 'view' || form.type === 'link' || form.type === 'iframe'
+                        ? form.component.trim() || null
+                        : null,
                 icon: form.icon?.trim() ? form.icon.trim() : null,
                 sort: form.sort,
                 status: form.status,
@@ -268,11 +275,25 @@ async function ruleEditSubmit() {
 
 watch(
     () => form.type,
-    (type) => {
-        if (props.scope === 'frontend' && type === 'menu') {
+    (type, prev) => {
+        if (props.scope !== 'frontend') return
+        if (type === 'menu' || type === 'link' || type === 'iframe') {
             backendRuleIds.value = []
         }
-        if (props.scope === 'frontend' && type === 'btn' && form.method === 'route') {
+        if (type === 'btn' && form.method === 'route') {
+            form.method = ''
+        }
+        // 在 view 组件路径与 URL 之间切换时清空 component，避免脏数据
+        if (
+            prev &&
+            prev !== type &&
+            ((prev === 'view' && (type === 'link' || type === 'iframe')) ||
+                ((prev === 'link' || prev === 'iframe') && type === 'view') ||
+                ((prev === 'link' || prev === 'iframe') && (type === 'menu' || type === 'btn')))
+        ) {
+            form.component = ''
+        }
+        if (type === 'link' || type === 'iframe') {
             form.method = ''
         }
     },
@@ -304,6 +325,8 @@ defineExpose({openAdd, openEdit})
                     <el-radio value="menu">目录</el-radio>
                     <el-radio value="view">页面</el-radio>
                     <el-radio value="btn">按钮</el-radio>
+                    <el-radio value="link">外链</el-radio>
+                    <el-radio value="iframe">内嵌</el-radio>
                 </el-radio-group>
                 <el-radio-group v-else v-model="form.type">
                     <el-radio value="menu">目录</el-radio>
@@ -333,8 +356,20 @@ defineExpose({openAdd, openEdit})
             </template>
 
             <template v-else>
-                <el-form-item label="path">
-                    <el-input v-model.trim="form.path" placeholder="路由 path 片段"/>
+                <el-form-item
+                    label="path"
+                    :required="form.type === 'link' || form.type === 'iframe'"
+                >
+                    <el-input
+                        v-model.trim="form.path"
+                        :placeholder="
+                            form.type === 'link' || form.type === 'iframe'
+                                ? '侧栏路由 path，如 /docs/help'
+                                : form.type === 'btn'
+                                  ? '权限标识 path'
+                                  : '路由 path 片段'
+                        "
+                    />
                 </el-form-item>
                 <el-form-item v-if="form.type === 'view'" label="component">
                     <el-select
@@ -353,6 +388,18 @@ defineExpose({openAdd, openEdit})
                             :value="item.value"
                         />
                     </el-select>
+                </el-form-item>
+                <el-form-item v-if="form.type === 'link'" label="外链地址" required>
+                    <el-input
+                        v-model.trim="form.component"
+                        placeholder="如 https://example.com"
+                    />
+                </el-form-item>
+                <el-form-item v-if="form.type === 'iframe'" label="内嵌地址" required>
+                    <el-input
+                        v-model.trim="form.component"
+                        placeholder="如 https://example.com"
+                    />
                 </el-form-item>
                 <el-form-item v-if="form.type !== 'btn'" label="图标">
                     <Picker v-model="form.icon"/>
