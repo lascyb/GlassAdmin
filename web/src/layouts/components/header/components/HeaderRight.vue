@@ -29,6 +29,12 @@ const refreshPage = () => {
     mainRefresh.bumpForPath(route.fullPath)
 }
 
+/** goWorkbench 进入工作台首页 */
+const goWorkbench = () => {
+    popoverVisible.value = false
+    void router.push({ name: 'root-default' })
+}
+
 /** goProfile 进入个人信息页 */
 const goProfile = () => {
     popoverVisible.value = false
@@ -77,7 +83,10 @@ const logout = async () => {
                 <template #default>
                     <div class="account-panel">
                         <div class="account-name">
-                            <el-text truncated>{{ accountName }}</el-text>
+                            <el-text truncated class="account-name-text">{{ accountName }}</el-text>
+                            <button type="button" class="account-link" @click="goWorkbench">
+                                工作台
+                            </button>
                         </div>
                         <div class="account-actions">
                             <button type="button" class="account-action" @click="goProfile">
@@ -133,9 +142,34 @@ const logout = async () => {
 }
 
 .account-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 4px 12px 8px;
     min-width: 0;
     font-weight: 500;
+}
+
+.account-name-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.account-link {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--el-color-primary);
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+
+    &:hover {
+        opacity: 0.8;
+    }
 }
 
 .account-actions {
