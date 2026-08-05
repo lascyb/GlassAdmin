@@ -21,7 +21,7 @@ const loading = ref<boolean>(true);
 onMounted(() => {
   void (async () => {
     const systemConfig = useSystemConfig()
-    await systemConfig.ensureLoaded()
+    await systemConfig.load()
     setting.applySystemDefaults()
     try {
       const res = await index(setting.layout.showAllMenus)

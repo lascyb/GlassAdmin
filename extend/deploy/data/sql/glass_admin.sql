@@ -239,7 +239,7 @@ INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`compo
 INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (75, 'backend', 'api', 74, '列表', 'system.Attachment/list', 'GET', NULL, NULL, 0, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
 INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (76, 'backend', 'api', 74, '详情', 'system.Attachment/read', 'GET', NULL, NULL, 1, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
 INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (77, 'backend', 'api', 74, '删除', 'system.Attachment/delete', 'DELETE', NULL, NULL, 2, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (78, 'backend', 'api', 57, '读取配置值', 'system.Config/values', 'GET', NULL, NULL, 7, 1, '2026-08-02 01:10:49', '2026-08-02 01:10:49');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (78, 'backend', 'api', 57, '运行时配置', 'system.Config/runtime', 'GET', NULL, NULL, 7, 1, '2026-08-02 01:10:49', '2026-08-02 01:10:49');
 
 -- ----------------------------
 -- Table structure for auth_rule_api

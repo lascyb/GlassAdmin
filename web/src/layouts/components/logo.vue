@@ -2,16 +2,12 @@
 import { useLayoutMenus } from "@/pinia/layout/menus"
 import { useSystemConfig } from "@/pinia/system/config"
 import { Expand, Fold } from "@element-plus/icons-vue"
-import { computed, onMounted } from "vue"
+import { computed } from "vue"
 import { useRouter } from "vue-router"
 
 const layoutMenus = useLayoutMenus()
 const systemConfig = useSystemConfig()
 const router = useRouter()
-
-onMounted(() => {
-    void systemConfig.ensureLoaded(['site_title'])
-})
 
 const toHome = () => {
     layoutMenus.module = undefined

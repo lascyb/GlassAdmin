@@ -82,11 +82,8 @@ export const batchSaveConfig = async (group: string, pairs: Record<string, strin
 }
 
 /**
- * fetchValues 读取启用中的配置键值；不传 keys 则返回全部
+ * fetchRuntime 登录后 Layout 拉取的运行时配置（site_title、layout_container、layout_show_all_menus）
  */
-export const fetchValues = async (keys?: string[]) => {
-    return getData<Record<string, string>>(
-        'system.Config/values',
-        keys?.length ? { keys: keys.join(',') } : undefined,
-    )
+export const fetchRuntime = async () => {
+    return getData<Record<string, string>>('system.Config/runtime')
 }

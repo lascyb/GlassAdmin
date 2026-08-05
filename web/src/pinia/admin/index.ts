@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { ApiEnvelope } from '@/apis/envelope'
 import { unwrap } from '@/apis/envelope'
 import { useAdminTokenLocal, useAdminTokenSession } from '@/pinia/admin/token'
+import { useSystemConfig } from '@/pinia/system/config'
 
 /** AdminUser 登录后的后台管理员信息 */
 export type Admin = {
@@ -65,16 +66,17 @@ export const useAdmin = defineStore('admin', () => {
         inactive.clearToken()
         target.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
         data.value = admin
-        data.value.role_codes = admin.roles?.filter(item=>item.enabled==1)?.map(item=>item.code)
-        data.value.role_ids = admin.roles?.filter(item=>item.enabled==1)?.map(item=>item.id)
+        data.value.role_codes = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.code)
+        data.value.role_ids = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.id)
         remember.value = rememberLogin
     }
 
-    /** clear 退出登录：清两侧 token、user、remember */
+    /** clear 退出登录：清两侧 token、user、remember、运行时配置缓存 */
     const clear = () => {
         tokenSession.clearToken()
         tokenLocal.clearToken()
         data.value = null
+        useSystemConfig().clear()
     }
 
     /** normalizeRefererPath 将完整 URL 或路由路径规范为可 router.push 的 path */

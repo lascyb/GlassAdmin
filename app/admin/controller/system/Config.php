@@ -16,37 +16,23 @@ class Config extends AdminController
     /** list 默认每页条数 */
     private const int LIMIT_DEFAULT = 20;
 
-    /** @var list<string> 已登录可读配置值，不校验 RBAC */
-    protected array $loginOnlyActions = ['values'];
+    /** @var list<string> 已登录可读运行时配置，不校验 RBAC */
+    protected array $loginOnlyActions = ['runtime'];
 
     /**
-     * values 读取启用中的配置键值（可选 keys 逗号分隔或数组）
+     * runtime 登录后 Layout 拉取的运行时配置（白名单启用项 key => value）
      */
-    public function values(Request $request): Response
+    public function runtime(Request $request): Response
     {
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $raw = $request->get('keys', []);
-        $keys = [];
-        if (is_string($raw) && $raw !== '') {
-            $keys = array_values(array_filter(array_map('trim', explode(',', $raw))));
-        } elseif (is_array($raw)) {
-            $keys = array_values(array_filter(array_map(static fn ($k): string => trim((string) $k), $raw)));
-        }
-        if ($keys !== []) {
-            return $this->ok(SystemConfigService::getConfigs($keys));
-        }
 
-        $grouped = SystemConfigService::getAllConfigs();
-        $flat = [];
-        foreach ($grouped as $pairs) {
-            foreach ($pairs as $k => $v) {
-                $flat[$k] = $v;
-            }
-        }
-
-        return $this->ok($flat);
+        return $this->ok(SystemConfigService::getConfigs([
+            'site_title',
+            'layout_container',
+            'layout_show_all_menus',
+        ]));
     }
 
     /**
