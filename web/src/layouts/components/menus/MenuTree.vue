@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from "@/router";
 import GaIcon from "@components/ga-icon/index.vue";
+import { Lock } from "@element-plus/icons-vue";
 import type { PropType } from "vue";
 import type { Extend, Menu } from "./types.ts";
 
@@ -21,6 +22,8 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
   console.log(index, indexPath, active, menu)
   console.log(router.getRoutes())
 }
+
+const isUnauthorized = (menu: Menu) => menu.authorized === false
 </script>
 
 <template>
@@ -30,21 +33,36 @@ const click = (index: string, indexPath: string[], active: boolean, menu: Menu) 
       <el-sub-menu :index="String(menu.id)" :key="menu.id">
         <template #title>
           <GaIcon :icon="menu.icon" />
-          <span>{{ menu.name }}</span>
+          <span :class="{ 'menu-locked': isUnauthorized(menu) }">{{ menu.name }}</span>
+          <el-icon v-if="isUnauthorized(menu)" class="menu-lock-icon"><Lock /></el-icon>
         </template>
         <MenuTree :extend="{ ...props.extend, level: props.extend.level + 1 }" :menus="menu.children"/>
       </el-sub-menu>
     </template>
     <template v-else-if="menu.type == 'page' || menu.type == 'view' || menu.type == 'route' || menu.type == 'link' || menu.type == 'iframe'">
       <el-menu-item :index="menu.path_full" :key="menu.id"
+                    :class="{ 'is-locked': isUnauthorized(menu) }"
                     @click="(index: string, indexPath: string[], active: boolean)=>click(index, indexPath, active,menu)">
         <GaIcon :icon="menu.icon" />
         <span>{{ menu.name }}</span>
+        <el-icon v-if="isUnauthorized(menu)" class="menu-lock-icon"><Lock /></el-icon>
       </el-menu-item>
     </template>
   </template>
 </template>
 
 <style scoped>
+.menu-locked {
+  opacity: 0.75;
+}
 
+.menu-lock-icon {
+  margin-left: 6px;
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.el-menu-item.is-locked) {
+  opacity: 0.85;
+}
 </style>

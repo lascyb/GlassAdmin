@@ -4,6 +4,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 const iframeView = () => import('@/layouts/router-view/iframe.vue')
 const linkView = () => import('@/layouts/router-view/link.vue')
+const noPermissionView = () => import('@/layouts/components/error/no-permission.vue')
 
 /** getComponent 按菜单 component 字段解析懒加载视图 */
 const getComponent = (component: string | undefined): (() => Promise<unknown>) | undefined => {
@@ -24,7 +25,6 @@ const isExternalPath = (path: string): boolean =>
 
 /**
  * resolveFullPath 计算菜单完整路径（供 path_full / el-menu 跳转，始终以 / 开头）
- * 绝对 path 原样规范化；相对 path 拼到 parentPath 下
  */
 const resolveFullPath = (path: string, parentPath: string): string => {
     if (isExternalPath(path)) {
@@ -37,18 +37,12 @@ const resolveFullPath = (path: string, parentPath: string): string => {
     return '/' + raw.split('/').filter((s) => s !== '').join('/')
 }
 
-/**
- * toRoutePath 挂到 root(`/`) 下的 route.path：去掉前导 /
- * 避免绝对 path 子路由在兄弟页之间跳转后 matched 异常导致白屏
- */
 const toRoutePath = (fullPath: string): string => fullPath.replace(/^\//, '')
 
 /**
  * menusToRoutes 将菜单数据转换为路由配置
- * - 始终写回 menu.path_full（绝对路径，供侧栏）
- * - route.path 用不带前导 / 的相对段（作为 root 子路由）
- * - view：component 为 views 下页面；link/iframe：component 为目标 URL，统一走 router-view 组件
- * - 纯外链 URL 作 path 时不入路由表（兼容旧数据）
+ * - authorized===false 的叶子注册无权限页
+ * - link/iframe 经统一 router-view 组件渲染
  */
 export const menusToRoutes = (
     menus: Menu[] | undefined,
@@ -67,6 +61,35 @@ export const menusToRoutes = (
             continue
         }
 
+        const authorized = menu.authorized !== false
+
+        if (!authorized) {
+            // 未授权可发现项：同一 path 进无权限说明页
+            if (
+                menu.type === 'view' ||
+                menu.type === 'page' ||
+                menu.type === 'link' ||
+                menu.type === 'iframe' ||
+                menu.type === 'route'
+            ) {
+                items.push({
+                    name: String(menu.id),
+                    path: toRoutePath(fullPath),
+                    component: noPermissionView,
+                    meta: {
+                        title: menu.name,
+                        ruleId: menu.id,
+                        unauthorized: true,
+                    },
+                })
+            }
+            const childRoutes = menusToRoutes(menu.children, fullPath)
+            if (childRoutes?.length) {
+                items.push(...childRoutes)
+            }
+            continue
+        }
+
         if (menu.type === 'iframe' || menu.type === 'link') {
             items.push({
                 name: String(menu.id),
@@ -74,7 +97,6 @@ export const menusToRoutes = (
                 component: menu.type === 'iframe' ? iframeView : linkView,
                 meta: {
                     name: menu.name,
-                    /** url 外链/内嵌目标地址（存于 auth_rule.component） */
                     url: menu.component ?? '',
                 },
             })

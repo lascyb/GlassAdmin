@@ -8,7 +8,6 @@ use app\admin\model\auth\Role as RoleModel;
 use app\admin\model\auth\RoleRule;
 use app\admin\model\auth\Rule as RuleModel;
 use app\admin\service\AdminRbacService;
-use app\admin\service\MenuService;
 use app\common\controller\AdminController;
 use think\Request;
 use think\Response;
@@ -137,7 +136,7 @@ class Role extends AdminController
         }
         RoleRule::where('role_id', $id)->delete();
         RoleModel::destroy($id);
-        MenuService::forgetRoleMenuCache($id);
+        RuleModel::forgetRoleMenuCache($id);
         AdminRbacService::forgetRoleRbacCache($id);
 
         return $this->ok();
@@ -174,7 +173,7 @@ class Role extends AdminController
             return $this->fail(400, $e->getMessage());
         }
 
-        MenuService::forgetRoleMenuCache($id);
+        RuleModel::forgetRoleMenuCache($id);
         AdminRbacService::forgetRoleRbacCache($id);
 
         return $this->ok();

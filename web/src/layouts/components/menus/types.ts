@@ -10,6 +10,8 @@ export type Menu = {
     /** 图标存储串：el:组件名、url:图片地址、local:stem */
     icon?: string | null
     component?: string
+    /** 是否已授权；catalog 模式下未授权可发现项为 false */
+    authorized?: boolean
     // components?: { [key: string]: any }
     children?: Menu[]
 }

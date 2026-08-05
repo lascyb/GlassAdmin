@@ -24,7 +24,16 @@ type RuleEditForm = {
     icon: string | null
     sort: number
     status: number
+    discoverable: number
+    description: string
 }
+
+/** showDiscoverableFields 前端可发现相关字段（不含 btn） */
+const showDiscoverableFields = computed(
+    () =>
+        props.scope === 'frontend' &&
+        (form.type === 'menu' || form.type === 'view' || form.type === 'link' || form.type === 'iframe'),
+)
 
 const visible = ref(false)
 const title = ref('')
@@ -98,6 +107,8 @@ const form = reactive<RuleEditForm>({
     icon: null,
     sort: 0,
     status: 1,
+    discoverable: 0,
+    description: '',
 })
 
 /**
@@ -129,6 +140,8 @@ function ruleEditResetForAdd(pid: number, type: string) {
     form.icon = null
     form.sort = 0
     form.status = 1
+    form.discoverable = 0
+    form.description = ''
     backendRuleIds.value = []
 }
 
@@ -180,6 +193,8 @@ function ruleEditMapRow(row: RuleRow) {
     form.icon = row.icon ?? null
     form.sort = row.sort
     form.status = row.status
+    form.discoverable = row.discoverable ?? 0
+    form.description = row.description ?? ''
 }
 
 /**
@@ -252,6 +267,10 @@ async function ruleEditSubmit() {
                 icon: form.icon?.trim() ? form.icon.trim() : null,
                 sort: form.sort,
                 status: form.status,
+                discoverable: showDiscoverableFields.value ? form.discoverable : 0,
+                description: showDiscoverableFields.value
+                    ? form.description.trim() || null
+                    : null,
             }
             if (form.type === 'view' || form.type === 'btn') {
                 payload.backend_rule_ids = backendRuleIds.value
@@ -418,6 +437,24 @@ defineExpose({openAdd, openEdit})
                     <el-radio :value="1">启用</el-radio>
                     <el-radio :value="0">禁用</el-radio>
                 </el-radio-group>
+            </el-form-item>
+            <el-form-item v-if="showDiscoverableFields" label="可发现">
+                <el-switch
+                    v-model="form.discoverable"
+                    :active-value="1"
+                    :inactive-value="0"
+                    active-text="展示全部时可出现"
+                />
+            </el-form-item>
+            <el-form-item v-if="showDiscoverableFields" label="描述">
+                <el-input
+                    v-model="form.description"
+                    type="textarea"
+                    :rows="3"
+                    maxlength="500"
+                    show-word-limit
+                    placeholder="无权限页展示的功能说明"
+                />
             </el-form-item>
             <el-form-item v-if="scope === 'frontend' && (form.type === 'menu' || form.type === 'view')" label="仅作为路由">
                 <el-checkbox v-model="routeOnly">是（不入侧栏菜单）</el-checkbox>

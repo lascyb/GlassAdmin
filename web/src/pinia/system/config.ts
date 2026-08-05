@@ -49,8 +49,10 @@ export const useSystemConfig = defineStore('system_config', () => {
         await pending
     }
 
-    /** ensureLoaded 未加载则拉取（默认含 site_title） */
-    const ensureLoaded = async (keys: string[] = ['site_title']): Promise<void> => {
+    /** ensureLoaded 未加载则拉取（默认含站点与布局默认项） */
+    const ensureLoaded = async (
+        keys: string[] = ['site_title', 'layout_show_all_menus', 'layout_container'],
+    ): Promise<void> => {
         if (loaded.value) return
         await load(keys)
     }

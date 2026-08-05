@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\admin\model\system\workbench;
 
-use app\admin\service\MenuService;
+use app\admin\model\auth\Rule as RuleModel;
 use think\facade\Db;
 use think\Model;
 
@@ -50,7 +50,7 @@ class Shortcut extends Model
      */
     public static function listForAdmin(int $adminId, array $roleIds): array
     {
-        $menus = MenuService::getMenus($roleIds);
+        $menus = RuleModel::menusForRoles($roleIds);
         $flat  = self::flattenShortcutLeaves($menus);
         $byId  = [];
         foreach ($flat as $item) {

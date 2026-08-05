@@ -20,21 +20,25 @@ const setting = useLayoutSetting()
 const layoutMenus = useLayoutMenus()
 const loading = ref<boolean>(true);
 onMounted(() => {
-  void useSystemConfig().ensureLoaded()
-  index().then((res: { menus?: Menu[] }) => {
-    const menus = res.menus ?? []
-    layoutMenus.init(menus)
-    if (menus.length === 0) {
-      void router.replace({ name: 'account-profile' })
-    } else {
-      // 只用 fullPath 触发重新匹配；传入 useRoute() 整对象会带上 addRoute 前的旧 matched，易导致后续跳转白屏
-      void router.replace(router.currentRoute.value.fullPath)
+  void (async () => {
+    const systemConfig = useSystemConfig()
+    await systemConfig.ensureLoaded()
+    setting.applySystemDefaults()
+    try {
+      const res = await index(setting.layout.showAllMenus)
+      const menus = res.menus ?? []
+      layoutMenus.init(menus)
+      if (menus.length === 0) {
+        void router.replace({ name: 'account-profile' })
+      } else {
+        void router.replace(router.currentRoute.value.fullPath)
+      }
+    } catch (e: unknown) {
+      ElMessage.error(e instanceof Error ? e.message : '菜单加载失败')
+    } finally {
+      loading.value = false
     }
-    loading.value = false
-  }).catch((e: unknown) => {
-    ElMessage.error(e instanceof Error ? e.message : '菜单加载失败')
-    loading.value = false
-  })
+  })()
 })
 
 </script>

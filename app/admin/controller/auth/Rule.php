@@ -8,7 +8,6 @@ use app\admin\model\auth\Rule as RuleModel;
 use app\admin\model\auth\RuleApi;
 use app\admin\service\AdminOperationLogService;
 use app\admin\service\AdminRbacService;
-use app\admin\service\MenuService;
 use app\common\controller\AdminController;
 use Exception;
 use think\db\exception\DataNotFoundException;
@@ -111,7 +110,7 @@ class Rule extends AdminController
             return $this->fail(400, $e->getMessage());
         }
         if ($scope === 'frontend') {
-            MenuService::forgetAllRoleMenuCaches();
+            RuleModel::forgetMenuCaches();
         }
         if ($scope === 'backend') {
             AdminRbacService::forgetAllRoleRbacCaches();
@@ -167,7 +166,7 @@ class Rule extends AdminController
         }
         $newScope = (string) $row->getAttr('scope');
         if ($oldScope === 'frontend' || $newScope === 'frontend') {
-            MenuService::forgetAllRoleMenuCaches();
+            RuleModel::forgetMenuCaches();
         }
         if ($oldScope === 'backend' || $newScope === 'backend') {
             AdminRbacService::forgetAllRoleRbacCaches();
@@ -223,7 +222,7 @@ class Rule extends AdminController
         }
 
         if ($forgetFrontendMenu) {
-            MenuService::forgetAllRoleMenuCaches();
+            RuleModel::forgetMenuCaches();
         }
         AdminRbacService::forgetAllRoleRbacCaches();
         AdminOperationLogService::forgetApiNameCache();
@@ -426,16 +425,20 @@ class Rule extends AdminController
     private function normalizePayload(array $p): array
     {
         return [
-            'scope'     => (string) $p['scope'],
-            'type'      => (string) $p['type'],
-            'pid'       => (int) ($p['pid'] ?? 0),
-            'name'      => (string) ($p['name'] ?? ''),
-            'path'      => $p['path'] ?? null,
-            'method'    => $p['method'] ?? null,
-            'component' => $p['component'] ?? null,
-            'icon'      => $p['icon'] ?? null,
-            'sort'      => (int) ($p['sort'] ?? 0),
-            'status'    => (int) ($p['status'] ?? 1),
+            'scope'         => (string) $p['scope'],
+            'type'          => (string) $p['type'],
+            'pid'           => (int) ($p['pid'] ?? 0),
+            'name'          => (string) ($p['name'] ?? ''),
+            'path'          => $p['path'] ?? null,
+            'method'        => $p['method'] ?? null,
+            'component'     => $p['component'] ?? null,
+            'icon'          => $p['icon'] ?? null,
+            'sort'          => (int) ($p['sort'] ?? 0),
+            'status'        => (int) ($p['status'] ?? 1),
+            'discoverable'  => (int) ($p['discoverable'] ?? 0) === 1 ? 1 : 0,
+            'description'   => isset($p['description']) && trim((string) $p['description']) !== ''
+                ? mb_substr(trim((string) $p['description']), 0, 500)
+                : null,
         ];
     }
 

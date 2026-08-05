@@ -16,16 +16,27 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
     /** subMenus 顶栏模块布局下当前一级菜单的子菜单 */
     const subMenus = shallowRef<Menu[]>([])
     const collapse = ref<boolean>(false)
+    /** registeredRouteNames 上次 init 注册的动态路由名（便于切换 catalog 时卸掉） */
+    const registeredRouteNames = ref<string[]>([])
 
     const init = (data: Menu[]) => {
+        for (const name of registeredRouteNames.value) {
+            if (router.hasRoute(name)) {
+                router.removeRoute(name)
+            }
+        }
+        registeredRouteNames.value = []
+
         const routes = menusToRoutes(data)
         if (routes) {
-            // 先移除旧 404，动态路由加完后再挂到最后，避免 catch-all 抢匹配
             if (router.hasRoute('root-not-found')) {
                 router.removeRoute('root-not-found')
             }
             for (const route of routes) {
                 router.addRoute('root', route)
+                if (typeof route.name === 'string') {
+                    registeredRouteNames.value.push(route.name)
+                }
             }
             router.addRoute('root', {
                 name: 'root-not-found',

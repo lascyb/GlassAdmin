@@ -144,15 +144,17 @@ DROP TABLE IF EXISTS `auth_rule`;
 CREATE TABLE `auth_rule`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `scope` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '{backend:后端,frontend:前端}',
-  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,btn}',
+  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,btn,link,iframe}',
   `pid` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级 id，0 为根',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '名称',
   `path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '后端 api 路径或前端 path 片段',
   `method` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'HTTP 方法，api 用，如 GET POST *',
-  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '前端组件路径，view 用',
+  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '前端组件路径或外链/内嵌 URL',
   `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '图标：{ep:ElementPlus图标组件名,url:图片绝对或相对地址}',
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '{1:启用,0:禁用}',
+  `discoverable` tinyint NOT NULL DEFAULT 0 COMMENT '{1:展示全部时可发现,0:仅已授权可见}',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '功能描述（无权限页展示）',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -163,81 +165,81 @@ CREATE TABLE `auth_rule`  (
 -- ----------------------------
 -- Records of auth_rule
 -- ----------------------------
-INSERT INTO `auth_rule` VALUES (1, 'backend', 'menu', 0, '权限管理', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-20 17:09:25');
-INSERT INTO `auth_rule` VALUES (2, 'backend', 'api', 16, '规则树', 'auth.Rule/tree', 'GET', NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (3, 'backend', 'api', 16, '规则详情', 'auth.Rule/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (4, 'backend', 'api', 16, '新增规则', 'auth.Rule/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (5, 'backend', 'api', 16, '更新规则', 'auth.Rule/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (6, 'backend', 'api', 16, '删除规则', 'auth.Rule/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (7, 'backend', 'api', 16, '绑定后端接口', 'auth.Rule/bindApis', 'POST', NULL, NULL, 5, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (9, 'backend', 'api', 17, '角色树', 'auth.Role/tree', 'GET', NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (10, 'backend', 'api', 17, '角色详情', 'auth.Role/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (11, 'backend', 'api', 17, '新增角色', 'auth.Role/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (12, 'backend', 'api', 17, '更新角色', 'auth.Role/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (13, 'backend', 'api', 17, '删除角色', 'auth.Role/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (14, 'backend', 'api', 17, '分配前端规则', 'auth.Role/assignRules', 'PUT', NULL, NULL, 5, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (16, 'backend', 'menu', 1, '规则管理', NULL, NULL, NULL, NULL, 30, 1, NULL, '2026-07-20 17:09:48');
-INSERT INTO `auth_rule` VALUES (17, 'backend', 'menu', 1, '角色管理', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-20 17:09:41');
-INSERT INTO `auth_rule` VALUES (19, 'backend', 'menu', 1, '管理员', NULL, NULL, NULL, NULL, 10, 1, NULL, '2026-07-20 17:09:33');
-INSERT INTO `auth_rule` VALUES (20, 'backend', 'api', 19, '管理员列表', 'auth.Admin/list', 'GET', NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (21, 'backend', 'api', 19, '管理员详情', 'auth.Admin/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (22, 'backend', 'api', 19, '新增管理员', 'auth.Admin/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (23, 'backend', 'api', 19, '更新管理员', 'auth.Admin/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (24, 'backend', 'api', 19, '删除管理员', 'auth.Admin/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (25, 'frontend', 'menu', 0, '仪表盘', 'dashboard', NULL, NULL, 'el:DataAnalysis', 0, 1, NULL, '2026-07-20 17:26:46');
-INSERT INTO `auth_rule` VALUES (26, 'frontend', 'menu', 0, '权限管理', 'auth', NULL, NULL, 'el:Avatar', 20, 1, NULL, '2026-05-12 16:09:25');
-INSERT INTO `auth_rule` VALUES (27, 'frontend', 'view', 26, '角色管理', 'role', NULL, 'auth/role/index.vue', 'el:User', 20, 1, NULL, '2026-05-14 16:41:58');
-INSERT INTO `auth_rule` VALUES (28, 'frontend', 'btn', 27, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, NULL, '2026-05-13 14:36:32');
-INSERT INTO `auth_rule` VALUES (29, 'frontend', 'btn', 27, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, NULL, '2026-05-13 14:36:18');
-INSERT INTO `auth_rule` VALUES (30, 'frontend', 'btn', 27, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, NULL, '2026-05-13 14:36:24');
-INSERT INTO `auth_rule` VALUES (31, 'frontend', 'view', 26, '规则管理', 'rule', NULL, 'auth/rule/index.vue', 'el:Tickets', 30, 1, NULL, '2026-05-14 16:42:05');
-INSERT INTO `auth_rule` VALUES (32, 'frontend', 'view', 26, '管理员', 'admin', NULL, 'auth/admin/index.vue', 'el:UserFilled', 10, 1, NULL, '2026-05-14 16:41:52');
-INSERT INTO `auth_rule` VALUES (33, 'frontend', 'btn', 32, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, '2026-05-14 16:45:07', '2026-05-14 16:45:07');
-INSERT INTO `auth_rule` VALUES (34, 'frontend', 'btn', 32, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, '2026-05-14 16:46:02', '2026-05-14 16:46:02');
-INSERT INTO `auth_rule` VALUES (35, 'frontend', 'btn', 32, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, '2026-05-14 16:46:15', '2026-05-14 16:46:15');
-INSERT INTO `auth_rule` VALUES (36, 'frontend', 'btn', 31, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, '2026-05-14 17:09:06', '2026-05-14 17:09:06');
-INSERT INTO `auth_rule` VALUES (37, 'frontend', 'btn', 31, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, '2026-05-14 17:09:22', '2026-05-14 17:09:22');
-INSERT INTO `auth_rule` VALUES (38, 'frontend', 'btn', 31, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, '2026-05-14 17:09:32', '2026-05-14 17:09:32');
-INSERT INTO `auth_rule` VALUES (39, 'frontend', 'view', 25, '系统使用情况', 'usage', NULL, 'dashboard/usage', 'el:Histogram', 0, 1, '2026-07-08 10:52:52', '2026-07-08 10:55:56');
-INSERT INTO `auth_rule` VALUES (40, 'backend', 'menu', 0, '仪表盘', NULL, NULL, NULL, NULL, 0, 1, '2026-07-08 10:53:10', '2026-07-20 17:08:24');
-INSERT INTO `auth_rule` VALUES (41, 'backend', 'api', 70, '系统使用情况', 'dashboard.Usage/index', 'GET', NULL, NULL, 0, 1, '2026-07-08 10:53:40', '2026-08-01 12:50:17');
-INSERT INTO `auth_rule` VALUES (42, 'backend', 'menu', 69, 'CURD工具', NULL, NULL, NULL, NULL, 0, 1, '2026-07-09 17:25:26', '2026-07-21 17:52:07');
-INSERT INTO `auth_rule` VALUES (43, 'backend', 'api', 42, 'CRUD样例列表', 'dev.curd.Index/samples', 'GET', NULL, NULL, 0, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (44, 'backend', 'api', 42, 'CRUD样例详情', 'dev.curd.Index/sample', 'GET', NULL, NULL, 1, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (45, 'backend', 'api', 42, 'CRUD执行生成', 'dev.curd.Index/generate', 'POST', NULL, NULL, 2, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (46, 'backend', 'api', 42, 'CRUD历史列表', 'dev.curd.History/index', 'GET', NULL, NULL, 3, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (47, 'backend', 'api', 42, 'CRUD历史详情', 'dev.curd.History/read', 'GET', NULL, NULL, 4, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (48, 'frontend', 'menu', 0, '开发', 'dev', NULL, NULL, 'el:SetUp', 90, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (49, 'frontend', 'view', 48, 'CRUD生成', 'curd', NULL, 'dev/curd/index.vue', 'el:Cpu', 0, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
-INSERT INTO `auth_rule` VALUES (50, 'backend', 'api', 42, 'CRUD数据表列表', 'dev.curd.Index/tables', 'GET', NULL, NULL, 5, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (51, 'backend', 'api', 42, 'CRUD表结构反推', 'dev.curd.Index/tableSchema', 'GET', NULL, NULL, 6, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (52, 'frontend', 'view', 25, '服务器性能', 'server', NULL, 'dashboard/server', 'el:Monitor', 10, 1, '2026-07-17 17:50:00', '2026-07-17 17:50:00');
-INSERT INTO `auth_rule` VALUES (53, 'backend', 'api', 71, '服务器性能', 'dashboard.Server/index', 'GET', NULL, NULL, 0, 1, '2026-07-17 17:50:00', '2026-08-01 12:50:24');
-INSERT INTO `auth_rule` VALUES (54, 'frontend', 'menu', 0, '常规管理', 'system', NULL, NULL, 'el:SetUp', 10, 1, '2026-07-20 13:51:07', '2026-07-21 17:45:28');
-INSERT INTO `auth_rule` VALUES (55, 'frontend', 'view', 54, '全局配置', 'config', NULL, 'system/config/index.vue', 'el:Setting', 0, 1, '2026-07-20 13:52:00', '2026-08-01 14:09:21');
-INSERT INTO `auth_rule` VALUES (56, 'backend', 'menu', 0, '常规管理', NULL, NULL, NULL, NULL, 10, 1, '2026-07-20 13:52:26', '2026-07-21 17:48:15');
-INSERT INTO `auth_rule` VALUES (57, 'backend', 'menu', 56, '系统配置', NULL, NULL, NULL, NULL, 0, 1, '2026-07-20 13:53:08', '2026-07-20 13:53:08');
-INSERT INTO `auth_rule` VALUES (58, 'backend', 'api', 57, '列表', 'system.Config/list', 'GET', NULL, NULL, 0, 1, '2026-07-20 13:53:36', '2026-07-20 13:54:03');
-INSERT INTO `auth_rule` VALUES (59, 'backend', 'api', 57, '配置详情', 'system.Config/read', 'GET', NULL, NULL, 1, 1, '2026-07-20 13:53:49', '2026-07-20 13:53:49');
-INSERT INTO `auth_rule` VALUES (60, 'backend', 'api', 57, '配置分组', 'system.Config/groups', 'GET', NULL, NULL, 2, 1, '2026-07-20 13:54:30', '2026-07-20 13:54:30');
-INSERT INTO `auth_rule` VALUES (61, 'backend', 'api', 57, '新建配置', 'system.Config/save', 'POST', NULL, NULL, 3, 1, '2026-07-20 13:54:48', '2026-07-20 13:54:48');
-INSERT INTO `auth_rule` VALUES (62, 'backend', 'api', 57, '更新配置', 'system.Config/update', 'PUT', NULL, NULL, 4, 1, '2026-07-20 13:55:06', '2026-07-20 13:55:06');
-INSERT INTO `auth_rule` VALUES (63, 'backend', 'api', 57, '删除配置', 'system.Config/delete', 'DELETE', NULL, NULL, 5, 1, '2026-07-20 13:55:26', '2026-07-20 13:55:26');
-INSERT INTO `auth_rule` VALUES (64, 'backend', 'api', 57, '批量保存配置(按 group)', 'system.Config/batchSave', 'PUT', NULL, NULL, 6, 1, '2026-07-20 13:55:58', '2026-07-20 13:56:31');
-INSERT INTO `auth_rule` VALUES (65, 'backend', 'menu', 56, '个人资料', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-21 17:48:30');
-INSERT INTO `auth_rule` VALUES (66, 'backend', 'api', 65, '修改密码', 'account.Profile/changePassword', 'PUT', NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO `auth_rule` VALUES (67, 'frontend', 'btn', 68, '修改密码', 'changePassword', NULL, NULL, 'el:Key', 0, 1, NULL, '2026-07-20 17:27:45');
-INSERT INTO `auth_rule` VALUES (68, 'frontend', 'view', 54, '个人资料', 'account', NULL, 'system/account/profile.vue', 'el:UserFilled', 20, 1, '2026-07-20 17:27:38', '2026-08-01 17:30:09');
-INSERT INTO `auth_rule` VALUES (69, 'backend', 'menu', 0, '开发', NULL, NULL, NULL, NULL, 90, 1, '2026-07-21 17:51:50', '2026-07-21 17:51:50');
-INSERT INTO `auth_rule` VALUES (70, 'backend', 'menu', 40, '系统使用情况', NULL, NULL, NULL, NULL, 10, 1, '2026-07-21 17:53:07', '2026-07-21 17:53:07');
-INSERT INTO `auth_rule` VALUES (71, 'backend', 'menu', 40, '服务器性能', NULL, NULL, NULL, NULL, 20, 1, '2026-07-21 17:53:19', '2026-07-21 17:53:19');
-INSERT INTO `auth_rule` VALUES (72, 'frontend', 'view', 54, '附件管理', 'attachment', NULL, 'system/attachment/index.vue', 'el:FolderOpened', 10, 1, '2026-08-01 14:03:50', '2026-08-01 14:09:27');
-INSERT INTO `auth_rule` VALUES (73, 'frontend', 'btn', 72, '删除', 'del', NULL, NULL, 'el:Delete', 0, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` VALUES (74, 'backend', 'menu', 56, '附件管理', NULL, NULL, NULL, NULL, 10, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` VALUES (75, 'backend', 'api', 74, '列表', 'system.Attachment/list', 'GET', NULL, NULL, 0, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` VALUES (76, 'backend', 'api', 74, '详情', 'system.Attachment/read', 'GET', NULL, NULL, 1, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` VALUES (77, 'backend', 'api', 74, '删除', 'system.Attachment/delete', 'DELETE', NULL, NULL, 2, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
-INSERT INTO `auth_rule` VALUES (78, 'backend', 'api', 57, '读取配置值', 'system.Config/values', 'GET', NULL, NULL, 7, 1, '2026-08-02 01:10:49', '2026-08-02 01:10:49');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (1, 'backend', 'menu', 0, '权限管理', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-20 17:09:25');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (2, 'backend', 'api', 16, '规则树', 'auth.Rule/tree', 'GET', NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (3, 'backend', 'api', 16, '规则详情', 'auth.Rule/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (4, 'backend', 'api', 16, '新增规则', 'auth.Rule/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (5, 'backend', 'api', 16, '更新规则', 'auth.Rule/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (6, 'backend', 'api', 16, '删除规则', 'auth.Rule/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (7, 'backend', 'api', 16, '绑定后端接口', 'auth.Rule/bindApis', 'POST', NULL, NULL, 5, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (9, 'backend', 'api', 17, '角色树', 'auth.Role/tree', 'GET', NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (10, 'backend', 'api', 17, '角色详情', 'auth.Role/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (11, 'backend', 'api', 17, '新增角色', 'auth.Role/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (12, 'backend', 'api', 17, '更新角色', 'auth.Role/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (13, 'backend', 'api', 17, '删除角色', 'auth.Role/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (14, 'backend', 'api', 17, '分配前端规则', 'auth.Role/assignRules', 'PUT', NULL, NULL, 5, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (16, 'backend', 'menu', 1, '规则管理', NULL, NULL, NULL, NULL, 30, 1, NULL, '2026-07-20 17:09:48');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (17, 'backend', 'menu', 1, '角色管理', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-20 17:09:41');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (19, 'backend', 'menu', 1, '管理员', NULL, NULL, NULL, NULL, 10, 1, NULL, '2026-07-20 17:09:33');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (20, 'backend', 'api', 19, '管理员列表', 'auth.Admin/list', 'GET', NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (21, 'backend', 'api', 19, '管理员详情', 'auth.Admin/read', 'GET', NULL, NULL, 1, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (22, 'backend', 'api', 19, '新增管理员', 'auth.Admin/save', 'POST', NULL, NULL, 2, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (23, 'backend', 'api', 19, '更新管理员', 'auth.Admin/update', 'PUT', NULL, NULL, 3, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (24, 'backend', 'api', 19, '删除管理员', 'auth.Admin/delete', 'DELETE', NULL, NULL, 4, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (25, 'frontend', 'menu', 0, '仪表盘', 'dashboard', NULL, NULL, 'el:DataAnalysis', 0, 1, NULL, '2026-07-20 17:26:46');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (26, 'frontend', 'menu', 0, '权限管理', 'auth', NULL, NULL, 'el:Avatar', 20, 1, NULL, '2026-05-12 16:09:25');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (27, 'frontend', 'view', 26, '角色管理', 'role', NULL, 'auth/role/index.vue', 'el:User', 20, 1, NULL, '2026-05-14 16:41:58');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (28, 'frontend', 'btn', 27, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, NULL, '2026-05-13 14:36:32');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (29, 'frontend', 'btn', 27, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, NULL, '2026-05-13 14:36:18');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (30, 'frontend', 'btn', 27, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, NULL, '2026-05-13 14:36:24');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (31, 'frontend', 'view', 26, '规则管理', 'rule', NULL, 'auth/rule/index.vue', 'el:Tickets', 30, 1, NULL, '2026-05-14 16:42:05');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (32, 'frontend', 'view', 26, '管理员', 'admin', NULL, 'auth/admin/index.vue', 'el:UserFilled', 10, 1, NULL, '2026-05-14 16:41:52');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (33, 'frontend', 'btn', 32, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, '2026-05-14 16:45:07', '2026-05-14 16:45:07');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (34, 'frontend', 'btn', 32, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, '2026-05-14 16:46:02', '2026-05-14 16:46:02');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (35, 'frontend', 'btn', 32, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, '2026-05-14 16:46:15', '2026-05-14 16:46:15');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (36, 'frontend', 'btn', 31, '添加', 'add', NULL, NULL, 'el:Plus', 0, 1, '2026-05-14 17:09:06', '2026-05-14 17:09:06');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (37, 'frontend', 'btn', 31, '编辑', 'edit', NULL, NULL, 'el:EditPen', 1, 1, '2026-05-14 17:09:22', '2026-05-14 17:09:22');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (38, 'frontend', 'btn', 31, '删除', 'del', NULL, NULL, 'el:Delete', 2, 1, '2026-05-14 17:09:32', '2026-05-14 17:09:32');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (39, 'frontend', 'view', 25, '系统使用情况', 'usage', NULL, 'dashboard/usage', 'el:Histogram', 0, 1, '2026-07-08 10:52:52', '2026-07-08 10:55:56');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (40, 'backend', 'menu', 0, '仪表盘', NULL, NULL, NULL, NULL, 0, 1, '2026-07-08 10:53:10', '2026-07-20 17:08:24');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (41, 'backend', 'api', 70, '系统使用情况', 'dashboard.Usage/index', 'GET', NULL, NULL, 0, 1, '2026-07-08 10:53:40', '2026-08-01 12:50:17');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (42, 'backend', 'menu', 69, 'CURD工具', NULL, NULL, NULL, NULL, 0, 1, '2026-07-09 17:25:26', '2026-07-21 17:52:07');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (43, 'backend', 'api', 42, 'CRUD样例列表', 'dev.curd.Index/samples', 'GET', NULL, NULL, 0, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (44, 'backend', 'api', 42, 'CRUD样例详情', 'dev.curd.Index/sample', 'GET', NULL, NULL, 1, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (45, 'backend', 'api', 42, 'CRUD执行生成', 'dev.curd.Index/generate', 'POST', NULL, NULL, 2, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (46, 'backend', 'api', 42, 'CRUD历史列表', 'dev.curd.History/index', 'GET', NULL, NULL, 3, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (47, 'backend', 'api', 42, 'CRUD历史详情', 'dev.curd.History/read', 'GET', NULL, NULL, 4, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (48, 'frontend', 'menu', 0, '开发', 'dev', NULL, NULL, 'el:SetUp', 90, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (49, 'frontend', 'view', 48, 'CRUD生成', 'curd', NULL, 'dev/curd/index.vue', 'el:Cpu', 0, 1, '2026-07-09 17:25:26', '2026-07-09 17:25:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (50, 'backend', 'api', 42, 'CRUD数据表列表', 'dev.curd.Index/tables', 'GET', NULL, NULL, 5, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (51, 'backend', 'api', 42, 'CRUD表结构反推', 'dev.curd.Index/tableSchema', 'GET', NULL, NULL, 6, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (52, 'frontend', 'view', 25, '服务器性能', 'server', NULL, 'dashboard/server', 'el:Monitor', 10, 1, '2026-07-17 17:50:00', '2026-07-17 17:50:00');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (53, 'backend', 'api', 71, '服务器性能', 'dashboard.Server/index', 'GET', NULL, NULL, 0, 1, '2026-07-17 17:50:00', '2026-08-01 12:50:24');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (54, 'frontend', 'menu', 0, '常规管理', 'system', NULL, NULL, 'el:SetUp', 10, 1, '2026-07-20 13:51:07', '2026-07-21 17:45:28');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (55, 'frontend', 'view', 54, '全局配置', 'config', NULL, 'system/config/index.vue', 'el:Setting', 0, 1, '2026-07-20 13:52:00', '2026-08-01 14:09:21');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (56, 'backend', 'menu', 0, '常规管理', NULL, NULL, NULL, NULL, 10, 1, '2026-07-20 13:52:26', '2026-07-21 17:48:15');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (57, 'backend', 'menu', 56, '系统配置', NULL, NULL, NULL, NULL, 0, 1, '2026-07-20 13:53:08', '2026-07-20 13:53:08');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (58, 'backend', 'api', 57, '列表', 'system.Config/list', 'GET', NULL, NULL, 0, 1, '2026-07-20 13:53:36', '2026-07-20 13:54:03');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (59, 'backend', 'api', 57, '配置详情', 'system.Config/read', 'GET', NULL, NULL, 1, 1, '2026-07-20 13:53:49', '2026-07-20 13:53:49');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (60, 'backend', 'api', 57, '配置分组', 'system.Config/groups', 'GET', NULL, NULL, 2, 1, '2026-07-20 13:54:30', '2026-07-20 13:54:30');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (61, 'backend', 'api', 57, '新建配置', 'system.Config/save', 'POST', NULL, NULL, 3, 1, '2026-07-20 13:54:48', '2026-07-20 13:54:48');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (62, 'backend', 'api', 57, '更新配置', 'system.Config/update', 'PUT', NULL, NULL, 4, 1, '2026-07-20 13:55:06', '2026-07-20 13:55:06');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (63, 'backend', 'api', 57, '删除配置', 'system.Config/delete', 'DELETE', NULL, NULL, 5, 1, '2026-07-20 13:55:26', '2026-07-20 13:55:26');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (64, 'backend', 'api', 57, '批量保存配置(按 group)', 'system.Config/batchSave', 'PUT', NULL, NULL, 6, 1, '2026-07-20 13:55:58', '2026-07-20 13:56:31');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (65, 'backend', 'menu', 56, '个人资料', NULL, NULL, NULL, NULL, 20, 1, NULL, '2026-07-21 17:48:30');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (66, 'backend', 'api', 65, '修改密码', 'account.Profile/changePassword', 'PUT', NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (67, 'frontend', 'btn', 68, '修改密码', 'changePassword', NULL, NULL, 'el:Key', 0, 1, NULL, '2026-07-20 17:27:45');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (68, 'frontend', 'view', 54, '个人资料', 'account', NULL, 'system/account/profile.vue', 'el:UserFilled', 20, 1, '2026-07-20 17:27:38', '2026-08-01 17:30:09');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (69, 'backend', 'menu', 0, '开发', NULL, NULL, NULL, NULL, 90, 1, '2026-07-21 17:51:50', '2026-07-21 17:51:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (70, 'backend', 'menu', 40, '系统使用情况', NULL, NULL, NULL, NULL, 10, 1, '2026-07-21 17:53:07', '2026-07-21 17:53:07');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (71, 'backend', 'menu', 40, '服务器性能', NULL, NULL, NULL, NULL, 20, 1, '2026-07-21 17:53:19', '2026-07-21 17:53:19');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (72, 'frontend', 'view', 54, '附件管理', 'attachment', NULL, 'system/attachment/index.vue', 'el:FolderOpened', 10, 1, '2026-08-01 14:03:50', '2026-08-01 14:09:27');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (73, 'frontend', 'btn', 72, '删除', 'del', NULL, NULL, 'el:Delete', 0, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (74, 'backend', 'menu', 56, '附件管理', NULL, NULL, NULL, NULL, 10, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (75, 'backend', 'api', 74, '列表', 'system.Attachment/list', 'GET', NULL, NULL, 0, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (76, 'backend', 'api', 74, '详情', 'system.Attachment/read', 'GET', NULL, NULL, 1, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (77, 'backend', 'api', 74, '删除', 'system.Attachment/delete', 'DELETE', NULL, NULL, 2, 1, '2026-08-01 14:03:50', '2026-08-01 14:03:50');
+INSERT INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`create_time`,`update_time`) VALUES (78, 'backend', 'api', 57, '读取配置值', 'system.Config/values', 'GET', NULL, NULL, 7, 1, '2026-08-02 01:10:49', '2026-08-02 01:10:49');
 
 -- ----------------------------
 -- Table structure for auth_rule_api
@@ -371,7 +373,9 @@ INSERT INTO `system_config` VALUES (1, 'site_title', 'GlassAdmin', '全局配置
 INSERT INTO `system_config` VALUES (4, 'upload_max_bytes', '10485760', '上传配置', '默认上传大小上限', '通用文件上传最大字节数（字节）', 'number', NULL, 10, 2, 1785567993, 1785567993);
 INSERT INTO `system_config` VALUES (5, 'upload_allowed_ext', 'jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip,txt', '上传配置', '默认允许扩展名', '逗号分隔，如 jpg,png,pdf', 'input', NULL, 20, 2, 1785567993, 1785567993);
 INSERT INTO `system_config` VALUES (6, 'upload_allowed_mime', '', '上传配置', '默认允许 MIME', '逗号分隔；留空表示不校验 MIME', 'input', NULL, 30, 2, 1785567993, 1785567993);
-INSERT INTO `system_config` VALUES (7, 'config_group_sort', '上传配置;全局配置;', '全局配置', '配置分组排序', NULL, 'input', NULL, 0, 2, 1785568826, 1785568989);
+INSERT INTO `system_config` VALUES (7, 'config_group_sort', '布局配置;上传配置;全局配置;', '全局配置', '配置分组排序', NULL, 'input', NULL, 0, 2, 1785568826, 1785568989);
+INSERT INTO `system_config` VALUES (8, 'layout_show_all_menus', '0', '布局配置', '展示全部可发现菜单', '个人偏好的系统默认值；开启后侧栏可显示可发现但未授权的菜单', 'switch', NULL, 10, 2, 1785567993, 1785567993);
+INSERT INTO `system_config` VALUES (9, 'layout_container', 'Default', '布局配置', '菜单样式', '个人偏好的系统默认值：Default=左侧单层，Double=左侧双层，Module=顶侧双栏', 'select', '["Default","Double","Module"]', 20, 2, 1785567993, 1785567993);
 
 -- ----------------------------
 -- Table structure for system_rsa_key
