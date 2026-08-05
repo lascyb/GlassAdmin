@@ -57,7 +57,26 @@ onMounted(load)
                     <GaIcon v-if="data.icon" :icon="data.icon" class="shrink-0" />
                     <span>{{ data.name }}</span>
                     <span v-if="data.path" class="text-xs text-gray-500">{{ data.path }}</span>
-                    <el-tag v-if="data.component" type="info">{{ data.component }}</el-tag>
+                    <el-tag v-if="data.component" type="info" size="small">{{ data.component }}</el-tag>
+                    <template
+                        v-if="
+                            data.type === 'menu' ||
+                            data.type === 'view' ||
+                            data.type === 'link' ||
+                            data.type === 'iframe'
+                        "
+                    >
+                        <el-tag v-if="data.discoverable === 1" type="success" effect="plain">可发现</el-tag>
+                        <el-tag v-else type="info" effect="plain" size="small">授权可见</el-tag>
+                    </template>
+                    <el-tag
+                        v-if="(data.type === 'menu' || data.type === 'view') && data.method === 'route'"
+                        type="warning"
+                        effect="plain"
+                        size="small"
+                    >
+                        仅作为路由
+                    </el-tag>
                     <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
                         <el-button
                             v-if="data.type !== 'link' && data.type !== 'iframe' && data.type !== 'btn'"
@@ -69,8 +88,12 @@ onMounted(load)
                         >
                             子节点
                         </el-button>
-                        <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
-                        <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>
+                        <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">
+                            编辑
+                        </el-button>
+                        <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">
+                            删除
+                        </el-button>
                     </el-button-group>
                 </span>
             </template>

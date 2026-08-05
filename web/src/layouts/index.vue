@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { index } from "@/apis";
-import type { Menu } from "@/layouts/components/menus/types";
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
 import { useLayoutSetting } from "@/pinia/layout/setting";
 import { useSystemConfig } from "@/pinia/system/config";
