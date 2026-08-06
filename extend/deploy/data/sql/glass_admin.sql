@@ -376,6 +376,7 @@ INSERT INTO `system_config` VALUES (6, 'upload_allowed_mime', '', '上传配置'
 INSERT INTO `system_config` VALUES (7, 'config_group_sort', '布局配置;上传配置;全局配置;', '全局配置', '配置分组排序', NULL, 'input', NULL, 0, 2, 1785568826, 1785568989);
 INSERT INTO `system_config` VALUES (8, 'layout_show_all_menus', '0', '布局配置', '展示全部可发现菜单', '个人偏好的系统默认值；开启后侧栏可显示可发现但未授权的菜单', 'switch', NULL, 10, 2, 1785567993, 1785567993);
 INSERT INTO `system_config` VALUES (9, 'layout_container', 'Default', '布局配置', '菜单样式', '个人偏好的系统默认值：Default=左侧单层，Double=左侧双层，Module=顶侧双栏', 'select', '["Default","Double","Module"]', 20, 2, 1785567993, 1785567993);
+INSERT INTO `system_config` VALUES (10, 'layout_aside_width', '200', '布局配置', '左侧菜单宽度', '个人偏好的系统默认值：展开态侧栏宽度（像素，建议 160–480）', 'number', NULL, 30, 2, 1785567993, 1785567993);
 
 -- ----------------------------
 -- Table structure for system_rsa_key

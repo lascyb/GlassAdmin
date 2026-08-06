@@ -11,14 +11,29 @@ type Layout = {
     container: LayoutContainer
     /** 是否展示全部可发现菜单（含未授权） */
     showAllMenus: boolean
+    /** 左侧菜单栏展开宽度（px） */
+    asideWidth: number
     /** 是否已用系统配置做过首次默认填充 */
     seededFromSystem: boolean
 }
 
 const CONTAINERS: LayoutContainer[] = ['Default', 'Double', 'Module']
 
+/** 侧栏宽度允许范围 */
+export const ASIDE_WIDTH_MIN = 160
+export const ASIDE_WIDTH_MAX = 480
+export const ASIDE_WIDTH_DEFAULT = 200
+
 const isContainer = (v: string): v is LayoutContainer =>
     (CONTAINERS as string[]).includes(v)
+
+/** clampAsideWidth 将宽度限制在合法区间 */
+export const clampAsideWidth = (n: number): number => {
+    if (!Number.isFinite(n)) {
+        return ASIDE_WIDTH_DEFAULT
+    }
+    return Math.min(ASIDE_WIDTH_MAX, Math.max(ASIDE_WIDTH_MIN, Math.round(n)))
+}
 
 /** persistKey 与 pinia-plugin-persistedstate 全局 key 规则一致 */
 const persistKey = () => `${persistStorageKeyPrefix}layout_setting`
@@ -30,10 +45,16 @@ export const useLayoutSetting = defineStore(
             showSetting: false,
             container: 'Default',
             showAllMenus: false,
+            asideWidth: ASIDE_WIDTH_DEFAULT,
             seededFromSystem: false,
         })
         const showSetting = () => {
             layout.showSetting = true
+        }
+
+        /** setAsideWidth 设置侧栏宽度并钳制范围 */
+        const setAsideWidth = (n: number) => {
+            layout.asideWidth = clampAsideWidth(n)
         }
 
         /**
@@ -52,6 +73,8 @@ export const useLayoutSetting = defineStore(
             }
             if (hasPersisted) {
                 layout.seededFromSystem = true
+                // 旧本地偏好可能没有 asideWidth，补默认并钳制
+                layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
                 return
             }
             const cfg = useSystemConfig()
@@ -60,12 +83,16 @@ export const useLayoutSetting = defineStore(
                 layout.container = container
             }
             layout.showAllMenus = cfg.get('layout_show_all_menus', '0') === '1'
+            layout.asideWidth = clampAsideWidth(
+                Number(cfg.get('layout_aside_width', String(ASIDE_WIDTH_DEFAULT))),
+            )
             layout.seededFromSystem = true
         }
 
         return {
             layout,
             showSetting,
+            setAsideWidth,
             applySystemDefaults,
         }
     },

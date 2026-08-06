@@ -82,7 +82,8 @@ export const batchSaveConfig = async (group: string, pairs: Record<string, strin
 }
 
 /**
- * fetchRuntime 登录后 Layout 拉取的运行时配置（site_title、layout_container、layout_show_all_menus）
+ * fetchRuntime 登录后 Layout 拉取的运行时配置
+ * （site_title、layout_container、layout_show_all_menus、layout_aside_width）
  */
 export const fetchRuntime = async () => {
     return getData<Record<string, string>>('system.Config/runtime')

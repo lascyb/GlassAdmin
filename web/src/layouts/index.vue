@@ -27,10 +27,12 @@ onMounted(() => {
       const res = await index(setting.layout.showAllMenus)
       const menus = res.menus ?? []
       layoutMenus.init(menus)
-      if (menus.length === 0) {
-        void router.replace({ name: 'account-profile' })
+      // 登录后默认落在工作台首页；无侧栏菜单时也不再跳个人中心
+      const route = router.currentRoute.value
+      if (menus.length === 0 || route.path === '/' || route.name === 'root-default') {
+        void router.replace({ name: 'root-default' })
       } else {
-        void router.replace(router.currentRoute.value.fullPath)
+        void router.replace(route.fullPath)
       }
     } catch (e: unknown) {
       ElMessage.error(e instanceof Error ? e.message : '菜单加载失败')

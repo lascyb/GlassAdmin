@@ -35,7 +35,7 @@ const goWorkbench = () => {
     void router.push({ name: 'root-default' })
 }
 
-/** goProfile 进入个人信息页 */
+/** goProfile 进入个人中心 */
 const goProfile = () => {
     popoverVisible.value = false
     void router.push({ name: 'account-profile' })
@@ -90,7 +90,7 @@ const logout = async () => {
                         </div>
                         <div class="account-actions">
                             <button type="button" class="account-action" @click="goProfile">
-                                个人信息
+                                个人中心
                             </button>
                             <button
                                 v-if="hasRoles"

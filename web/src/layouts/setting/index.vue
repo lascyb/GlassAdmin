@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { index } from '@/apis'
 import { useLayoutMenus } from '@/pinia/layout/menus'
-import { useLayoutSetting } from '@/pinia/layout/setting.ts'
+import {
+    ASIDE_WIDTH_DEFAULT,
+    ASIDE_WIDTH_MAX,
+    ASIDE_WIDTH_MIN,
+    useLayoutSetting,
+} from '@/pinia/layout/setting.ts'
 import { router } from '@/router'
 import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
@@ -27,6 +32,17 @@ const onShowAllMenusChange = async (val: string | number | boolean) => {
         reloading.value = false
     }
 }
+
+/** onAsideWidthChange 调整侧栏宽度 */
+const onAsideWidthChange = (val: number | number[]) => {
+    const n = Array.isArray(val) ? val[0] : val
+    setting.setAsideWidth(typeof n === 'number' ? n : ASIDE_WIDTH_DEFAULT)
+}
+
+/** resetAsideWidth 恢复系统默认宽度 */
+const resetAsideWidth = () => {
+    setting.setAsideWidth(ASIDE_WIDTH_DEFAULT)
+}
 </script>
 
 <template>
@@ -34,6 +50,24 @@ const onShowAllMenusChange = async (val: string | number | boolean) => {
         <el-form v-loading="reloading" label-position="top">
             <el-form-item label="菜单样式">
                 <LayoutPicker v-model="setting.layout.container" />
+            </el-form-item>
+            <el-form-item label="左侧菜单宽度">
+                <div class="aside-width-row">
+                    <el-slider
+                        class="aside-width-slider"
+                        :model-value="setting.layout.asideWidth"
+                        :min="ASIDE_WIDTH_MIN"
+                        :max="ASIDE_WIDTH_MAX"
+                        :step="10"
+                        show-input
+                        :show-input-controls="true"
+                        @update:model-value="onAsideWidthChange"
+                    />
+                    <el-button link type="primary" @click="resetAsideWidth">重置</el-button>
+                </div>
+                <div class="mt-1 text-xs text-gray-400">
+                    展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。
+                </div>
             </el-form-item>
             <el-form-item label="展示全部可发现菜单">
                 <el-switch
@@ -48,4 +82,15 @@ const onShowAllMenusChange = async (val: string | number | boolean) => {
     </el-drawer>
 </template>
 
-<style scoped></style>
+<style scoped>
+.aside-width-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.aside-width-slider {
+    flex: 1;
+    min-width: 0;
+}
+</style>

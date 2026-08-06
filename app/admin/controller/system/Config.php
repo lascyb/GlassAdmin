@@ -32,6 +32,7 @@ class Config extends AdminController
             'site_title',
             'layout_container',
             'layout_show_all_menus',
+            'layout_aside_width',
         ]));
     }
 

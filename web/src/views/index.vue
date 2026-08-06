@@ -7,10 +7,13 @@ import ShortcutCustomizeDrawer from '@/views/system/workbench/ShortcutCustomizeD
 import ShortcutPanel from '@/views/system/workbench/ShortcutPanel.vue'
 import TodoPanel from '@/views/system/workbench/TodoPanel.vue'
 import type { WorkbenchShortcut } from '@/views/system/workbench/types'
+import { User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const admin = useAdmin()
 const recentStore = useWorkbenchRecent()
 const { items: recents } = storeToRefs(recentStore)
@@ -32,15 +35,6 @@ const greeting = computed(() => {
     if (h < 14) return '中午好'
     if (h < 18) return '下午好'
     return '晚上好'
-})
-
-const todayText = computed(() => {
-    const d = new Date()
-    const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day} 星期${week}`
 })
 
 const selectedIds = computed(() => shortcuts.value.map((s) => s.id))
@@ -104,6 +98,11 @@ const onRestoreDefault = async () => {
     }
 }
 
+/** goProfile 进入个人中心 */
+const goProfile = () => {
+    void router.push({ name: 'account-profile' })
+}
+
 onMounted(() => {
     if (admin.data?.id) {
         recentStore.ensureAdmin(admin.data.id)
@@ -114,13 +113,14 @@ onMounted(() => {
 
 <template>
     <div class="workbench p-4" style="min-height: calc(100vh - 120px)">
-        <div class="welcome mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <h1 class="m-0 text-xl font-semibold tracking-tight text-gray-800">
-                    {{ greeting }}，{{ displayName }}
-                </h1>
-                <p class="mt-1 mb-0 text-sm text-gray-400">{{ todayText }} · 工作台</p>
-            </div>
+        <div class="welcome mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="m-0 text-xl font-semibold tracking-tight text-gray-800">
+                {{ greeting }}，{{ displayName }}
+            </h1>
+            <el-button type="primary" plain @click="goProfile">
+                <el-icon class="mr-1"><User /></el-icon>
+                个人中心
+            </el-button>
         </div>
 
         <div v-loading="loadingShortcuts || saving" class="flex flex-col gap-3">

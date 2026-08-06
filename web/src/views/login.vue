@@ -40,7 +40,7 @@ type LoginResult = {
   user: Admin
 }
 
-/** applyLoginResult 写入登录态并跳转 */
+/** applyLoginResult 写入登录态并跳转（默认工作台首页） */
 const applyLoginResult = async (data: LoginResult, remember: boolean) => {
   admin.init(
     data.access_token,
@@ -51,7 +51,12 @@ const applyLoginResult = async (data: LoginResult, remember: boolean) => {
     remember,
   )
   ElMessage.success('登录成功')
-  await router.push(admin.getReferer())
+  const target = admin.getReferer('/')
+  if (target === '/' || target === '') {
+    await router.push({ name: 'root-default' })
+  } else {
+    await router.push(target)
+  }
 }
 
 // 获取验证码

@@ -4,6 +4,7 @@ import GaLogo from '../logo.vue'
 import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
+import { useLayoutSetting } from '@/pinia/layout/setting.ts'
 import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import { useRoute, useRouter } from 'vue-router'
 import GaIcon from "@components/ga-icon/index.vue";
@@ -12,6 +13,7 @@ const router = useRouter()
 const route = useRoute()
 
 const layoutMenus = useLayoutMenus()
+const layoutSetting = useLayoutSetting()
 
 const menus = ref<Menu[]>([])
 const moduleOptions = computed(() => menusForDisplay(layoutMenus.menus))
@@ -20,7 +22,7 @@ const moduleOptions = computed(() => menusForDisplay(layoutMenus.menus))
 const asideStyle = computed(() => ({
     width: layoutMenus.collapse
         ? 'calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding) * 2)'
-        : '250px',
+        : `${layoutSetting.layout.asideWidth}px`,
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
 
