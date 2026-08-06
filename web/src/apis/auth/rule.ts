@@ -14,8 +14,8 @@ export type RuleRow = {
     icon?: string | null
     sort: number
     status: number
-    /** {1:展示全部时可发现,0:仅已授权可见} */
-    discoverable?: number
+    /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
+    visibility?: number
     description?: string | null
     children?: RuleRow[]
 }
@@ -47,9 +47,10 @@ export type RulePayload = {
     icon?: string | null
     sort: number
     status: number
-    discoverable?: number
+    /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
+    visibility?: number
     description?: string | null
-    /** backend_rule_ids 前端 view/btn 关联的后端 api 规则 id */
+    /** backend_rule_ids 前端 view/route/btn 关联的后端 api 规则 id */
     backend_rule_ids?: number[]
 }
 

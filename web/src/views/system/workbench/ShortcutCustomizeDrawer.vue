@@ -9,6 +9,7 @@ import Sortable from 'sortablejs'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 const SHORTCUT_TYPES = new Set(['view', 'page', 'link', 'iframe'])
+const VISIBILITY_HIDDEN = 2
 const MAX_ITEMS = 16
 
 const props = defineProps<{
@@ -40,7 +41,7 @@ const markTree = (menus: Menu[]): TreeNode[] => {
     return menus.map((m) => {
         const children = m.children?.length ? markTree(m.children) : undefined
         const isLeafShortcut =
-            !children?.length && SHORTCUT_TYPES.has(m.type) && m.method !== 'route'
+            !children?.length && SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN
         return {
             ...m,
             children,
@@ -57,7 +58,7 @@ const flatById = computed(() => {
         for (const m of list) {
             if (m.children?.length) {
                 walk(m.children)
-            } else if (SHORTCUT_TYPES.has(m.type) && m.method !== 'route') {
+            } else if (SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN) {
                 map.set(m.id, m)
             }
         }

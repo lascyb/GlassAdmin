@@ -48,7 +48,7 @@ class Rule extends AdminController
     }
 
     /**
-     * read 单条规则；前端 view/btn 附带已绑定的 backend_rule_id 列表（字段名 backend_rule_ids）
+     * read 单条规则；前端 view/route/btn 附带已绑定的 backend_rule_id 列表（字段名 backend_rule_ids）
      *
      * @param Request $request
      * @return Response
@@ -67,7 +67,7 @@ class Rule extends AdminController
             return $this->fail(404, '不存在');
         }
         $data = $row->toArray();
-        if ($data['scope'] === 'frontend' && in_array($data['type'], ['view', 'btn'], true)) {
+        if ($data['scope'] === 'frontend' && in_array($data['type'], RuleModel::API_BINDABLE_TYPES, true)) {
             $data['backend_rule_ids'] = RuleApi::where('frontend_rule_id', $id)->column('backend_rule_id');
             $data['backend_rule_ids'] = array_map('intval', $data['backend_rule_ids']);
         }
@@ -76,7 +76,7 @@ class Rule extends AdminController
     }
 
     /**
-     * save 新建规则；frontend view/btn 可同时提交 backend_rule_ids 绑定后端 api
+     * save 新建规则；frontend view/route/btn 可同时提交 backend_rule_ids 绑定后端 api
      *
      * @return Response
      */
@@ -97,7 +97,7 @@ class Rule extends AdminController
                 $m = new RuleModel();
                 $m->save($this->normalizePayload($payload));
                 $id = (int) $m->getAttr('id');
-                if ($scope === 'frontend' && in_array($type, ['view', 'btn'], true) && array_key_exists('backend_rule_ids', $payload)) {
+                if ($scope === 'frontend' && in_array($type, RuleModel::API_BINDABLE_TYPES, true) && array_key_exists('backend_rule_ids', $payload)) {
                     $bindErr = $this->syncBackendApis($id, $payload['backend_rule_ids']);
                     if ($bindErr !== null) {
                         throw new Exception($bindErr);
@@ -121,7 +121,7 @@ class Rule extends AdminController
     }
 
     /**
-     * update 更新规则；frontend view/btn 可同时提交 backend_rule_ids
+     * update 更新规则；frontend view/route/btn 可同时提交 backend_rule_ids
      *
      * @return Response
      */
@@ -150,7 +150,7 @@ class Rule extends AdminController
                 $newScope = (string) $row->getAttr('scope');
                 $newType  = (string) $row->getAttr('type');
                 if ($newScope === 'frontend') {
-                    if (in_array($newType, ['view', 'btn'], true) && array_key_exists('backend_rule_ids', $payload)) {
+                    if (in_array($newType, RuleModel::API_BINDABLE_TYPES, true) && array_key_exists('backend_rule_ids', $payload)) {
                         $bindErr = $this->syncBackendApis($id, $payload['backend_rule_ids']);
                         if ($bindErr !== null) {
                             throw new Exception($bindErr);
@@ -293,7 +293,7 @@ class Rule extends AdminController
     }
 
     /**
-     * bindApis 为前端 view/btn 绑定后端 api 规则
+     * bindApis 为前端 view/route/btn 绑定后端 api 规则
      *
      * @param Request $request
      * @return Response
@@ -323,7 +323,7 @@ class Rule extends AdminController
     }
 
     /**
-     * syncBackendApis 同步前端 view/btn 与后端 api 的绑定关系
+     * syncBackendApis 同步前端 view/route/btn 与后端 api 的绑定关系
      *
      * @param int $fid
      * @param mixed $rawIds
@@ -335,9 +335,9 @@ class Rule extends AdminController
     private function syncBackendApis(int $fid, mixed $rawIds): ?string
     {
         $rawIds = is_array($rawIds) ? array_values(array_unique(array_map('intval', $rawIds))) : [];
-        $front  = RuleModel::where([['id', '=', $fid], ['scope', '=', 'frontend'], ['type', 'in', ['view', 'btn']]])->find();
+        $front  = RuleModel::where([['id', '=', $fid], ['scope', '=', 'frontend'], ['type', 'in', RuleModel::API_BINDABLE_TYPES]])->find();
         if (!$front) {
-            return '数据不存在，仅允许对前端 view/btn 绑定接口';
+            return '数据不存在，仅允许对前端 view/route/btn 绑定接口';
         }
         if ($rawIds === []) {
             $apiIds = [];
@@ -394,14 +394,14 @@ class Rule extends AdminController
         if ($scope === 'backend' && !in_array($type, ['menu', 'api'], true)) {
             return 'backend 下 type 仅支持 menu、api';
         }
-        if ($scope === 'frontend' && !in_array($type, ['menu', 'view', 'btn', 'link', 'iframe'], true)) {
-            return 'frontend 下 type 仅支持 menu、view、btn、link、iframe';
+        if ($scope === 'frontend' && !in_array($type, ['menu', 'view', 'route', 'btn', 'link', 'iframe'], true)) {
+            return 'frontend 下 type 仅支持 menu、view、route、btn、link、iframe';
         }
         if ($type === 'api' && $scope !== 'backend') {
             return 'api 仅属于 backend';
         }
-        if (in_array($type, ['view', 'btn', 'link', 'iframe'], true) && $scope !== 'frontend') {
-            return 'view/btn/link/iframe 仅属于 frontend';
+        if (in_array($type, ['view', 'route', 'btn', 'link', 'iframe'], true) && $scope !== 'frontend') {
+            return 'view/route/btn/link/iframe 仅属于 frontend';
         }
         if (in_array($type, ['link', 'iframe'], true) && trim((string) ($p['path'] ?? '')) === '') {
             return '外链/内嵌须填写路由 path';
@@ -411,6 +411,15 @@ class Rule extends AdminController
         }
         if (($p['name'] ?? '') === '') {
             return '名称必填';
+        }
+        if ($scope === 'frontend' && in_array($type, RuleModel::VISIBILITY_TYPES, true)) {
+            $vis = (int) ($p['visibility'] ?? RuleModel::VISIBILITY_SIDEBAR);
+            if (!in_array($vis, RuleModel::VISIBILITIES, true)) {
+                return 'visibility 无效';
+            }
+            if ($vis === RuleModel::VISIBILITY_HIDDEN && !in_array($type, RuleModel::HIDDEN_TYPES, true)) {
+                return '仅目录可设为不入侧栏；页面请使用 route 类型';
+            }
         }
 
         return null;
@@ -424,19 +433,31 @@ class Rule extends AdminController
      */
     private function normalizePayload(array $p): array
     {
+        $scope = (string) $p['scope'];
+        $type  = (string) $p['type'];
+        $showVisibility = $scope === 'frontend' && in_array($type, RuleModel::VISIBILITY_TYPES, true);
+        $visibility     = RuleModel::VISIBILITY_SIDEBAR;
+        if ($showVisibility) {
+            $vis = (int) ($p['visibility'] ?? RuleModel::VISIBILITY_SIDEBAR);
+            if (in_array($vis, RuleModel::VISIBILITIES, true)
+                && ($vis !== RuleModel::VISIBILITY_HIDDEN || in_array($type, RuleModel::HIDDEN_TYPES, true))) {
+                $visibility = $vis;
+            }
+        }
+
         return [
-            'scope'         => (string) $p['scope'],
-            'type'          => (string) $p['type'],
-            'pid'           => (int) ($p['pid'] ?? 0),
-            'name'          => (string) ($p['name'] ?? ''),
-            'path'          => $p['path'] ?? null,
-            'method'        => $p['method'] ?? null,
-            'component'     => $p['component'] ?? null,
-            'icon'          => $p['icon'] ?? null,
-            'sort'          => (int) ($p['sort'] ?? 0),
-            'status'        => (int) ($p['status'] ?? 1),
-            'discoverable'  => (int) ($p['discoverable'] ?? 0) === 1 ? 1 : 0,
-            'description'   => isset($p['description']) && trim((string) $p['description']) !== ''
+            'scope'       => $scope,
+            'type'        => $type,
+            'pid'         => (int) ($p['pid'] ?? 0),
+            'name'        => (string) ($p['name'] ?? ''),
+            'path'        => $p['path'] ?? null,
+            'method'      => $scope === 'backend' && $type === 'api' ? ($p['method'] ?? null) : null,
+            'component'   => $p['component'] ?? null,
+            'icon'        => $p['icon'] ?? null,
+            'sort'        => (int) ($p['sort'] ?? 0),
+            'status'      => (int) ($p['status'] ?? 1),
+            'visibility'  => $visibility,
+            'description' => $showVisibility && isset($p['description']) && trim((string) $p['description']) !== ''
                 ? mb_substr(trim((string) $p['description']), 0, 500)
                 : null,
         ];

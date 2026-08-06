@@ -11,6 +11,14 @@ const props = defineProps<{ scope: 'backend' | 'frontend' }>()
 
 const emit = defineEmits<{ success: [] }>()
 
+/** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（仅目录）} */
+const VISIBILITY_SIDEBAR = 0
+const VISIBILITY_CATALOG = 1
+const VISIBILITY_HIDDEN = 2
+
+/** VIEW_TYPES 需要 component 的页面类型 */
+const VIEW_TYPES = ['view', 'route']
+
 /** RuleEditForm 与 auth_rule 表字段对齐的编辑表单（前后端 scope 共用） */
 type RuleEditForm = {
     id?: number
@@ -24,16 +32,19 @@ type RuleEditForm = {
     icon: string | null
     sort: number
     status: number
-    discoverable: number
+    visibility: number
     description: string
 }
 
-/** showDiscoverableFields 前端可发现相关字段（不含 btn） */
-const showDiscoverableFields = computed(
+/** showVisibilityFields 侧栏可见性相关字段；route 恒不入侧栏故不展示 */
+const showVisibilityFields = computed(
     () =>
         props.scope === 'frontend' &&
         (form.type === 'menu' || form.type === 'view' || form.type === 'link' || form.type === 'iframe'),
 )
+
+/** allowHidden 仅目录可设为不入侧栏（页面用 route 类型） */
+const allowHidden = computed(() => form.type === 'menu')
 
 const visible = ref(false)
 const title = ref('')
@@ -45,19 +56,11 @@ const treeData = ref<RuleRow[]>([])
 
 /** showBackendApiPanel 是否展示关联后端 API 区域 */
 const showBackendApiPanel = computed(
-    () => props.scope === 'frontend' && (form.type === 'view' || form.type === 'btn'),
+    () => props.scope === 'frontend' && (VIEW_TYPES.includes(form.type) || form.type === 'btn'),
 )
 
 /** dialogWidth 弹窗宽度：含接口勾选时加宽 */
-const dialogWidth = computed(() => (showBackendApiPanel.value ? '720px' : '520px'))
-
-/** routeOnly 前端规则是否仅作为路由（method=route） */
-const routeOnly = computed({
-    get: () => form.method === 'route',
-    set: (v: boolean) => {
-        form.method = v ? 'route' : ''
-    },
-})
+const dialogWidth = computed(() => (showBackendApiPanel.value ? '700px' : '700px'))
 
 /**
  * toViewComponentValue glob key 转为 auth_rule.component（相对 views/）
@@ -107,7 +110,7 @@ const form = reactive<RuleEditForm>({
     icon: null,
     sort: 0,
     status: 1,
-    discoverable: 0,
+    visibility: VISIBILITY_SIDEBAR,
     description: '',
 })
 
@@ -121,7 +124,6 @@ function inferDefaultType(pid: number, parentType?: string): string {
     }
     if (pid === 0) return 'menu'
     if (parentType === 'menu') return 'view'
-    if (parentType === 'view') return 'btn'
     return 'btn'
 }
 
@@ -136,11 +138,11 @@ function ruleEditResetForAdd(pid: number, type: string) {
     form.name = ''
     form.path = ''
     form.method = props.scope === 'backend' && type === 'api' ? 'GET' : ''
-    form.component = props.scope === 'frontend' && type === 'view' ? '' : ''
+    form.component = ''
     form.icon = null
     form.sort = 0
     form.status = 1
-    form.discoverable = 0
+    form.visibility = VISIBILITY_SIDEBAR
     form.description = ''
     backendRuleIds.value = []
 }
@@ -193,7 +195,7 @@ function ruleEditMapRow(row: RuleRow) {
     form.icon = row.icon ?? null
     form.sort = row.sort
     form.status = row.status
-    form.discoverable = row.discoverable ?? 0
+    form.visibility = row.visibility ?? VISIBILITY_SIDEBAR
     form.description = row.description ?? ''
 }
 
@@ -204,7 +206,7 @@ async function openEdit(row: RuleRow) {
     title.value = '编辑'
     ruleEditMapRow(row)
     backendRuleIds.value = []
-    if (props.scope === 'frontend' && (row.type === 'view' || row.type === 'btn')) {
+    if (props.scope === 'frontend' && (VIEW_TYPES.includes(row.type) || row.type === 'btn')) {
         try {
             const detail = await ruleApi.fetchRead(row.id)
             backendRuleIds.value = detail.backend_rule_ids ?? []
@@ -230,7 +232,7 @@ function ruleEditValidate(): string | void {
 }
 
 /**
- * ruleEditSubmit 保存（frontend view/btn 时 backend_rule_ids 随 save/update 一并提交）
+ * ruleEditSubmit 保存（frontend view/route/btn 时 backend_rule_ids 随 save/update 一并提交）
  */
 async function ruleEditSubmit() {
     const hint = ruleEditValidate()
@@ -259,20 +261,20 @@ async function ruleEditSubmit() {
                 pid: form.pid,
                 name: form.name.trim(),
                 path: form.path.trim() || null,
-                method: form.method === 'route' ? 'route' : null,
+                method: null,
                 component:
-                    form.type === 'view' || form.type === 'link' || form.type === 'iframe'
+                    VIEW_TYPES.includes(form.type) || form.type === 'link' || form.type === 'iframe'
                         ? form.component.trim() || null
                         : null,
                 icon: form.icon?.trim() ? form.icon.trim() : null,
                 sort: form.sort,
                 status: form.status,
-                discoverable: showDiscoverableFields.value ? form.discoverable : 0,
-                description: showDiscoverableFields.value
+                visibility: showVisibilityFields.value ? form.visibility : VISIBILITY_SIDEBAR,
+                description: showVisibilityFields.value
                     ? form.description.trim() || null
                     : null,
             }
-            if (form.type === 'view' || form.type === 'btn') {
+            if (VIEW_TYPES.includes(form.type) || form.type === 'btn') {
                 payload.backend_rule_ids = backendRuleIds.value
             }
         }
@@ -299,21 +301,18 @@ watch(
         if (type === 'menu' || type === 'link' || type === 'iframe') {
             backendRuleIds.value = []
         }
-        if (type === 'btn' && form.method === 'route') {
-            form.method = ''
+        if (!allowHidden.value && form.visibility === VISIBILITY_HIDDEN) {
+            form.visibility = VISIBILITY_SIDEBAR
         }
-        // 在 view 组件路径与 URL 之间切换时清空 component，避免脏数据
+        // 在页面组件路径与 URL 之间切换时清空 component，避免脏数据
         if (
             prev &&
             prev !== type &&
-            ((prev === 'view' && (type === 'link' || type === 'iframe')) ||
-                ((prev === 'link' || prev === 'iframe') && type === 'view') ||
+            ((VIEW_TYPES.includes(prev) && (type === 'link' || type === 'iframe')) ||
+                ((prev === 'link' || prev === 'iframe') && VIEW_TYPES.includes(type)) ||
                 ((prev === 'link' || prev === 'iframe') && (type === 'menu' || type === 'btn')))
         ) {
             form.component = ''
-        }
-        if (type === 'link' || type === 'iframe') {
-            form.method = ''
         }
     },
 )
@@ -340,17 +339,25 @@ defineExpose({openAdd, openEdit})
                 />
             </el-form-item>
             <el-form-item label="类型">
-                <el-radio-group v-if="scope === 'frontend'" v-model="form.type">
-                    <el-radio value="menu">目录</el-radio>
-                    <el-radio value="view">页面</el-radio>
-                    <el-radio value="btn">按钮</el-radio>
-                    <el-radio value="link">外链</el-radio>
-                    <el-radio value="iframe">内嵌</el-radio>
-                </el-radio-group>
-                <el-radio-group v-else v-model="form.type">
-                    <el-radio value="menu">目录</el-radio>
-                    <el-radio value="api">接口</el-radio>
-                </el-radio-group>
+                <template v-if="scope === 'frontend'">
+                    <el-radio-group v-model="form.type">
+                        <el-radio value="menu">目录</el-radio>
+                        <el-radio value="view">页面</el-radio>
+                        <el-radio value="route">路由</el-radio>
+                        <el-radio value="btn">按钮</el-radio>
+                        <el-radio value="link">外链</el-radio>
+                        <el-radio value="iframe">内嵌</el-radio>
+                    </el-radio-group>
+                    <div v-if="form.type === 'route'" class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                        路由：与页面相同，但不出现在侧栏（详情页、编辑页等）
+                    </div>
+                </template>
+                <template v-else>
+                    <el-radio-group v-model="form.type">
+                        <el-radio value="menu">目录</el-radio>
+                        <el-radio value="api">接口</el-radio>
+                    </el-radio-group>
+                </template>
             </el-form-item>
             <el-form-item label="名称" required>
                 <el-input v-model.trim="form.name" maxlength="100" show-word-limit/>
@@ -390,7 +397,7 @@ defineExpose({openAdd, openEdit})
                         "
                     />
                 </el-form-item>
-                <el-form-item v-if="form.type === 'view'" label="component">
+                <el-form-item v-if="VIEW_TYPES.includes(form.type)" label="component">
                     <el-select
                         v-model="form.component"
                         class="w-full"
@@ -438,15 +445,17 @@ defineExpose({openAdd, openEdit})
                     <el-radio :value="0">禁用</el-radio>
                 </el-radio-group>
             </el-form-item>
-            <el-form-item v-if="showDiscoverableFields" label="可发现">
-                <el-switch
-                    v-model="form.discoverable"
-                    :active-value="1"
-                    :inactive-value="0"
-                    active-text="展示全部时可出现"
-                />
+            <el-form-item v-if="showVisibilityFields" label="可见性">
+                <el-radio-group v-model="form.visibility">
+                    <el-radio :value="VISIBILITY_SIDEBAR">侧栏可见</el-radio>
+                    <el-radio :value="VISIBILITY_CATALOG">可发现</el-radio>
+                    <el-radio v-if="allowHidden" :value="VISIBILITY_HIDDEN">不入侧栏</el-radio>
+                </el-radio-group>
+                <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                    侧栏可见：授权后显示；可发现：未授权时也能在「展示全部」中出现<template v-if="allowHidden">；不入侧栏：隐藏本目录，子节点提升到同级</template>
+                </div>
             </el-form-item>
-            <el-form-item v-if="showDiscoverableFields" label="描述">
+            <el-form-item v-if="showVisibilityFields" label="描述">
                 <el-input
                     v-model="form.description"
                     type="textarea"
@@ -455,9 +464,6 @@ defineExpose({openAdd, openEdit})
                     show-word-limit
                     placeholder="无权限页展示的功能说明"
                 />
-            </el-form-item>
-            <el-form-item v-if="scope === 'frontend' && (form.type === 'menu' || form.type === 'view')" label="仅作为路由">
-                <el-checkbox v-model="routeOnly">是（不入侧栏菜单）</el-checkbox>
             </el-form-item>
         </el-form>
         <template #footer>

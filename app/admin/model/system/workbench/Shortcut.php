@@ -157,8 +157,7 @@ class Shortcut extends Model
             if (!in_array($type, self::SHORTCUT_TYPES, true)) {
                 continue;
             }
-            $method = (string) ($menu['method'] ?? '');
-            if ($method === 'route') {
+            if ((int) ($menu['visibility'] ?? 0) === RuleModel::VISIBILITY_HIDDEN) {
                 continue;
             }
             $out[] = $menu;

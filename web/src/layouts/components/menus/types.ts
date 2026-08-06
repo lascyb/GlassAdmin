@@ -3,10 +3,10 @@ export type Menu = {
     name: string
     path: string
     path_full: string; //根据层级前端自动补全
-    /** {menu:目录,page:页面(兼容),view:页面,route:路由,btn:按钮,iframe:内嵌,link:外链} */
+    /** {menu:目录,page:页面(兼容),view:页面,route:路由(不入侧栏),btn:按钮,iframe:内嵌,link:外链} */
     type: 'menu' | 'page' | 'view' | 'route' | 'btn' | 'iframe' | 'link'
-    /** method 前端规则：route 表示仅作为路由、不入侧栏 */
-    method?: string | null
+    /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
+    visibility?: number
     /** 图标存储串：el:组件名、url:图片地址、local:stem */
     icon?: string | null
     component?: string

@@ -66,17 +66,12 @@ onMounted(load)
                             data.type === 'iframe'
                         "
                     >
-                        <el-tag v-if="data.discoverable === 1" type="success" effect="plain">可发现</el-tag>
+                        <el-tag v-if="data.visibility === 1" type="success" effect="plain">可发现</el-tag>
+                        <el-tag v-else-if="data.visibility === 2" type="warning" effect="plain" size="small">
+                            不入侧栏
+                        </el-tag>
                         <el-tag v-else type="info" effect="plain" size="small">授权可见</el-tag>
                     </template>
-                    <el-tag
-                        v-if="(data.type === 'menu' || data.type === 'view') && data.method === 'route'"
-                        type="warning"
-                        effect="plain"
-                        size="small"
-                    >
-                        仅作为路由
-                    </el-tag>
                     <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
                         <el-button
                             v-if="data.type !== 'link' && data.type !== 'iframe' && data.type !== 'btn'"

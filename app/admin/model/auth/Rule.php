@@ -20,7 +20,7 @@ use think\Model;
  * @property string|null $icon
  * @property int         $sort
  * @property int         $status  {1:启用,0:禁用}
- * @property int         $discoverable {1:展示全部时可发现,0:仅已授权可见}
+ * @property int         $visibility {0:侧栏可见,1:展示全部时可发现,2:不入侧栏}
  * @property string|null $description
  */
 class Rule extends Model
@@ -36,12 +36,33 @@ class Rule extends Model
 
     /** @var array<string, string> */
     protected $type = [
-        'id'           => 'integer',
-        'pid'          => 'integer',
-        'sort'         => 'integer',
-        'status'       => 'integer',
-        'discoverable' => 'integer',
+        'id'         => 'integer',
+        'pid'        => 'integer',
+        'sort'       => 'integer',
+        'status'     => 'integer',
+        'visibility' => 'integer',
     ];
+
+    /** 授权后侧栏可见（默认） */
+    public const int VISIBILITY_SIDEBAR = 0;
+
+    /** 未授权时也可出现在「展示全部」目录中 */
+    public const int VISIBILITY_CATALOG = 1;
+
+    /** 不入侧栏；子节点提升到同级（用于目录） */
+    public const int VISIBILITY_HIDDEN = 2;
+
+    /** 可见性取值 */
+    public const array VISIBILITIES = [self::VISIBILITY_SIDEBAR, self::VISIBILITY_CATALOG, self::VISIBILITY_HIDDEN];
+
+    /** 可配置可见性的前端类型；其余固定为 VISIBILITY_SIDEBAR */
+    public const array VISIBILITY_TYPES = ['menu', 'view', 'link', 'iframe'];
+
+    /** 可设为 VISIBILITY_HIDDEN 的前端类型；页面不入侧栏请用 type=route */
+    public const array HIDDEN_TYPES = ['menu'];
+
+    /** 可关联后端 api 的前端类型 */
+    public const array API_BINDABLE_TYPES = ['view', 'route', 'btn'];
 
     /** 超级管理员 role_id */
     private const int SUPER_ROLE_ID = 1;
@@ -117,15 +138,16 @@ class Rule extends Model
         $row = self::where('id', $ruleId)
             ->where('scope', 'frontend')
             ->where('status', 1)
-            ->field('id,name,type,path,icon,description,discoverable,pid')
+            ->field('id,name,type,path,icon,description,visibility,pid')
             ->find();
         if (!$row) {
             return null;
         }
 
         $authorized = self::isRuleAuthorized($ruleId, $roleIds);
-        $discoverable = (int) $row->getAttr('discoverable') === 1;
-        if (!$authorized && !$discoverable) {
+        $visibility = (int) $row->getAttr('visibility');
+        // 无权限页：仅授权或 catalog 可发现可读；hidden 未授权不可读
+        if (!$authorized && $visibility !== self::VISIBILITY_CATALOG) {
             return null;
         }
 
@@ -231,7 +253,7 @@ class Rule extends Model
                 if (isset($granted[$id])) {
                     return true;
                 }
-                if ($catalog && (int) ($r['discoverable'] ?? 0) === 1) {
+                if ($catalog && (int) ($r['visibility'] ?? 0) === self::VISIBILITY_CATALOG) {
                     return true;
                 }
 
@@ -421,12 +443,9 @@ class Rule extends Model
                 'name'       => $n['name'],
                 'type'       => $n['type'],
                 'path'       => $n['path'] ?? '',
+                'visibility' => (int) ($n['visibility'] ?? self::VISIBILITY_SIDEBAR),
                 'authorized' => $allAuthorized || ($granted !== null && isset($granted[$id])),
             ];
-            $method = $n['method'] ?? null;
-            if ($method !== null && $method !== '') {
-                $item['method'] = $method;
-            }
             if (!empty($n['component'])) {
                 $item['component'] = $n['component'];
             }
