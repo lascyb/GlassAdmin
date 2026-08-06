@@ -50,6 +50,7 @@ class Feishu extends Model
     {
         $unionId = trim((string) ($userInfo['union_id'] ?? ''));
         $openId = trim((string) ($userInfo['open_id'] ?? ''));
+        $userId = trim((string) ($userInfo['user_id'] ?? ''));
         if ($unionId === '' || $openId === '') {
             throw new \InvalidArgumentException('飞书用户标识缺失');
         }
@@ -96,6 +97,7 @@ class Feishu extends Model
 
             $bind = self::create(array_merge($tokenPayload, [
                 'admin_id' => $adminId,
+                'user_id' => $userId,
                 'open_id'  => $openId,
                 'union_id' => $unionId,
             ]));
