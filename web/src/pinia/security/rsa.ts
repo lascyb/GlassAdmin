@@ -1,6 +1,6 @@
 import { getData } from '@/apis/http'
-import { defineStore } from 'pinia';
-import { ref } from "vue";
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export type RsaPublicKeyInfo = {
     serial: string
@@ -10,6 +10,27 @@ export type RsaPublicKeyInfo = {
 
 /** SKIP_SECONDS 与后端 RsaKeyService 一致，距过期预留秒数 */
 const SKIP_SECONDS = 600
+
+/** canUseSubtle 当前是否处于可用 Web Crypto subtle 的安全上下文 */
+const canUseSubtle = (): boolean => {
+    if (typeof globalThis.crypto === 'undefined') {
+        return false
+    }
+    const subtle = globalThis.crypto.subtle
+    if (!subtle || typeof subtle.importKey !== 'function' || typeof subtle.encrypt !== 'function') {
+        return false
+    }
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+        return false
+    }
+    return true
+}
+
+/** loadForge 仅在 subtle 不可用时动态加载（代码分割） */
+const loadForge = async () => {
+    const forge = await import('node-forge')
+    return forge.default ?? forge
+}
 
 export const useSecurityRsa = defineStore('security_rsa', () => {
     const rsaPublicKey = ref<RsaPublicKeyInfo | null>(null)
@@ -80,7 +101,8 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         return key
     }
 
-    const encryptWithPublicKey = async (pem: string, plainText: string): Promise<string> => {
+    /** encryptWithSubtle 使用 Web Crypto RSA-OAEP(SHA-1) */
+    const encryptWithSubtle = async (pem: string, plainText: string): Promise<string> => {
         const spkiDer = pemToArrayBuffer(pem)
         const key = await crypto.subtle.importKey(
             'spki',
@@ -90,14 +112,40 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
                 hash: 'SHA-1',
             },
             false,
-            ['encrypt']
+            ['encrypt'],
         )
         const cipherBuffer = await crypto.subtle.encrypt(
-            {name: 'RSA-OAEP'},
+            { name: 'RSA-OAEP' },
             key,
-            new TextEncoder().encode(plainText)
+            new TextEncoder().encode(plainText),
         )
         return arrayBufferToBase64(cipherBuffer)
+    }
+
+    /**
+     * encryptWithForge HTTP/非安全上下文降级：node-forge RSA-OAEP(SHA-1)
+     * 与 PHP OPENSSL_PKCS1_OAEP_PADDING（默认 SHA-1）对齐
+     */
+    const encryptWithForge = async (pem: string, plainText: string): Promise<string> => {
+        const forge = await loadForge()
+        const publicKey = forge.pki.publicKeyFromPem(pem)
+        const encrypted = publicKey.encrypt(plainText, 'RSA-OAEP', {
+            md: forge.md.sha1.create(),
+            mgf1: {
+                md: forge.md.sha1.create(),
+            },
+        })
+        return forge.util.encode64(encrypted)
+    }
+
+    /**
+     * encryptWithPublicKey 优先 subtle；不可用时动态加载 node-forge
+     */
+    const encryptWithPublicKey = async (pem: string, plainText: string): Promise<string> => {
+        if (canUseSubtle()) {
+            return encryptWithSubtle(pem, plainText)
+        }
+        return encryptWithForge(pem, plainText)
     }
 
     const pemToArrayBuffer = (pem: string): ArrayBuffer => {
@@ -122,7 +170,10 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         return window.btoa(binary)
     }
 
-    const encryptText = async (plainText: string, serial?: string): Promise<null | {
+    const encryptText = async (
+        plainText: string,
+        serial?: string,
+    ): Promise<null | {
         serial: string
         cipherText: string
     }> => {
@@ -131,25 +182,27 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         const cipherText = await encryptWithPublicKey(key.publicKey, plainText)
         return {
             serial: key.serial,
-            cipherText
+            cipherText,
         }
     }
 
     /** encrypt 批量 RSA-OAEP 加密（同一批次共用当前公钥；可变参数传入 1 个或多个明文） */
-    const encrypt = async (...plain_texts: string[]): Promise<{
+    const encrypt = async (
+        ...plain_texts: string[]
+    ): Promise<{
         serial: string
         texts: string[]
     }> => {
         const key = await getPublicKeyBySerial()
         if (!key) {
             return {
-                serial: "",
-                texts: plain_texts.map(() => "")
+                serial: '',
+                texts: plain_texts.map(() => ''),
             }
         }
         return {
             serial: key.serial,
-            texts: await Promise.all(plain_texts.map((text) => encryptWithPublicKey(key.publicKey, text)))
+            texts: await Promise.all(plain_texts.map((text) => encryptWithPublicKey(key.publicKey, text))),
         }
     }
 
@@ -162,7 +215,7 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
         ensureRsaPublicKey,
         getPublicKeyBySerial,
         encryptText,
-        encrypt
+        encrypt,
     }
 }, {
     // persist: true
