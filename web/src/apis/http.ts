@@ -1,6 +1,6 @@
 import type { ApiEnvelope } from '@/apis/envelope'
 import { ApiError, unwrap } from '@/apis/envelope'
-import { del, get, post, postFormData, put } from '@/apis/request'
+import { del, get, patch, post, postFormData, put } from '@/apis/request'
 
 export { ApiError, unwrap } from '@/apis/envelope'
 
@@ -201,6 +201,19 @@ export const putData = async <T>(
 ): Promise<T> => {
     return sendWithRsaRetry(
         (p, o) => put<ApiEnvelope<T>>(url, p, o),
+        params,
+        options,
+    )
+}
+
+/** patchData PATCH JSON 请求并解包 data */
+export const patchData = async <T>(
+    url: string,
+    params?: Record<string, unknown>,
+    options?: HttpRequestOptions,
+): Promise<T> => {
+    return sendWithRsaRetry(
+        (p, o) => patch<ApiEnvelope<T>>(url, p, o),
         params,
         options,
     )

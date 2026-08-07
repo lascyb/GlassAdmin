@@ -274,6 +274,30 @@ export const put = async <T = any>(url: string, params?: Record<string, any>, op
 }
 
 /**
+ * patch 发起 PATCH 请求（JSON body）
+ */
+export const patch = async <T = any>(url: string, params?: Record<string, any>, options?: {
+    headers?: Record<string, string>
+}): Promise<T> => {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json', ...(options?.headers ?? {}),
+    }
+    const fetchResult = useFetch<T>(url, {
+        method: 'PATCH', body: params !== undefined ? JSON.stringify(params) : undefined, headers,
+    }, {
+        immediate: false,
+    }).json()
+
+    await fetchResult.execute()
+
+    if (fetchResult.error.value) {
+        throw fetchResult.error.value
+    }
+
+    return fetchResult.data.value as T
+}
+
+/**
  * del 发起 DELETE 请求
  */
 export const del = async <T = any>(url: string, params?: Record<string, any>): Promise<T> => {
