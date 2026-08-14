@@ -13,10 +13,10 @@ use think\facade\Env;
  */
 final class InstallState
 {
-    /** lockPath runtime/install.lock */
+    /** lockPath public/install.lock */
     public static function lockPath(): string
     {
-        return rtrim(root_path(), '/\\') . DIRECTORY_SEPARATOR . 'runtime' . DIRECTORY_SEPARATOR . 'install.lock';
+        return rtrim(root_path(), '/\\') . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install.lock';
     }
 
     /** isInstalled 是否已写入安装锁 */

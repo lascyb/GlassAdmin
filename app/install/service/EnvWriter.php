@@ -31,6 +31,24 @@ final class EnvWriter
     }
 
     /**
+     * writeViteDevelopment 按当前站点地址生成 web/.env.development
+     */
+    public function writeViteDevelopment(string $path, string $apiBaseUrl): void
+    {
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            throw new \RuntimeException('缺少 web 目录，无法写入 .env.development');
+        }
+        $body = "# API 基础地址\n"
+            . 'VITE_API_BASE_URL=' . $this->encodeValue($apiBaseUrl) . "\n"
+            . "# Pinia 持久化 key 前缀（与 storeId 拼接，默认 __GA__）\n"
+            . "VITE_PERSIST_STORAGE_PREFIX=__GA__\n";
+        if (@file_put_contents($path, $body) === false) {
+            throw new \RuntimeException('web/.env.development 写入失败，请检查 web 目录权限');
+        }
+    }
+
+    /**
      * upsertKey 替换已有键或追加
      */
     private function upsertKey(string $src, string $key, string $value): string

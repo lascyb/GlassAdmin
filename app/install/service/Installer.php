@@ -69,12 +69,13 @@ final class Installer
      * @param array{hostname:string,hostport:string,database:string,username:string,password:string,prefix:string} $db
      * @return array{sql_log: list<string>}
      */
-    public function run(array $db, string $adminUsername, string $adminPassword, string $adminNickname, string $siteTitle): array
+    public function run(array $db, string $adminUsername, string $adminPassword, string $adminNickname, string $siteTitle, string $publicOrigin = ''): array
     {
         $this->assertDbForm($db);
         $adminUsername = trim($adminUsername);
         $adminNickname = trim($adminNickname) !== '' ? trim($adminNickname) : $adminUsername;
         $siteTitle = trim($siteTitle) !== '' ? trim($siteTitle) : 'GlassAdmin';
+        $publicOrigin = rtrim($publicOrigin, '/');
         if (!preg_match('/^[A-Za-z0-9_]{3,32}$/', $adminUsername)) {
             throw new \InvalidArgumentException('管理员用户名须为 3–32 位字母、数字或下划线');
         }
@@ -89,20 +90,31 @@ final class Installer
         }
 
         $root = rtrim(root_path(), '/\\');
-        (new EnvWriter())->write(
+        $envValues = [
+            'DB_TYPE'    => 'mysql',
+            'DB_HOST'    => $db['hostname'],
+            'DB_NAME'    => $db['database'],
+            'DB_USER'    => $db['username'],
+            'DB_PASS'    => $db['password'],
+            'DB_PORT'    => $db['hostport'],
+            'DB_CHARSET' => self::CHARSET,
+            'DB_PREFIX'  => $db['prefix'],
+        ];
+        if ($publicOrigin !== '') {
+            $envValues['APP_URL'] = $publicOrigin;
+        }
+        $writer = new EnvWriter();
+        $writer->write(
             $root . DIRECTORY_SEPARATOR . '.env',
             $root . DIRECTORY_SEPARATOR . '.example.env',
-            [
-                'DB_TYPE'    => 'mysql',
-                'DB_HOST'    => $db['hostname'],
-                'DB_NAME'    => $db['database'],
-                'DB_USER'    => $db['username'],
-                'DB_PASS'    => $db['password'],
-                'DB_PORT'    => $db['hostport'],
-                'DB_CHARSET' => self::CHARSET,
-                'DB_PREFIX'  => $db['prefix'],
-            ],
+            $envValues,
         );
+        if ($publicOrigin !== '') {
+            $writer->writeViteDevelopment(
+                $root . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . '.env.development',
+                $publicOrigin . '/admin',
+            );
+        }
         InstallState::applyDatabaseEnv($db);
 
         $log = SqlLoader::run($pdo, $db['prefix']);
@@ -143,6 +155,8 @@ final class Installer
             $root . DIRECTORY_SEPARATOR . '.env' => '.env',
             $root . DIRECTORY_SEPARATOR . 'runtime' => 'runtime/',
             $root . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'storage' => 'public/storage/',
+            $root . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install.lock' => 'public/install.lock',
+            $root . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . '.env.development' => 'web/.env.development',
         ];
         foreach ($paths as $path => $label) {
             $ok = $this->isWritableTarget($path);

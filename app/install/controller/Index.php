@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\install\controller;
@@ -113,6 +114,7 @@ class Index extends BaseController
                 (string) ($body['admin_password'] ?? ''),
                 (string) ($body['admin_nickname'] ?? ''),
                 (string) ($body['site_title'] ?? 'GlassAdmin'),
+                rtrim((string) $this->request->domain(), '/'),
             );
         } catch (\InvalidArgumentException $e) {
             return $this->fail(400, $e->getMessage());
