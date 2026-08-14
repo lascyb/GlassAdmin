@@ -8,5 +8,7 @@ return [
         'rsa:generate'   => \app\admin\command\GenerateRsaKeys::class,
         'crud:generate'  => \app\admin\command\CrudGenerate::class,
         'mcp:serve'      => \app\admin\command\McpServe::class,
+        'version:create' => \app\common\command\version\Create::class,
+        'version:update' => \app\common\command\version\Update::class,
     ],
 ];

@@ -24,17 +24,19 @@
     ],
     "require": {
         "php": ">=8.3",
+        "ext-openssl": "*",
+        "ext-pdo_mysql": "*",
         "topthink/framework": "^8.0",
         "topthink/think-orm": "^3.0|^4.0",
         "topthink/think-filesystem": "^2.0|^3.0",
-        "ext-openssl": "*",
-        "ext-redis": "*",
-        "ext-swoole": "^4.0|^5.0|^6.0",
-        "topthink/think-swoole": "^4.1",
         "topthink/think-multi-app": "^1.1",
+        "topthink/think-view": "^2.0",
         "mcp/sdk": "^0.7.0",
         "lascyb/feishu-sdk-php": "^1.0",
-        "topthink/think-worker": "^5.0"
+        "robmorgan/phinx": "^0.16"
+    },
+    "suggest": {
+        "ext-redis": "将 cache.default 设为 redis 时需要"
     },
     "require-dev": {
         "topthink/think-dumper": "^1.0",
@@ -42,7 +44,8 @@
     },
     "autoload": {
         "psr-4": {
-            "app\\": "app"
+            "app\\": "app",
+            "phinx\\": "database/phinx/"
         },
         "psr-0": {
             "": "extend/"

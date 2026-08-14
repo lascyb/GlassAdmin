@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GlassAdmin 安装向导</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #303133;
+        }
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            width: 100%;
+            max-width: 640px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+            padding: 36px 40px 32px;
+        }
+        h1 { margin: 0 0 6px; font-size: 26px; text-align: center; }
+        .sub { margin: 0 0 28px; text-align: center; color: #909399; font-size: 14px; }
+        .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+        .step {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: #909399;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ebeef5;
+        }
+        .step.on { color: #667eea; border-bottom-color: #667eea; font-weight: 600; }
+        .step.done { color: #67c23a; border-bottom-color: #67c23a; }
+        .hint { margin: -6px 0 14px; font-size: 12px; color: #909399; }
+        label { display: block; font-size: 13px; color: #606266; margin-bottom: 6px; }
+        input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        input:focus { outline: none; border-color: #667eea; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btns { display: flex; gap: 12px; margin-top: 20px; }
+        button {
+            flex: 1;
+            height: 42px;
+            border: 0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .primary { background: #667eea; color: #fff; }
+        .ghost { background: #f2f3f5; color: #303133; }
+        .msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+        .ok { color: #67c23a; }
+        .err { color: #f56c6c; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        td { padding: 8px 4px; border-bottom: 1px solid #ebeef5; }
+        .badge { font-weight: 600; }
+        .badge.ok { color: #67c23a; }
+        .badge.bad { color: #f56c6c; }
+        .hidden { display: none; }
+        a.login { color: #667eea; }
+        @media (max-width: 560px) {
+            .card { padding: 24px; }
+            .grid2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <h1>GlassAdmin</h1>
+        <p class="sub">系统安装向导</p>
+        <div class="steps">
+            <div class="step on" id="tab0">1. 环境检测</div>
+            <div class="step" id="tab1">2. 数据库</div>
+            <div class="step" id="tab2">3. 管理员</div>
+            <div class="step" id="tab3">4. 完成</div>
+        </div>
+
+        <div id="pane0">
+            <table id="envTable"><tbody></tbody></table>
+            <p class="msg" id="envMsg"></p>
+            <div class="btns">
+                <button type="button" class="primary" id="btnEnvNext" disabled>下一步</button>
+            </div>
+        </div>
+
+        <div id="pane1" class="hidden">
+            <div class="grid2">
+                <div class="row"><label>数据库主机</label><input id="hostname" value="127.0.0.1"></div>
+                <div class="row"><label>端口</label><input id="hostport" value="3306"></div>
+            </div>
+            <div class="row"><label>数据库名</label><input id="database" placeholder="glass_admin"></div>
+            <div class="grid2">
+                <div class="row"><label>用户名</label><input id="username" value="root"></div>
+                <div class="row"><label>密码</label><input id="password" type="password"></div>
+            </div>
+            <div class="row"><label>数据库表前缀</label><input id="prefix" value="ga_" placeholder="ga_"></div>
+            <p class="hint">写入 .env 的 DB_PREFIX；可留空。非空时建议以下划线结尾，如 ga_</p>
+            <p class="msg" id="formMsg"></p>
+            <div class="btns">
+                <button type="button" class="ghost" id="btnDbPrev">上一步</button>
+                <button type="button" class="ghost" id="btnTest">测试连接</button>
+                <button type="button" class="primary" id="btnDbNext">下一步</button>
+            </div>
+        </div>
+
+        <div id="pane2" class="hidden">
+            <div class="row"><label>站点名称</label><input id="site_title" value="GlassAdmin"></div>
+            <div class="grid2">
+                <div class="row"><label>管理员用户名</label><input id="admin_username" value="admin"></div>
+                <div class="row"><label>管理员昵称</label><input id="admin_nickname" value="超级管理员"></div>
+            </div>
+            <div class="grid2">
+                <div class="row"><label>管理员密码</label><input id="admin_password" type="password"></div>
+                <div class="row"><label>确认密码</label><input id="admin_password2" type="password"></div>
+            </div>
+            <p class="msg" id="adminMsg"></p>
+            <div class="btns">
+                <button type="button" class="ghost" id="btnAdminPrev">上一步</button>
+                <button type="button" class="primary" id="btnInstall">开始安装</button>
+            </div>
+        </div>
+
+        <div id="pane3" class="hidden">
+            <p id="doneTitle">安装成功。</p>
+            <p class="msg" id="doneMsg">可删除安装程序 app/install，也可稍后手动处理。</p>
+            <div class="btns">
+                <button type="button" class="ghost" id="btnDonePrev">上一步</button>
+                <button type="button" class="primary" id="btnRemove">删除安装程序</button>
+            </div>
+            <p style="margin-top:18px;text-align:center;font-size:14px;">
+                <a class="login" id="loginLink" href="{$login_url}">前往管理端登录</a>
+            </p>
+            <p class="msg" id="removeManual"></p>
+        </div>
+    </div>
+</div>
+<script>
+window.__INSTALL_BOOT__ = {
+    installed: {if $installed}true{else}false{/if},
+    loginUrl: "{$login_url}"
+};
+</script>
+{literal}
+<script>
+(function () {
+    var boot = window.__INSTALL_BOOT__ || {};
+    var api = '/install/Index/';
+    var step = 0;
+
+    function $(id) { return document.getElementById(id); }
+    function show(n) {
+        step = n;
+        for (var i = 0; i < 4; i++) {
+            $('pane' + i).classList.toggle('hidden', i !== n);
+            $('tab' + i).className = 'step' + (i === n ? ' on' : (i < n ? ' done' : ''));
+        }
+    }
+    function json(url, method, body) {
+        var opt = { method: method, headers: { 'Accept': 'application/json' } };
+        if (body) {
+            opt.headers['Content-Type'] = 'application/json';
+            opt.body = JSON.stringify(body);
+        }
+        return fetch(api + url, opt).then(function (r) { return r.json(); });
+    }
+    function formDb() {
+        return {
+            hostname: $('hostname').value.trim(),
+            hostport: $('hostport').value.trim(),
+            database: $('database').value.trim(),
+            username: $('username').value.trim(),
+            password: $('password').value,
+            prefix: $('prefix').value.trim(),
+            site_title: $('site_title').value.trim(),
+            admin_username: $('admin_username').value.trim(),
+            admin_nickname: $('admin_nickname').value.trim(),
+            admin_password: $('admin_password').value
+        };
+    }
+
+    function loadEnv() {
+        json('envCheck', 'GET').then(function (res) {
+            var data = res.data || {};
+            var tb = $('envTable').querySelector('tbody');
+            tb.innerHTML = '';
+            (data.items || []).forEach(function (it) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + it.name + '</td><td>' + (it.detail || '') + '</td><td class="badge ' + (it.ok ? 'ok' : 'bad') + '">' + (it.ok ? '通过' : '失败') + '</td>';
+                tb.appendChild(tr);
+            });
+            if (data.installed) {
+                goDone('系统已安装。可删除安装程序，或直接登录。');
+                return;
+            }
+            $('btnEnvNext').disabled = !data.ok;
+            $('envMsg').className = 'msg ' + (data.ok ? 'ok' : 'err');
+            $('envMsg').textContent = data.ok ? '环境检测通过' : '请先解决失败项';
+        }).catch(function () {
+            $('envMsg').className = 'msg err';
+            $('envMsg').textContent = '无法请求安装接口';
+        });
+    }
+
+    function goDone(text) {
+        show(3);
+        $('doneTitle').textContent = text;
+        $('doneMsg').className = 'msg';
+        $('doneMsg').textContent = '可删除安装程序 app/install，也可稍后手动处理。';
+    }
+
+    function doRemove() {
+        json('remove', 'POST', {}).then(function (res) {
+            if (res.code === 0) {
+                $('doneMsg').className = 'msg ok';
+                $('doneMsg').textContent = '安装程序已删除。';
+                $('btnRemove').disabled = true;
+                $('removeManual').textContent = '';
+            } else {
+                $('btnRemove').disabled = false;
+                $('doneMsg').className = 'msg err';
+                $('doneMsg').textContent = res.msg || '删除失败';
+                $('removeManual').textContent = '请手动执行：rm -rf app/install';
+            }
+        }).catch(function () {
+            $('btnRemove').disabled = false;
+            $('doneMsg').className = 'msg err';
+            $('doneMsg').textContent = '删除请求失败';
+            $('removeManual').textContent = '请手动执行：rm -rf app/install';
+        });
+    }
+
+    $('btnEnvNext').addEventListener('click', function () { show(1); });
+    $('btnDbPrev').addEventListener('click', function () { show(0); });
+    $('btnDbNext').addEventListener('click', function () {
+        var d = formDb();
+        if (!d.hostname || !d.database || !d.username) {
+            $('formMsg').className = 'msg err';
+            $('formMsg').textContent = '请填写数据库主机、库名和用户名';
+            return;
+        }
+        show(2);
+    });
+    $('btnAdminPrev').addEventListener('click', function () { show(1); });
+    $('btnTest').addEventListener('click', function () {
+        $('formMsg').textContent = '正在测试…';
+        $('formMsg').className = 'msg';
+        json('testConnection', 'POST', formDb()).then(function (res) {
+            $('formMsg').className = 'msg ' + (res.code === 0 ? 'ok' : 'err');
+            $('formMsg').textContent = res.msg || (res.code === 0 ? '连接成功' : '失败');
+        }).catch(function () {
+            $('formMsg').className = 'msg err';
+            $('formMsg').textContent = '请求失败';
+        });
+    });
+    $('btnInstall').addEventListener('click', function () {
+        var d = formDb();
+        if (d.admin_password !== $('admin_password2').value) {
+            $('adminMsg').className = 'msg err';
+            $('adminMsg').textContent = '两次密码不一致';
+            return;
+        }
+        $('btnInstall').disabled = true;
+        $('adminMsg').textContent = '正在安装，请稍候…';
+        $('adminMsg').className = 'msg';
+        json('run', 'POST', d).then(function (res) {
+            $('btnInstall').disabled = false;
+            if (res.code !== 0) {
+                $('adminMsg').className = 'msg err';
+                $('adminMsg').textContent = res.msg || '安装失败';
+                return;
+            }
+            goDone('安装成功。');
+        }).catch(function () {
+            $('btnInstall').disabled = false;
+            $('adminMsg').className = 'msg err';
+            $('adminMsg').textContent = '安装请求失败';
+        });
+    });
+    $('btnRemove').addEventListener('click', function () {
+        $('btnRemove').disabled = true;
+        doRemove();
+    });
+    $('btnDonePrev').addEventListener('click', function () { show(2); });
+    $('loginLink').setAttribute('href', boot.loginUrl || '/login');
+
+    if (boot.installed) {
+        goDone('系统已安装。可删除安装程序，或直接登录。');
+    } else {
+        loadEnv();
+    }
+})();
+</script>
+{/literal}
+</body>
+</html>

@@ -11,5 +11,5 @@
 use think\facade\Route;
 
 Route::get('', function () {
-    return "GlassAdmin v0.0.1";
+    return "未启用路由";
 });

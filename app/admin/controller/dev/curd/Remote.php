@@ -417,7 +417,7 @@ class Remote extends AdminController
     private function isSystemTable(string $name): bool
     {
         $exact = [
-            'migrations', 'migration', 'phinxlog', 'think_migrations',
+            'migrations', 'migration', 'phinxlog', 'system_db_version', 'think_migrations',
             'auth_admin', 'auth_admin_role', 'auth_admin_operation_log', 'auth_oauth2_feishu',
             'auth_role', 'auth_role_rule', 'auth_rule', 'auth_rule_api',
             'system_config', 'system_rsa_key', 'system_attachment', 'dev_crud_history',
