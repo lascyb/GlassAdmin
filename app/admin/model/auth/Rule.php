@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\admin\model\auth;
 
@@ -107,7 +108,7 @@ class Rule extends Model
      */
     public static function menusForRoles(array $roleIds, bool $catalog = false): array
     {
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
         if ($roleIds === []) {
             return [];
         }
@@ -227,49 +228,103 @@ class Rule extends Model
         $isSuper = in_array(self::SUPER_ROLE_ID, $roleIds, true);
         $granted = $isSuper ? null : self::grantedRuleIdMap($roleIds);
 
-        if ($isSuper) {
-            $filteredRows = array_values(array_filter(
-                $pool,
-                static fn (array $r): bool => in_array((string) ($r['type'] ?? ''), self::MENU_DISPLAY_TYPES, true)
-            ));
-            $filteredRows = self::applyAbsolutePaths($filteredRows, $byId);
-            $tree         = self::buildTreeFromRows($filteredRows, 0);
-
-            return self::menuNodes($tree, true);
-        }
-
-        if ($granted === [] && !$catalog) {
+        if (!$isSuper && $granted === [] && !$catalog) {
             return [];
         }
 
-        $filteredRows = array_values(array_filter(
-            $pool,
-            static function (array $r) use ($granted, $catalog): bool {
-                $id = (int) $r['id'];
-                $type = (string) ($r['type'] ?? '');
-                if (!in_array($type, self::MENU_DISPLAY_TYPES, true)) {
-                    return false;
-                }
-                if (isset($granted[$id])) {
-                    return true;
-                }
-                if ($catalog && (int) ($r['visibility'] ?? 0) === self::VISIBILITY_CATALOG) {
-                    return true;
-                }
-
-                return false;
-            }
-        ));
-
+        $filteredRows = self::filterRowsForMenuTree($pool, $granted, $catalog, $isSuper);
         if ($filteredRows === []) {
             return [];
         }
 
         $filteredRows = self::applyAbsolutePaths($filteredRows, $byId);
-        // 提升时：可见集合内的节点可作为父级（已授权或可发现）
+        if ($isSuper) {
+            $tree = self::buildTreeFromRows($filteredRows, 0);
+
+            return self::menuNodes($tree, true);
+        }
+
         $tree = self::buildTreePromotingOrphans($filteredRows, $pool);
 
         return self::menuNodes($tree, false, $granted);
+    }
+
+    /**
+     * filterRowsForMenuTree 侧栏可见项 + 已授权 btn（供 v-auth 收集 path）
+     *
+     * @param list<array<string,mixed>> $pool
+     * @param array<int, true>|null $granted null=超管
+     * @return list<array<string,mixed>>
+     */
+    private static function filterRowsForMenuTree(
+        array $pool,
+        ?array $granted,
+        bool $catalog,
+        bool $isSuper,
+    ): array {
+        $filteredRows = array_values(array_filter(
+            $pool,
+            static function (array $r) use ($granted, $catalog, $isSuper): bool {
+                $id   = (int) $r['id'];
+                $type = (string) ($r['type'] ?? '');
+                if ($type === 'btn') {
+                    return $isSuper || ($granted !== null && isset($granted[$id]));
+                }
+                if (!in_array($type, self::MENU_DISPLAY_TYPES, true)) {
+                    return false;
+                }
+                if ($isSuper) {
+                    return true;
+                }
+                if ($granted !== null && isset($granted[$id])) {
+                    return true;
+                }
+
+                return $catalog && (int) ($r['visibility'] ?? 0) === self::VISIBILITY_CATALOG;
+            }
+        ));
+
+        return self::pruneOrphanBtnRows($filteredRows, $pool);
+    }
+
+    /**
+     * pruneOrphanBtnRows 丢弃父页面不在可见集合内的 btn，避免被提升为侧栏根节点
+     *
+     * @param list<array<string,mixed>> $filteredRows
+     * @param list<array<string,mixed>> $pool
+     * @return list<array<string,mixed>>
+     */
+    private static function pruneOrphanBtnRows(array $filteredRows, array $pool): array
+    {
+        $byId = [];
+        foreach ($pool as $r) {
+            $byId[(int) $r['id']] = $r;
+        }
+        $nonBtnIds = [];
+        foreach ($filteredRows as $r) {
+            if ((string) ($r['type'] ?? '') !== 'btn') {
+                $nonBtnIds[(int) $r['id']] = true;
+            }
+        }
+
+        return array_values(array_filter(
+            $filteredRows,
+            static function (array $r) use ($byId, $nonBtnIds): bool {
+                if ((string) ($r['type'] ?? '') !== 'btn') {
+                    return true;
+                }
+                $pid   = (int) ($r['pid'] ?? 0);
+                $guard = 0;
+                while ($pid > 0 && $guard++ < 64) {
+                    if (isset($nonBtnIds[$pid])) {
+                        return true;
+                    }
+                    $pid = isset($byId[$pid]) ? (int) $byId[$pid]['pid'] : 0;
+                }
+
+                return false;
+            }
+        ));
     }
 
     /**
@@ -294,7 +349,7 @@ class Rule extends Model
      */
     private static function isRuleAuthorized(int $ruleId, array $roleIds): bool
     {
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
         if ($roleIds === []) {
             return false;
         }
@@ -374,7 +429,7 @@ class Rule extends Model
 
     private static function normalizeAbsPath(string $path): string
     {
-        $parts = array_values(array_filter(explode('/', $path), static fn (string $s): bool => $s !== ''));
+        $parts = array_values(array_filter(explode('/', $path), static fn(string $s): bool => $s !== ''));
 
         return '/' . implode('/', $parts);
     }
