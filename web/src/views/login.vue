@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ApiError, postData } from '@/apis/http'
+import * as systemConfigApi from '@/apis/system/config'
 import feishuIcon from '@/assets/images/feishu.png'
 import { type Admin, useAdmin } from '@/pinia/admin'
 import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
@@ -14,6 +15,8 @@ const admin = useAdmin()
 const loginType = ref<'password' | 'sms'>('password')
 const logining = ref<boolean>(false)
 const feishuLogining = ref(false)
+const siteTitle = ref('GlassAdmin')
+const siteDescription = ref('透明可视的后台框架')
 
 // 密码登录表单
 const passwordForm = reactive({
@@ -172,7 +175,23 @@ const handleFeishuCallback = async () => {
 }
 
 onMounted(() => {
-  void handleFeishuCallback()
+  void (async () => {
+    try {
+      const data = await systemConfigApi.fetchPublic()
+      const title = String(data.site_title ?? '').trim()
+      if (title) {
+        siteTitle.value = title
+        document.title = `${title} - 登录`
+      }
+      const description = String(data.site_description ?? '').trim()
+      if (description) {
+        siteDescription.value = description
+      }
+    } catch {
+      // 保留默认 GlassAdmin
+    }
+    await handleFeishuCallback()
+  })()
 })
 </script>
 
@@ -185,8 +204,8 @@ onMounted(() => {
             <User />
           </el-icon>
         </div>
-        <h1 class="logo-title">GlassAdmin</h1>
-        <p class="logo-subtitle">透明可视的后台框架</p>
+        <h1 class="logo-title">{{ siteTitle }}</h1>
+        <p v-if="siteDescription" class="logo-subtitle">{{ siteDescription }}</p>
       </div>
 
       <el-tabs v-model="loginType" class="login-tabs">

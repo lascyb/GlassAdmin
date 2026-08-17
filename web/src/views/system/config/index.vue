@@ -66,7 +66,7 @@ const load = async () => {
         configs.value = res.list
         const sortRow = res.list.find((c) => c.key === CONFIG_GROUP_SORT_KEY)
         const set = new Set(res.list.map((c) => c.group))
-        groups.value = sortGroups(Array.from(set), sortRow?.value)
+        groups.value = sortGroups(Array.from(set), String(sortRow?.value ?? ''))
         if (groups.value.length && !groups.value.includes(activeGroup.value)) {
             activeGroup.value = groups.value[0]!
         }
@@ -109,20 +109,17 @@ const onSaved = () => {
 
 const displayValue = (row: SystemConfigRow): string => {
     const v = row.value
-    if (v === '' || v === null) return '—'
-    if (row.type === 'switch') return v === '1' ? '开启' : '关闭'
+    if (v === '' || v === null || v === undefined) return '—'
+    if (row.type === 'switch') return v === true ? '开启' : '关闭'
     if (row.type === 'multi_select') {
-        try {
-            const arr = JSON.parse(v) as unknown
-            if (Array.isArray(arr)) {
-                const text = arr.map(String).join('、')
-                return text || '—'
-            }
-        } catch {
-            /* fallthrough */
+        if (Array.isArray(v)) {
+            const text = v.map(String).join('、')
+            return text || '—'
         }
+        return '—'
     }
-    return v.length > 50 ? v.slice(0, 50) + '…' : v
+    const text = String(v)
+    return text.length > 50 ? text.slice(0, 50) + '…' : text
 }
 </script>
 

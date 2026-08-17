@@ -16,3 +16,4 @@ Thumbs.db
 /runtime
 /.cursor/
 /.codex/
+public/install.lock

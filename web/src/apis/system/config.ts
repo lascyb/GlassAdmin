@@ -1,10 +1,13 @@
 import { delData, getData, postData, putData } from '@/apis/http'
 
+/** 与后端 castValueByType 一致的配置值 */
+export type SystemConfigValue = string | number | boolean | string[]
+
 /** SystemConfigRow 系统配置行 */
 export type SystemConfigRow = {
     id: number
     key: string
-    value: string
+    value: SystemConfigValue
     group: string
     name: string
     description: string | null
@@ -15,6 +18,9 @@ export type SystemConfigRow = {
     create_time: number
     update_time: number
 }
+
+/** SystemConfigMap key => typed value */
+export type SystemConfigMap = Record<string, SystemConfigValue>
 
 /** SystemConfigListRes 配置列表分页结果 */
 export type SystemConfigListRes = {
@@ -77,14 +83,20 @@ export const deleteConfig = async (id: number) => {
 /**
  * batchSaveConfig 批量保存配置（按 group）
  */
-export const batchSaveConfig = async (group: string, pairs: Record<string, string>) => {
+export const batchSaveConfig = async (group: string, pairs: Record<string, SystemConfigValue>) => {
     return putData<null>('system.Config/batchSave', { group, pairs })
 }
 
 /**
+ * fetchPublic 未登录可读公开配置（site_title、site_description）
+ */
+export const fetchPublic = async () => {
+    return getData<SystemConfigMap>('system.Config/public')
+}
+
+/**
  * fetchRuntime 登录后 Layout 拉取的运行时配置
- * （site_title、layout_container、layout_show_all_menus、layout_aside_width）
  */
 export const fetchRuntime = async () => {
-    return getData<Record<string, string>>('system.Config/runtime')
+    return getData<SystemConfigMap>('system.Config/runtime')
 }

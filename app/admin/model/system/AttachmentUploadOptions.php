@@ -118,20 +118,24 @@ final readonly class AttachmentUploadOptions
             self::CONFIG_ALLOWED_MIME,
         ]);
 
-        $max = (int) ($cfg[self::CONFIG_MAX_BYTES] ?? 0);
-        if ($max <= 0) {
+        $max = $cfg[self::CONFIG_MAX_BYTES] ?? 0;
+        if (!is_int($max) || $max <= 0) {
             $max = self::FALLBACK_MAX_BYTES;
         }
 
-        $ext = self::parseList((string) ($cfg[self::CONFIG_ALLOWED_EXT] ?? ''));
+        $extRaw = $cfg[self::CONFIG_ALLOWED_EXT] ?? '';
+        $ext    = self::parseList(is_string($extRaw) ? $extRaw : '');
         if ($ext === []) {
             $ext = self::FALLBACK_ALLOWED_EXT;
         }
 
         $mime = null;
         if (array_key_exists(self::CONFIG_ALLOWED_MIME, $cfg)) {
-            $mimeRaw = trim($cfg[self::CONFIG_ALLOWED_MIME]);
-            $mime = $mimeRaw === '' ? null : self::parseList($mimeRaw);
+            $mimeRaw = $cfg[self::CONFIG_ALLOWED_MIME];
+            if (is_string($mimeRaw)) {
+                $mimeRaw = trim($mimeRaw);
+                $mime    = $mimeRaw === '' ? null : self::parseList($mimeRaw);
+            }
             if ($mime === []) {
                 $mime = null;
             }

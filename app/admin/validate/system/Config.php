@@ -14,7 +14,6 @@ class Config extends Validate
      */
     protected $rule = [
         'key'         => 'max:100',
-        'value'       => 'max:2000',
         'group'       => 'max:50',
         'name'        => 'max:100',
         'type'        => 'in:input,textarea,select,multi_select,switch,number,color',
@@ -31,7 +30,6 @@ class Config extends Validate
      */
     protected $message = [
         'key.max'         => '键名最多100个字符',
-        'value.max'       => '值最多2000个字符',
         'group.max'       => '分组最多50个字符',
         'name.max'        => '名称最多100个字符',
         'type.in'         => '类型无效',

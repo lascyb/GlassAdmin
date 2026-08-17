@@ -78,14 +78,14 @@ export const useLayoutSetting = defineStore(
                 return
             }
             const cfg = useSystemConfig()
-            const container = cfg.get('layout_container', 'Default')
+            layout.showAllMenus = cfg.getBool('layout_show_all_menus', false)
+            layout.asideWidth = clampAsideWidth(
+                cfg.getNumber('layout_aside_width', ASIDE_WIDTH_DEFAULT),
+            )
+            const container = cfg.getString('layout_container', 'Default')
             if (isContainer(container)) {
                 layout.container = container
             }
-            layout.showAllMenus = cfg.get('layout_show_all_menus', '0') === '1'
-            layout.asideWidth = clampAsideWidth(
-                Number(cfg.get('layout_aside_width', String(ASIDE_WIDTH_DEFAULT))),
-            )
             layout.seededFromSystem = true
         }
 

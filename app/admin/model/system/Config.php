@@ -44,19 +44,62 @@ class Config extends Model
     private const array STATUS_ACTIVE = [1, 2];
 
     /**
-     * findValueByKey 按 key 取启用配置的 value
+     * findEntryByKey 按 key 取启用配置的 value/type/options
+     *
+     * @return array{value: string, type: string, options: ?string}|null
      */
-    public static function findValueByKey(string $key): ?string
+    public static function findEntryByKey(string $key): ?array
     {
         $row = self::where('key', $key)
             ->whereIn('status', self::STATUS_ACTIVE)
-            ->field('value')
+            ->field('value,type,options')
             ->find();
         if (!$row) {
             return null;
         }
 
-        return (string) $row->getAttr('value');
+        return [
+            'value'   => (string) $row->getAttr('value'),
+            'type'    => (string) $row->getAttr('type'),
+            'options' => $row->getAttr('options') !== null ? (string) $row->getAttr('options') : null,
+        ];
+    }
+
+    /**
+     * findEntriesByKeys 按 key 列表取启用配置条目
+     *
+     * @param list<string> $keys
+     * @return array<string, array{value: string, type: string, options: ?string}>
+     */
+    public static function findEntriesByKeys(array $keys): array
+    {
+        if ($keys === []) {
+            return [];
+        }
+        $rows = self::where('key', 'in', $keys)
+            ->whereIn('status', self::STATUS_ACTIVE)
+            ->field('key,value,type,options')
+            ->select();
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(string) $row->getAttr('key')] = [
+                'value'   => (string) $row->getAttr('value'),
+                'type'    => (string) $row->getAttr('type'),
+                'options' => $row->getAttr('options') !== null ? (string) $row->getAttr('options') : null,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * findValueByKey 按 key 取启用配置的 value
+     */
+    public static function findValueByKey(string $key): ?string
+    {
+        $entry = self::findEntryByKey($key);
+
+        return $entry !== null ? $entry['value'] : null;
     }
 
     /**
@@ -67,30 +110,23 @@ class Config extends Model
      */
     public static function findValuesByKeys(array $keys): array
     {
-        if ($keys === []) {
-            return [];
-        }
-        $rows = self::where('key', 'in', $keys)
-            ->whereIn('status', self::STATUS_ACTIVE)
-            ->field('key,value')
-            ->select();
         $result = [];
-        foreach ($rows as $row) {
-            $result[(string) $row->getAttr('key')] = (string) $row->getAttr('value');
+        foreach (self::findEntriesByKeys($keys) as $k => $entry) {
+            $result[$k] = $entry['value'];
         }
 
         return $result;
     }
 
     /**
-     * findActiveRows 全部启用配置（key/value/group）
+     * findActiveRows 全部启用配置（key/value/type/group）
      *
      * @return Collection<int, static>
      */
     public static function findActiveRows(): Collection
     {
         return self::whereIn('status', self::STATUS_ACTIVE)
-            ->field('key,value,group')
+            ->field('key,value,type,group')
             ->select();
     }
 

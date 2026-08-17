@@ -114,6 +114,7 @@ class Index extends BaseController
                 (string) ($body['admin_password'] ?? ''),
                 (string) ($body['admin_nickname'] ?? ''),
                 (string) ($body['site_title'] ?? 'GlassAdmin'),
+                (string) ($body['site_description'] ?? '透明可视的后台框架'),
                 rtrim((string) $this->request->domain(), '/'),
             );
         } catch (\InvalidArgumentException $e) {

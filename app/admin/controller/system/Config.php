@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\admin\controller\system;
 
@@ -16,8 +17,26 @@ class Config extends AdminController
     /** list 默认每页条数 */
     private const int LIMIT_DEFAULT = 20;
 
+    /** @var list<string> 无需登录的 action 名 */
+    protected array $noLoginActions = ['public'];
+
     /** @var list<string> 已登录可读运行时配置，不校验 RBAC */
     protected array $loginOnlyActions = ['runtime'];
+
+    /**
+     * public 未登录可读公开配置（site_title、site_description）
+     */
+    public function public(Request $request): Response
+    {
+        if (!$request->isGet()) {
+            return $this->fail(405, '仅支持 GET');
+        }
+
+        return $this->ok(SystemConfigService::getConfigs([
+            'site_title',
+            'site_description',
+        ]));
+    }
 
     /**
      * runtime 登录后 Layout 拉取的运行时配置（白名单启用项 key => value）
@@ -50,9 +69,12 @@ class Config extends AdminController
         $keyword = trim((string) $request->get('keyword', ''));
 
         $paginator = SystemConfigService::getList($page, $limit, $group, $keyword);
+        $items     = SystemConfigService::castRowsForApi(
+            array_map(static fn($row): array => $row->toArray(), $paginator->items()),
+        );
 
         return $this->paginate(
-            $paginator->items(),
+            $items,
             $paginator->total(),
             $paginator->currentPage(),
             $paginator->listRows()
@@ -76,7 +98,7 @@ class Config extends AdminController
             return $this->fail(404, '不存在');
         }
 
-        return $this->ok($row->toArray());
+        return $this->ok(SystemConfigService::castRowForApi($row->toArray()));
     }
 
     /**
@@ -106,7 +128,11 @@ class Config extends AdminController
         } catch (\think\exception\ValidateException $e) {
             return $this->fail(400, $e->getError() ?: $e->getMessage());
         }
-        $id = SystemConfigService::saveConfig($data);
+        try {
+            $id = SystemConfigService::saveConfig($data);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail(400, $e->getMessage());
+        }
         if ($id <= 0) {
             return $this->fail(500, '创建失败');
         }
@@ -143,7 +169,11 @@ class Config extends AdminController
         } catch (\think\exception\ValidateException $e) {
             return $this->fail(400, $e->getError() ?: $e->getMessage());
         }
-        $result = SystemConfigService::saveConfig($data, $id);
+        try {
+            $result = SystemConfigService::saveConfig($data, $id);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail(400, $e->getMessage());
+        }
         if ($result <= 0) {
             return $this->fail(404, '不存在或更新失败');
         }
@@ -194,9 +224,12 @@ class Config extends AdminController
         if (!is_array($pairs) || $pairs === []) {
             return $this->fail(400, 'pairs 不能为空');
         }
-        SystemConfigService::batchSave($group, $pairs);
+        try {
+            SystemConfigService::batchSave($group, $pairs);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail(400, $e->getMessage());
+        }
 
         return $this->ok();
     }
-
 }

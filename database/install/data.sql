@@ -82,6 +82,7 @@ INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (76,'backend','api',74,'详情','system.Attachment/read','GET',NULL,NULL,1,1,0,NULL,'2026-08-01 14:03:50','2026-08-01 14:03:50');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (77,'backend','api',74,'删除','system.Attachment/delete','DELETE',NULL,NULL,2,1,0,NULL,'2026-08-01 14:03:50','2026-08-01 14:03:50');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (78,'backend','api',57,'运行时配置','system.Config/runtime','GET',NULL,NULL,7,1,0,NULL,'2026-08-02 01:10:49','2026-08-02 01:10:49');
+INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (79,'backend','api',57,'公开配置','system.Config/public','GET',NULL,NULL,8,1,0,NULL,'2026-08-17 17:30:00','2026-08-17 17:30:00');
 
 -- auth_rule_api
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (31,2);
@@ -129,6 +130,7 @@ INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES
 
 -- system_config
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (1,'site_title','GlassAdmin','全局配置','网站名',NULL,'input',NULL,0,2,1784527288,1784529606);
+INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (11,'site_description','透明可视的后台框架','全局配置','网站简介',NULL,'input',NULL,1,2,1784527288,1784529606);
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (4,'upload_max_bytes','10485760','上传配置','默认上传大小上限','通用文件上传最大字节数（字节）','number',NULL,10,2,1785567993,1785567993);
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (5,'upload_allowed_ext','jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip,txt','上传配置','默认允许扩展名','逗号分隔，如 jpg,png,pdf','input',NULL,20,2,1785567993,1785567993);
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (6,'upload_allowed_mime','','上传配置','默认允许 MIME','逗号分隔；留空表示不校验 MIME','input',NULL,30,2,1785567993,1785567993);

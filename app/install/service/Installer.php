@@ -69,12 +69,13 @@ final class Installer
      * @param array{hostname:string,hostport:string,database:string,username:string,password:string,prefix:string} $db
      * @return array{sql_log: list<string>}
      */
-    public function run(array $db, string $adminUsername, string $adminPassword, string $adminNickname, string $siteTitle, string $publicOrigin = ''): array
+    public function run(array $db, string $adminUsername, string $adminPassword, string $adminNickname, string $siteTitle, string $siteDescription = '', string $publicOrigin = ''): array
     {
         $this->assertDbForm($db);
         $adminUsername = trim($adminUsername);
         $adminNickname = trim($adminNickname) !== '' ? trim($adminNickname) : $adminUsername;
         $siteTitle = trim($siteTitle) !== '' ? trim($siteTitle) : 'GlassAdmin';
+        $siteDescription = trim($siteDescription) !== '' ? trim($siteDescription) : '透明可视的后台框架';
         $publicOrigin = rtrim($publicOrigin, '/');
         if (!preg_match('/^[A-Za-z0-9_]{3,32}$/', $adminUsername)) {
             throw new \InvalidArgumentException('管理员用户名须为 3–32 位字母、数字或下划线');
@@ -120,7 +121,8 @@ final class Installer
         $log = SqlLoader::run($pdo, $db['prefix']);
         $log[] = Runner::baseline($pdo, $db['database'], $db['prefix'], self::CHARSET);
         $this->ensureAdmin($pdo, $db['prefix'], $adminUsername, $adminPassword, $adminNickname);
-        $this->upsertConfig($pdo, $db['prefix'], 'site_title', $siteTitle);
+        $this->upsertConfig($pdo, $db['prefix'], 'site_title', $siteTitle, '网站名');
+        $this->upsertConfig($pdo, $db['prefix'], 'site_description', $siteDescription, '网站简介');
         $this->ensureRsaKey($pdo, $db['prefix']);
         InstallState::writeLock();
 
@@ -296,7 +298,7 @@ final class Installer
         $pdo->prepare('INSERT INTO ' . $pivot . ' (`admin_id`,`role_id`,`enabled`) VALUES (?,1,1)')->execute([$adminId]);
     }
 
-    private function upsertConfig(PDO $pdo, string $prefix, string $key, string $value): void
+    private function upsertConfig(PDO $pdo, string $prefix, string $key, string $value, string $name = '网站名'): void
     {
         $table = $this->table($prefix, 'system_config');
         $st = $pdo->prepare('SELECT `id` FROM ' . $table . ' WHERE `key` = ? LIMIT 1');
@@ -312,7 +314,7 @@ final class Installer
         $pdo->prepare(
             'INSERT INTO ' . $table . ' (`key`,`value`,`group`,`name`,`type`,`sort`,`status`,`create_time`,`update_time`)'
                 . ' VALUES (?,?,?,?,?,?,1,?,?)',
-        )->execute([$key, $value, '全局配置', '网站名', 'input', 0, $now, $now]);
+        )->execute([$key, $value, '全局配置', $name, 'input', 0, $now, $now]);
     }
 
     private function ensureRsaKey(PDO $pdo, string $prefix): void

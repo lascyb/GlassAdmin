@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { SystemConfigRow } from '@/apis/system/config'
+import type { SystemConfigRow, SystemConfigValue } from '@/apis/system/config'
 import * as systemApi from '@/apis/system/config'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, computed, watch } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 
 const props = defineProps<{
     id?: number
@@ -28,9 +28,16 @@ const typeLabels: Record<string, string> = {
 
 const isBuiltin = computed(() => form.status === 2 && !!props.id)
 
+const defaultValueForType = (type: SystemConfigRow['type']): SystemConfigValue => {
+    if (type === 'switch') return false
+    if (type === 'number') return 0
+    if (type === 'multi_select') return []
+    return ''
+}
+
 const form = reactive<{
     key: string
-    value: string | string[]
+    value: SystemConfigValue
     group: string
     name: string
     description: string
@@ -50,33 +57,6 @@ const form = reactive<{
     status: 1,
 })
 
-/** parseMultiValue 将库内字符串解析为多选数组 */
-const parseMultiValue = (raw: string): string[] => {
-    const s = raw.trim()
-    if (!s) return []
-    if (s.startsWith('[')) {
-        try {
-            const arr = JSON.parse(s) as unknown
-            if (Array.isArray(arr)) return arr.map((v) => String(v))
-        } catch {
-            /* fallthrough */
-        }
-    }
-    return s
-        .split(/[;；,]/)
-        .map((x) => x.trim())
-        .filter(Boolean)
-}
-
-/** serializeValue 提交前将 value 规范为字符串（多选存 JSON 数组） */
-const serializeValue = (type: SystemConfigRow['type'], value: string | string[]): string => {
-    if (type === 'multi_select') {
-        const arr = Array.isArray(value) ? value.map(String) : parseMultiValue(String(value ?? ''))
-        return JSON.stringify(arr)
-    }
-    return Array.isArray(value) ? value.join(';') : String(value ?? '')
-}
-
 /** optionList 下拉选项列表 */
 const optionList = computed((): string[] => {
     const raw = form.options.trim()
@@ -90,20 +70,9 @@ const optionList = computed((): string[] => {
     return []
 })
 
-watch(
-    () => form.type,
-    (type, prev) => {
-        if (type === 'multi_select') {
-            form.value = Array.isArray(form.value)
-                ? form.value
-                : parseMultiValue(String(form.value ?? ''))
-            return
-        }
-        if (prev === 'multi_select' && Array.isArray(form.value)) {
-            form.value = JSON.stringify(form.value)
-        }
-    },
-)
+const onTypeChange = (type: SystemConfigRow['type']) => {
+    form.value = defaultValueForType(type)
+}
 
 const loadDetail = async () => {
     if (!props.id) {
@@ -127,7 +96,7 @@ const loadDetail = async () => {
         const d = await systemApi.fetchRead(props.id)
         Object.assign(form, {
             key: d.key,
-            value: d.type === 'multi_select' ? parseMultiValue(d.value ?? '') : d.value,
+            value: d.value,
             group: d.group,
             name: d.name,
             description: d.description ?? '',
@@ -144,13 +113,11 @@ const loadDetail = async () => {
 onMounted(loadDetail)
 
 const submit = async () => {
-    const value = serializeValue(form.type, form.value)
-
     if (isBuiltin.value) {
         saving.value = true
         try {
             await systemApi.updateConfig(props.id!, {
-                value,
+                value: form.value,
                 description: form.description.trim() || undefined,
                 sort: form.sort,
             })
@@ -181,7 +148,7 @@ const submit = async () => {
     try {
         const payload = {
             key: form.key.trim(),
-            value,
+            value: form.value,
             group: form.group.trim(),
             name: form.name.trim(),
             description: form.description.trim() || undefined,
@@ -226,7 +193,7 @@ const submit = async () => {
                     <el-input v-model.trim="form.description" type="textarea" :rows="2" placeholder="配置项说明" maxlength="255" show-word-limit />
                 </el-form-item>
                 <el-form-item label="类型" required>
-                    <el-select v-model="form.type" class="w-full" :disabled="isBuiltin">
+                    <el-select v-model="form.type" class="w-full" :disabled="isBuiltin" @change="onTypeChange">
                         <el-option v-for="(label, value) in typeLabels" :key="value" :label="label" :value="value" />
                     </el-select>
                 </el-form-item>
@@ -236,9 +203,9 @@ const submit = async () => {
                 <el-form-item label="默认值">
                     <el-input v-if="form.type === 'input'" v-model="form.value" placeholder="请输入" clearable />
                     <el-input v-else-if="form.type === 'textarea'" v-model="form.value" type="textarea" :rows="3" placeholder="请输入" />
-                    <el-input v-else-if="form.type === 'number'" v-model="form.value" type="number" placeholder="请输入数值" />
+                    <el-input-number v-else-if="form.type === 'number'" v-model="form.value" class="w-full" />
                     <el-color-picker v-else-if="form.type === 'color'" v-model="form.value" />
-                    <el-switch v-else-if="form.type === 'switch'" v-model="form.value" :active-value="'1'" :inactive-value="'0'" />
+                    <el-switch v-else-if="form.type === 'switch'" v-model="form.value" />
                     <el-select v-else-if="form.type === 'select'" v-model="form.value" placeholder="请选择" clearable>
                         <el-option v-for="opt in optionList" :key="opt" :label="opt" :value="opt" />
                     </el-select>
