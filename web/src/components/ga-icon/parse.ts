@@ -6,7 +6,7 @@ export type ParsedGaIcon =
     | { source: 'none' }
 
 /**
- * parseGaIconString 解析存储的图标串：el:（Element Plus 图标组件名）、url:、local:（assets/icons 下 .svg，stem 无后缀）；无前缀时视为 el 组件名
+ * parseGaIconString 解析存储的图标串：el:（Element Plus 图标组件名）、url:、local:（assets/icons 下 svg/png/webp，stem 无后缀）；无前缀时视为 el 组件名
  */
 export function parseGaIconString(raw: string | null | undefined): ParsedGaIcon {
     const s = raw?.trim() ?? ''
@@ -22,7 +22,7 @@ export function parseGaIconString(raw: string | null | undefined): ParsedGaIcon 
         return href ? { source: 'url', href } : { source: 'none' }
     }
     if (s.startsWith('local:')) {
-        const stem = s.slice(6).trim().replace(/\.svg$/i, '')
+        const stem = s.slice(6).trim().replace(/\.(svg|png|webp)$/i, '')
         return stem ? { source: 'local', stem } : { source: 'none' }
     }
     return { source: 'el', elName: s }

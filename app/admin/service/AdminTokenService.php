@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\admin\service;
 
@@ -31,13 +32,13 @@ class AdminTokenService
     {
         $accessTtl = max(60, (int) env('ACCESS_TOKEN_TTL', 7200));
         $refreshTtl = $remember
-            ? max(300, (int) env('REFRESH_TOKEN_TTL_REMEMBER', 2592000))
-            : max(300, (int) env('REFRESH_TOKEN_TTL_SESSION', 604800));
+            ? max(300, (int) env('REFRESH_TOKEN_TTL_REMEMBER', 604800))
+            : max(300, (int) env('REFRESH_TOKEN_TTL_SESSION', 86400));
 
         $accessRaw = bin2hex(random_bytes(32));
         $refreshRaw = bin2hex(random_bytes(32));
         $now = time();
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
 
         Cache::set(
             self::accessCacheKey($accessRaw),
@@ -82,7 +83,7 @@ class AdminTokenService
         if (!is_array($roleIds)) {
             $roleIds = [];
         }
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
 
         return new AdminAuthPayload((int) $payload['admin_id'], $roleIds);
     }
@@ -136,7 +137,7 @@ class AdminTokenService
         if (!is_array($payload) || empty($payload['admin_id'])) {
             return false;
         }
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
         if ($roleIds === []) {
             return false;
         }

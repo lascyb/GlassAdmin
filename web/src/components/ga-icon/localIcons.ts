@@ -1,29 +1,55 @@
 /**
- * localIcons 本地 assets/icons 下 svg，供 local: 前缀（stem 无 .svg 后缀，可含子目录如 foo/bar）
+ * localIcons 本地 assets/icons 下图标，供 local: 前缀（stem 无后缀，可含子目录如 foo/bar）
  */
-const modules = import.meta.glob<string>('@/assets/icons/**/*.svg', {
+const pngModules = import.meta.glob<string>('@/assets/icons/**/*.png', {
     eager: true,
     query: '?url',
     import: 'default',
 })
 
-/** stemToUrl stem（相对 icons）→ 构建期 url */
-const stemToUrl: Map<string, string> = (() => {
+const webpModules = import.meta.glob<string>('@/assets/icons/**/*.webp', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+})
+
+const svgModules = import.meta.glob<string>('@/assets/icons/**/*.svg', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+})
+
+function collectStemToUrl(modules: Record<string, string>): Map<string, string> {
     const m = new Map<string, string>()
     for (const path of Object.keys(modules)) {
-        const match = path.match(/\/icons\/(.+)\.svg$/i)
+        const match = path.match(/\/icons\/(.+)\.(svg|png|webp)$/i)
         if (!match?.[1]) continue
         const stem = match[1].replace(/\\/g, '/')
         m.set(stem, modules[path] as string)
     }
     return m
+}
+
+/** stemToUrl stem（相对 icons）→ 构建期 url；同 stem 时 svg 优先于 png/webp */
+const stemToUrl: Map<string, string> = (() => {
+    const m = new Map<string, string>()
+    for (const map of [
+        collectStemToUrl(pngModules),
+        collectStemToUrl(webpModules),
+        collectStemToUrl(svgModules),
+    ]) {
+        for (const [stem, url] of map) {
+            m.set(stem, url)
+        }
+    }
+    return m
 })()
 
 /**
- * getLocalIconUrl 根据 stem 取 svg 的 url，未打包到项目则 undefined
+ * getLocalIconUrl 根据 stem 取本地图标 url，未打包到项目则 undefined
  */
 export function getLocalIconUrl(stem: string): string | undefined {
-    const k = stem.trim().replace(/^\/+|\/+$/g, '')
+    const k = stem.trim().replace(/^\/+|\/+$/g, '').replace(/\.(svg|png|webp)$/i, '')
     if (!k) return undefined
     return stemToUrl.get(k)
 }

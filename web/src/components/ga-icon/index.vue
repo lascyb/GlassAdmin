@@ -37,7 +37,7 @@ const elComp = computed(() => {
 
 const url = computed(() => (parsed.value.source === 'url' ? parsed.value.href : ''))
 
-/** localImgUrl local: 前缀且存在对应 svg 时的 url */
+/** localImgUrl local: 前缀且存在对应本地图标时的 url */
 const localImgUrl = computed(() => {
     if (parsed.value.source !== 'local') return ''
     return getLocalIconUrl(parsed.value.stem) ?? ''

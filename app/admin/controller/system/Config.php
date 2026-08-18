@@ -35,7 +35,7 @@ class Config extends AdminController
         return $this->ok(SystemConfigService::getConfigs([
             'site_title',
             'site_description',
-        ]));
+        ]))->cacheControl('public, max-age=3600');
     }
 
     /**
@@ -52,7 +52,7 @@ class Config extends AdminController
             'layout_container',
             'layout_show_all_menus',
             'layout_aside_width',
-        ]));
+        ]))->cacheControl('public, max-age=60');
     }
 
     /**

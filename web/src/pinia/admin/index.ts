@@ -21,6 +21,10 @@ export type Admin = {
     roles?: { id: number; code: string; name: string; enabled: number }[]
 }
 
+export type AdminLoginMethod = 'password' | 'feishu'
+/** 空字符串表示尚未选择登录方式偏好 */
+export type AdminLoginMethodPreference = AdminLoginMethod | ''
+
 /**
  * useAdmin 登录态唯一入口。
  * remember/user 由本 store 持久化（默认 localStorage）；
@@ -32,6 +36,7 @@ export const useAdmin = defineStore('admin', () => {
 
     const data = ref<Admin | null>(null)
     const remember = ref(false)
+    const loginMethod = ref<AdminLoginMethodPreference>('')
     const referer = ref("")
 
     /** activeTokenStore 由 remember 选定的 token 容器 */
@@ -114,6 +119,11 @@ export const useAdmin = defineStore('admin', () => {
         referer.value = ''
         if (!r || isLoginPath(r)) return defaultPath
         return r
+    }
+
+    /** setLoginMethod 持久化最近使用的登录方式 */
+    const setLoginMethod = (method: AdminLoginMethod) => {
+        loginMethod.value = method
     }
 
     /**
@@ -204,17 +214,19 @@ export const useAdmin = defineStore('admin', () => {
         tokenValid,
         data,
         remember,
+        loginMethod,
         loggedIn,
         referer,
         init,
         clear,
         setReferer,
         getReferer,
+        setLoginMethod,
         tryRefreshAccessToken,
         tryRefreshAccessTokenIfNeeded,
     }
 }, {
     persist: {
-        pick: ['data', 'remember'],
+        pick: ['data', 'remember', 'loginMethod'],
     },
 })

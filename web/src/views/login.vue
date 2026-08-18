@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ApiError, postData } from '@/apis/http'
 import * as systemConfigApi from '@/apis/system/config'
-import feishuIcon from '@/assets/images/feishu.png'
+import GaIcon from '@/components/ga-icon/index.vue'
 import { type Admin, useAdmin } from '@/pinia/admin'
-import { Lock, Message, Phone, User } from '@element-plus/icons-vue'
+import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -11,12 +11,10 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const admin = useAdmin()
 
-// 登录方式：password | sms
-const loginType = ref<'password' | 'sms'>('password')
 const logining = ref<boolean>(false)
 const feishuLogining = ref(false)
-const siteTitle = ref('GlassAdmin')
-const siteDescription = ref('透明可视的后台框架')
+const siteTitle = ref('')
+const siteDescription = ref('')
 
 // 密码登录表单
 const passwordForm = reactive({
@@ -25,22 +23,17 @@ const passwordForm = reactive({
   remember: false
 })
 
-// 验证码登录表单
-const smsForm = reactive({
-  phone: '',
-  code: ''
-})
-
-// 验证码倒计时
-const countdown = ref(0)
-const codeButtonText = ref('获取验证码')
-
 type LoginResult = {
   access_token: string
   refresh_token: string
   expire_at: number
   refresh_expire_at: number
   user: Admin
+}
+
+/** openPasswordLogin 切换为密码登录 */
+const openPasswordLogin = () => {
+  admin.setLoginMethod('password')
 }
 
 /** applyLoginResult 写入登录态并跳转（默认工作台首页） */
@@ -62,33 +55,6 @@ const applyLoginResult = async (data: LoginResult, remember: boolean) => {
   }
 }
 
-// 获取验证码
-const getVerificationCode = () => {
-  if (!smsForm.phone) {
-    ElMessage.warning('请输入手机号')
-    return
-  }
-
-  const phoneRegex = /^1[3-9]\d{9}$/
-  if (!phoneRegex.test(smsForm.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
-  }
-
-  ElMessage.success('验证码已发送')
-
-  countdown.value = 60
-  const timer = setInterval(() => {
-    countdown.value--
-    codeButtonText.value = `${countdown.value}秒后重试`
-
-    if (countdown.value <= 0) {
-      clearInterval(timer)
-      codeButtonText.value = '获取验证码'
-    }
-  }, 1000)
-}
-
 // 密码登录
 const handlePasswordLogin = async () => {
   if (!passwordForm.username || !passwordForm.password) {
@@ -106,7 +72,7 @@ const handlePasswordLogin = async () => {
       },
       { encryptFields: ['username', 'password'] },
     )
-
+    admin.setLoginMethod('password')
     await applyLoginResult(data, passwordForm.remember)
   } catch (e) {
     ElMessage.error(e instanceof ApiError ? e.message : '登录请求失败' + e)
@@ -115,19 +81,9 @@ const handlePasswordLogin = async () => {
   }
 }
 
-// 验证码登录
-const handleSmsLogin = async () => {
-  if (!smsForm.phone || !smsForm.code) {
-    ElMessage.warning('请输入手机号和验证码')
-    return
-  }
-
-  ElMessage.success('登录成功')
-  await router.push('/')
-}
-
 /** handleFeishuLogin 跳转后端飞书授权入口 */
 const handleFeishuLogin = () => {
+  admin.setLoginMethod('feishu')
   const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   if (!base) {
     ElMessage.error('未配置 VITE_API_BASE_URL')
@@ -208,105 +164,80 @@ onMounted(() => {
         <p v-if="siteDescription" class="logo-subtitle">{{ siteDescription }}</p>
       </div>
 
-      <el-tabs v-model="loginType" class="login-tabs">
-        <el-tab-pane label="密码登录" name="password">
-          <el-form :model="passwordForm" class="login-form">
-            <el-form-item>
-              <el-input
-                v-model="passwordForm.username"
-                placeholder="请输入用户名"
-                size="large"
-                :prefix-icon="User"
-                clearable
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-input
-                v-model="passwordForm.password"
-                type="password"
-                placeholder="请输入密码"
-                size="large"
-                :prefix-icon="Lock"
-                show-password
-                clearable
-                @keyup.enter="handlePasswordLogin"
-              />
-            </el-form-item>
-            <el-form-item>
-              <div class="form-options">
-                <el-checkbox v-model="passwordForm.remember">记住我</el-checkbox>
-              </div>
-            </el-form-item>
-            <el-form-item>
-              <el-button
-                type="primary"
-                size="large"
-                class="login-button"
-                :loading="logining"
-                @click="handlePasswordLogin"
-              >
-                登录
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
+      <el-form v-if="admin.loginMethod !== 'feishu'" :model="passwordForm" class="login-form">
+        <el-form-item>
+          <el-input
+            v-model="passwordForm.username"
+            placeholder="请输入用户名"
+            size="large"
+            :prefix-icon="User"
+            clearable
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-input
+            v-model="passwordForm.password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+            clearable
+            @keyup.enter="handlePasswordLogin"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            type="primary"
+            size="large"
+            class="login-button"
+            :loading="logining"
+            @click="handlePasswordLogin"
+          >
+            登录
+          </el-button>
+        </el-form-item>
+        <el-form-item>
+          <div class="form-options">
+            <el-checkbox v-model="passwordForm.remember">记住我</el-checkbox>
+          </div>
+        </el-form-item>
+      </el-form>
 
-        <el-tab-pane label="验证码登录" name="sms">
-          <el-form :model="smsForm" class="login-form">
-            <el-form-item>
-              <el-input
-                v-model="smsForm.phone"
-                placeholder="请输入手机号"
-                size="large"
-                :prefix-icon="Phone"
-                clearable
-                maxlength="11"
-              />
-            </el-form-item>
-            <el-form-item>
-              <div class="code-input-group">
-                <el-input
-                  v-model="smsForm.code"
-                  placeholder="请输入验证码"
-                  size="large"
-                  :prefix-icon="Message"
-                  clearable
-                  maxlength="6"
-                  @keyup.enter="handleSmsLogin"
-                />
-                <el-button
-                  :disabled="countdown > 0"
-                  size="large"
-                  class="code-button"
-                  @click="getVerificationCode"
-                >
-                  {{ codeButtonText }}
-                </el-button>
-              </div>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" size="large" class="login-button" @click="handleSmsLogin">
-                登录
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
+      <div v-else class="third-party-section">
+        <button
+          type="button"
+          class="feishu-login-btn feishu-login-btn--primary"
+          :disabled="feishuLogining"
+          title="飞书登录"
+          @click="handleFeishuLogin"
+        >
+          <GaIcon icon="local:feishu" :url-size="22" class="shrink-0" />
+          <span class="feishu-login-btn__text">{{ feishuLogining ? '正在跳转…' : '飞书登录' }}</span>
+        </button>
+      </div>
 
       <div class="third-party-section">
         <div class="divider">
           <span class="divider-text">其他登录方式</span>
         </div>
-        <button
-          type="button"
-          class="feishu-login-btn"
-          :disabled="feishuLogining"
-          title="飞书登录"
-          @click="handleFeishuLogin"
-        >
-          <img :src="feishuIcon" alt="" class="feishu-login-btn__icon" />
-          <span class="feishu-login-btn__text">{{ feishuLogining ? '正在跳转…' : '飞书登录' }}</span>
-        </button>
+        <template v-if="admin.loginMethod !== 'feishu'">
+          <button
+            type="button"
+            class="feishu-login-btn"
+            :disabled="feishuLogining"
+            title="飞书登录"
+            @click="handleFeishuLogin"
+          >
+            <GaIcon icon="local:feishu" :url-size="22" class="shrink-0" />
+            <span class="feishu-login-btn__text">{{ feishuLogining ? '正在跳转…' : '飞书登录' }}</span>
+          </button>
+        </template>
+        <template v-else>
+          <el-button size="large" class="password-switch-btn" @click="openPasswordLogin">
+            使用密码登录
+          </el-button>
+        </template>
       </div>
     </div>
   </div>
@@ -372,21 +303,8 @@ onMounted(() => {
   margin: 0;
 }
 
-.login-tabs {
-  margin-bottom: 24px;
-}
-
-.login-tabs :deep(.el-tabs__header) {
-  margin-bottom: 24px;
-}
-
-.login-tabs :deep(.el-tabs__item) {
-  font-size: 16px;
-  font-weight: 500;
-}
-
 .login-form {
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .login-form :deep(.el-form-item) {
@@ -413,23 +331,8 @@ onMounted(() => {
   align-items: center;
 }
 
-.code-input-group {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-}
-
-.code-input-group :deep(.el-input) {
-  flex: 1;
-}
-
-.code-button {
-  white-space: nowrap;
-  min-width: 120px;
-}
-
 .third-party-section {
-  margin-top: 28px;
+  margin-top: 8px;
 }
 
 .divider {
@@ -490,15 +393,19 @@ onMounted(() => {
   cursor: wait;
 }
 
-.feishu-login-btn__icon {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 .feishu-login-btn__text {
   line-height: 1;
+}
+
+.feishu-login-btn--primary {
+  height: 52px;
+  font-size: 16px;
+}
+
+.password-switch-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
 }
 
 @media (max-width: 480px) {
