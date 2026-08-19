@@ -59,6 +59,9 @@ INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (53,'backend','api',71,'服务器性能','dashboard.Server/index','GET',NULL,NULL,0,1,0,NULL,'2026-07-17 17:50:00','2026-08-01 12:50:24');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (54,'frontend','menu',0,'常规管理','system',NULL,NULL,'el:SetUp',10,1,0,NULL,'2026-07-20 13:51:07','2026-07-21 17:45:28');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (55,'frontend','view',54,'全局配置','config',NULL,'system/config/index.vue','el:Setting',0,1,0,NULL,'2026-07-20 13:52:00','2026-08-01 14:09:21');
+INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (80,'frontend','btn',55,'新增','add',NULL,NULL,'el:Plus',0,1,0,NULL,'2026-08-19 16:00:00','2026-08-19 16:00:00');
+INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (81,'frontend','btn',55,'编辑','edit',NULL,NULL,'el:EditPen',1,1,0,NULL,'2026-08-19 16:00:00','2026-08-19 16:00:00');
+INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (82,'frontend','btn',55,'删除','del',NULL,NULL,'el:Delete',2,1,0,NULL,'2026-08-19 16:00:00','2026-08-19 16:00:00');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (56,'backend','menu',0,'常规管理',NULL,NULL,NULL,NULL,10,1,0,NULL,'2026-07-20 13:52:26','2026-07-21 17:48:15');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (57,'backend','menu',56,'系统配置',NULL,NULL,NULL,NULL,0,1,0,NULL,'2026-07-20 13:53:08','2026-07-20 13:53:08');
 INSERT IGNORE INTO `auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (58,'backend','api',57,'列表','system.Config/list','GET',NULL,NULL,0,1,0,NULL,'2026-07-20 13:53:36','2026-07-20 13:54:03');
@@ -118,10 +121,10 @@ INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,58);
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,59);
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,60);
-INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,61);
-INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,62);
-INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,63);
-INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (55,64);
+INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (80,61);
+INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (81,62);
+INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (82,63);
+INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (81,64);
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (67,66);
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (72,75);
 INSERT IGNORE INTO `auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (72,76);

@@ -148,9 +148,21 @@ class Shortcut extends Model
     private static function dfsLeaves(array $menus, array &$out): void
     {
         foreach ($menus as $menu) {
+            $nav = [];
             $children = $menu['children'] ?? [];
-            if (is_array($children) && $children !== []) {
-                self::dfsLeaves($children, $out);
+            if (is_array($children)) {
+                foreach ($children as $child) {
+                    if (!is_array($child)) {
+                        continue;
+                    }
+                    if ((string) ($child['type'] ?? '') === 'btn') {
+                        continue;
+                    }
+                    $nav[] = $child;
+                }
+            }
+            if ($nav !== []) {
+                self::dfsLeaves($nav, $out);
                 continue;
             }
             $type = (string) ($menu['type'] ?? '');

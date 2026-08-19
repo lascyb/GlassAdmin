@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import GaIcon from '@/components/ga-icon/index.vue'
-import type { Menu } from '@/layouts/components/menus/types'
 import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
+import type { Menu } from '@/layouts/components/menus/types'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import { Rank, RefreshLeft } from '@element-plus/icons-vue'
 import { ElMessage, type ElTree } from 'element-plus'
 import Sortable from 'sortablejs'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-const SHORTCUT_TYPES = new Set(['view', 'page', 'link', 'iframe'])
+const SHORTCUT_TYPES = new Set(['view', 'link', 'iframe'])
 const VISIBILITY_HIDDEN = 2
 const MAX_ITEMS = 16
 
@@ -36,18 +36,25 @@ const open = computed({
 
 type TreeNode = Menu & { disabled?: boolean }
 
-/** markTree：仅 view/page/link/iframe 叶子可勾选 */
+/** navigableChildren 快捷入口树忽略 type=btn（按钮只给 v-auth，不能当入口） */
+const navigableChildren = (menu: Menu): Menu[] =>
+    (menu.children ?? []).filter((c) => c.type !== 'btn')
+
+/** markTree：仅 view/link/iframe 叶子可勾选（有按钮子级仍算叶子） */
 const markTree = (menus: Menu[]): TreeNode[] => {
-    return menus.map((m) => {
-        const children = m.children?.length ? markTree(m.children) : undefined
-        const isLeafShortcut =
-            !children?.length && SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN
-        return {
-            ...m,
-            children,
-            disabled: !isLeafShortcut,
-        }
-    })
+    return menus
+        .filter((m) => m.type !== 'btn')
+        .map((m) => {
+            const nav = navigableChildren(m)
+            const children = nav.length ? markTree(nav) : undefined
+            const isLeafShortcut =
+                !children?.length && SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN
+            return {
+                ...m,
+                children,
+                disabled: !isLeafShortcut,
+            }
+        })
 }
 
 const treeData = computed(() => markTree(menusForDisplay(layoutMenus.menus)))
@@ -56,8 +63,12 @@ const flatById = computed(() => {
     const map = new Map<number, Menu>()
     const walk = (list: Menu[]) => {
         for (const m of list) {
-            if (m.children?.length) {
-                walk(m.children)
+            if (m.type === 'btn') {
+                continue
+            }
+            const nav = navigableChildren(m)
+            if (nav.length) {
+                walk(nav)
             } else if (SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN) {
                 map.set(m.id, m)
             }
