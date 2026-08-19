@@ -1,56 +1,89 @@
 import type { Menu } from '@/layouts/components/menus/types'
-import { useAdmin } from '@/pinia/admin'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import type { Directive, DirectiveBinding } from 'vue'
+import { useRoute } from 'vue-router'
+
+/** AuthBindingValue 指令值：旧字符串 btn、scope 路径、或 { btn, scope }；未赋值时 Vue 传入 true */
+export type AuthBindingValue =
+    | string
+    | boolean
+    | null
+    | undefined
+    | { btn?: string; scope?: string }
+
+type AuthQuery = {
+    btn?: string
+    scope?: string
+}
 
 /**
- * collectBtnPaths 从菜单树收集 type=btn 的 path 作为权限键
+ * stripPathExtras 去掉 query / hash，得到与菜单 path_full 对齐的路径
  */
-function collectBtnPaths(menus: Menu[]): Set<string> {
-    const keys = new Set<string>()
-    const walk = (nodes: Menu[]) => {
-        for (const n of nodes) {
-            if (n.type === 'btn' && n.path) {
-                keys.add(n.path)
-            }
-            if (n.children?.length) walk(n.children)
+function stripPathExtras(path: string): string {
+    const withoutQuery = path.split('?')[0] ?? path
+    return withoutQuery.split('#')[0] ?? withoutQuery
+}
+
+/**
+ * parseAuth 解析四种写法：v-auth:add、v-auth:refresh="scope"、v-auth="'add'"、v-auth="{ btn, scope }"
+ */
+function parseAuth(binding: DirectiveBinding<AuthBindingValue>): AuthQuery {
+    const arg = typeof binding.arg === 'string' && binding.arg ? binding.arg : undefined
+    const val = binding.value
+
+    let btn = arg
+    let scope: string | undefined
+
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+        if (!btn && val.btn) {
+            btn = val.btn
+        }
+        if (val.scope) {
+            scope = val.scope
+        }
+    } else if (typeof val === 'string' && val) {
+        if (btn) {
+            scope = val
+        } else {
+            btn = val
         }
     }
-    walk(menus)
-    return keys
+
+    return { btn, scope }
 }
 
 /**
- * getStoredPermissions 当前用户已授权的前端按钮 path 集合
+ * pageHasBtn 指定页面节点的直接子级中是否有已授权的 type=btn 且 path 匹配
  */
-function getStoredPermissions(): Set<string> {
-    const menus = useLayoutMenus().menus
-    return collectBtnPaths(menus)
+function pageHasBtn(page: Menu, btn: string): boolean {
+    return (page.children ?? []).some((n) => n.type === 'btn' && n.path === btn)
 }
 
 /**
- * hasPermission 判断是否拥有指定权限键；超级管理员恒为 true
+ * hasPermission 当前页（或 scope 页）下是否有指定按钮
  */
-export function hasPermission(key: string | string[] | undefined | null): boolean {
-    if (!key) return true
-    const admin = useAdmin()
-    if (admin.data?.role_codes?.includes('SUPER')) return true // 超级管理员，拥有全部前端按钮权限
+export function hasPermission(btn?: string | null, scope?: string | null): boolean {
+    if (!btn) return true
 
-    const keys = Array.isArray(key) ? key : [key]
-    const allowed = getStoredPermissions()
-    return keys.some((k) => allowed.has(k))
+    const pagePath = stripPathExtras(scope || useRoute().path)
+    if (!pagePath) return false
+
+    const found = useLayoutMenus().find(pagePath)
+    if (!found) return false
+
+    return pageHasBtn(found.menu, btn)
 }
 
 /**
  * applyAuth 无权限时隐藏元素（display:none，保留 DOM 便于调试）
  */
-function applyAuth(el: HTMLElement, binding: DirectiveBinding<string | string[]>) {
-    const allowed = hasPermission(binding.value)
-    el.style.display = allowed ? '' : 'none'
+function applyAuth(el: HTMLElement, binding: DirectiveBinding<AuthBindingValue>) {
+    const { btn, scope } = parseAuth(binding)
+    el.style.display = hasPermission(btn, scope) ? '' : 'none'
 }
 
-/** vAuth 前端按钮权限指令，值：单个 path 或 path 数组（任一命中即显示） */
-export const vAuth: Directive<HTMLElement, string | string[]> = {
+/** vAuth 前端按钮权限指令，按页面子按钮鉴权 */
+export const vAuth: Directive<HTMLElement, AuthBindingValue> = {
     mounted(el, binding) {
         applyAuth(el, binding)
     },
