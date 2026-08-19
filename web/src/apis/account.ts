@@ -48,27 +48,27 @@ export type OperationLogsListRes = {
  * fetchProfile 当前用户资料
  */
 export const fetchProfile = async () => {
-    return getData<ProfileRow>('account.Profile/read')
+    return getData<ProfileRow>('admin/account.Profile/read')
 }
 
 /**
  * fetchProfile 当前用户资料
  */
 export const fetchRoles = async () => {
-    return getData<ProfileRow>('account.Profile/roles')
+    return getData<ProfileRow>('admin/account.Profile/roles')
 }
 /**
  * switchRoles 切换当前用户启用的角色
  */
 export const switchRoles = async (role_ids: number[]) => {
-    return putData<SwitchRolesRes>('account.Profile/switchRoles', { role_ids })
+    return putData<SwitchRolesRes>('admin/account.Profile/switchRoles', { role_ids })
 }
 
 /**
  * updateProfile 更新昵称
  */
 export const updateProfile = async (payload: { nickname?: string }) => {
-    return putData<null>('account.Profile/update', payload)
+    return putData<null>('admin/account.Profile/update', payload)
 }
 
 /**
@@ -78,7 +78,7 @@ export const changePassword = async (
     payload: { password: string },
     options?: HttpRequestOptions,
 ) => {
-    return putData<null>('account.Profile/changePassword', payload, {
+    return putData<null>('admin/account.Profile/changePassword', payload, {
         ...options,
         encryptFields: options?.encryptFields ?? ['password'],
     })
@@ -88,12 +88,12 @@ export const changePassword = async (
  * uploadProfileAvatar 上传当前用户头像（字段名 file）
  */
 export const uploadProfileAvatar = async (formData: FormData) => {
-    return postFormDataData<{ avatar: string }>('account.Profile/uploadAvatar', formData)
+    return postFormDataData<{ avatar: string }>('admin/account.Profile/uploadAvatar', formData)
 }
 
 /**
  * fetchMyOperationLogs 当前用户操作日志分页
  */
 export const fetchMyOperationLogs = async (params: { page?: number; limit?: number }) => {
-    return getData<OperationLogsListRes>('account.Profile/operationLogs', params)
+    return getData<OperationLogsListRes>('admin/account.Profile/operationLogs', params)
 }

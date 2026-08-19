@@ -108,7 +108,7 @@ class ApisFile
 
         return Template::render('apis/apis.ts.tpl', [
             'entity' => $ctx->entity,
-            'apiBase' => $ctx->apiBase,
+            'apiBase' => Helper::adminHttpUrl($ctx->apiBase),
             'rowBlock' => implode("\n", $rowFields),
             'payloadBlock' => implode("\n", $payloadFields),
             'listParams' => implode("\n", $listParamFields),

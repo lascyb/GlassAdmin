@@ -7,6 +7,7 @@ use crud\field\FieldMeta;
 use crud\field\Naming;
 use crud\Context;
 use crud\Template;
+use crud\generator\Helper;
 use crud\generator\ui\UiRenderer;
 
 /**
@@ -61,7 +62,7 @@ class RemoteMultiSelect implements UiRenderer
         return Template::render('index/search/remote_multi_select.vue.tpl', [
             'label' => $p->label,
             'prop' => $p->prop,
-            'url' => $p->url,
+            'url' => Helper::adminHttpUrl($p->url),
             'valueField' => $p->valueField,
             'labelField' => $p->labelField,
             'placeholder' => $p->placeholder,

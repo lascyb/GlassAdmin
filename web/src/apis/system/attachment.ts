@@ -46,19 +46,19 @@ export const fetchList = async (params: {
     mime?: string
     admin_id?: number
 }) => {
-    return getData<AttachmentListRes>('system.Attachment/list', params)
+    return getData<AttachmentListRes>('admin/system.Attachment/list', params)
 }
 
 /**
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<AttachmentRow>('system.Attachment/read', { id })
+    return getData<AttachmentRow>('admin/system.Attachment/read', { id })
 }
 
 /**
  * deleteAttachment 删除附件
  */
 export const deleteAttachment = async (id: number) => {
-    return delData<null>('system.Attachment/delete', { id })
+    return delData<null>('admin/system.Attachment/delete', { id })
 }

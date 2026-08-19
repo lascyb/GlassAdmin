@@ -48,6 +48,20 @@ class Helper
         return implode(', ', array_map([self::class, 'jsLiteral'], $values));
     }
 
+    /**
+     * adminHttpUrl 前端请求路径（ThinkPHP 多应用前缀 admin/）
+     * 配置里仍存 module.Entity/list，写入 .vue/.ts 时再加前缀
+     */
+    public static function adminHttpUrl(string $path): string
+    {
+        $path = ltrim($path, '/');
+        if ($path === '' || str_starts_with($path, 'admin/')) {
+            return $path;
+        }
+
+        return 'admin/' . $path;
+    }
+
     /** enumIsString 枚举值是否为字符串语义 */
     public static function enumIsString(array $vals): bool
     {

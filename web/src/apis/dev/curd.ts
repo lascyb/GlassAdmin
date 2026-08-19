@@ -122,9 +122,9 @@ export type PivotTablesRes = {
 }
 
 /** API_BASE 控制器路径前缀 */
-const API_BASE = 'dev.curd.Index'
-const HISTORY_BASE = 'dev.curd.History'
-const REMOTE_BASE = 'dev.curd.Remote'
+const API_BASE = 'admin/dev.curd.Index'
+const HISTORY_BASE = 'admin/dev.curd.History'
+const REMOTE_BASE = 'admin/dev.curd.Remote'
 
 /** listTables 列出当前库业务表名 */
 export const listTables = () => getData<string[]>(`${API_BASE}/tables`)

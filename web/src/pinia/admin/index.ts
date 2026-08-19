@@ -138,7 +138,7 @@ export const useAdmin = defineStore('admin', () => {
             return false
         }
         const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-        const url = `${base}/account.login.Refresh/token`
+        const url = `${base}/admin/account.login.Refresh/token`
         try {
             const res = await fetch(url, {
                 method: 'POST',

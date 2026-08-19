@@ -69,7 +69,7 @@ export const useSecurityRsa = defineStore('security_rsa', () => {
                     serial: string
                     public_key: string
                     expire_at: number
-                }>('system.Security/rsaPublicKey')
+                }>('admin/system.Security/rsaPublicKey')
                 if (!res.serial || !res.public_key) {
                     clearRsaPublicKey()
                     return null

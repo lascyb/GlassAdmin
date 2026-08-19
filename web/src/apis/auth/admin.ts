@@ -40,14 +40,14 @@ export const fetchList = async (params: {
     nickname?: string
     status?: number
 }) => {
-    return getData<AdminListRes>('auth.Admin/list', params)
+    return getData<AdminListRes>('admin/auth.Admin/list', params)
 }
 
 /**
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<AdminRow>('auth.Admin/read', { id })
+    return getData<AdminRow>('admin/auth.Admin/read', { id })
 }
 
 /**
@@ -57,7 +57,7 @@ export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
     options?: HttpRequestOptions,
 ) => {
-    return postData<{ id: number }>('auth.Admin/save', payload, {
+    return postData<{ id: number }>('admin/auth.Admin/save', payload, {
         ...options,
         encryptFields: options?.encryptFields ?? ['password'],
     })
@@ -74,7 +74,7 @@ export const updateAdmin = async (
     const encryptFields =
         options?.encryptFields ??
         (payload.password ? ['password'] : undefined)
-    return putData<null>('auth.Admin/update?id=' + id, payload, {
+    return putData<null>('admin/auth.Admin/update?id=' + id, payload, {
         ...options,
         encryptFields,
     })
@@ -84,5 +84,5 @@ export const updateAdmin = async (
  * deleteAdmin 删除
  */
 export const deleteAdmin = async (id: number) => {
-    return delData<null>('auth.Admin/delete', { id })
+    return delData<null>('admin/auth.Admin/delete', { id })
 }

@@ -11,7 +11,7 @@ export { ApiError, unwrap, getData, postData, putData, delData, postFormDataData
  * @returns menus 供 useLayoutMenus.init
  */
 export const index = async (catalog = false): Promise<{ menus: Menu[] }> => {
-    return getData<{ menus: Menu[] }>('account.Menu/menus', {
+    return getData<{ menus: Menu[] }>('admin/account.Menu/menus', {
         catalog: catalog ? 1 : 0,
     })
 }
@@ -30,5 +30,5 @@ export type MenuDescribe = {
  * fetchMenuDescribe 按规则 id 拉取描述（授权或可发现）
  */
 export const fetchMenuDescribe = async (id: number) => {
-    return getData<MenuDescribe>('account.Menu/describe', { id })
+    return getData<MenuDescribe>('admin/account.Menu/describe', { id })
 }

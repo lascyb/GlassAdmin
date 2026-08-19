@@ -64,7 +64,7 @@ const handlePasswordLogin = async () => {
   logining.value = true
   try {
     const data = await postData<LoginResult>(
-      'account.login.Password/login',
+      'admin/account.login.Password/login',
       {
         username: passwordForm.username,
         password: passwordForm.password,
@@ -85,12 +85,8 @@ const handlePasswordLogin = async () => {
 const handleFeishuLogin = () => {
   admin.setLoginMethod('feishu')
   const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  if (!base) {
-    ElMessage.error('未配置 VITE_API_BASE_URL')
-    return
-  }
   feishuLogining.value = true
-  location.href = `${base}/account.login.oauth2.Feishu/authorize`
+  location.href = `${base}/admin/account.login.oauth2.Feishu/authorize`
 }
 
 /** handleFeishuCallback 处理飞书授权回调（login_from=feishu-web&code=） */
@@ -117,7 +113,7 @@ const handleFeishuCallback = async () => {
 
   feishuLogining.value = true
   try {
-    const data = await postData<LoginResult>('account.login.oauth2.Feishu/login', {
+    const data = await postData<LoginResult>('admin/account.login.oauth2.Feishu/login', {
       code,
       remember: false,
     })

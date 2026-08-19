@@ -42,61 +42,61 @@ export const fetchList = async (params: {
     group?: string
     keyword?: string
 }) => {
-    return getData<SystemConfigListRes>('system.Config/list', params)
+    return getData<SystemConfigListRes>('admin/system.Config/list', params)
 }
 
 /**
  * fetchRead 获取配置详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<SystemConfigRow>('system.Config/read', { id })
+    return getData<SystemConfigRow>('admin/system.Config/read', { id })
 }
 
 /**
  * fetchGroups 获取所有配置分组
  */
 export const fetchGroups = async () => {
-    return getData<SystemConfigGroupsRes>('system.Config/groups')
+    return getData<SystemConfigGroupsRes>('admin/system.Config/groups')
 }
 
 /**
  * saveConfig 新建配置
  */
 export const saveConfig = async (payload: Partial<SystemConfigRow>) => {
-    return postData<{ id: number }>('system.Config/save', payload)
+    return postData<{ id: number }>('admin/system.Config/save', payload)
 }
 
 /**
  * updateConfig 更新配置
  */
 export const updateConfig = async (id: number, payload: Partial<SystemConfigRow>) => {
-    return putData<null>(`system.Config/update?id=${id}`, payload)
+    return putData<null>(`admin/system.Config/update?id=${id}`, payload)
 }
 
 /**
  * deleteConfig 删除配置
  */
 export const deleteConfig = async (id: number) => {
-    return delData<null>('system.Config/delete', { id })
+    return delData<null>('admin/system.Config/delete', { id })
 }
 
 /**
  * batchSaveConfig 批量保存配置（按 group）
  */
 export const batchSaveConfig = async (group: string, pairs: Record<string, SystemConfigValue>) => {
-    return putData<null>('system.Config/batchSave', { group, pairs })
+    return putData<null>('admin/system.Config/batchSave', { group, pairs })
 }
 
 /**
  * fetchPublic 未登录可读公开配置（site_title、site_description）
  */
 export const fetchPublic = async () => {
-    return getData<SystemConfigMap>('system.Config/public')
+    return getData<SystemConfigMap>('admin/system.Config/public')
 }
 
 /**
  * fetchRuntime 登录后 Layout 拉取的运行时配置
  */
 export const fetchRuntime = async () => {
-    return getData<SystemConfigMap>('system.Config/runtime')
+    return getData<SystemConfigMap>('admin/system.Config/runtime')
 }

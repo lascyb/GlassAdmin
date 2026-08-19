@@ -7,6 +7,7 @@ use crud\field\FieldMeta;
 use crud\field\Naming;
 use crud\Context;
 use crud\Template;
+use crud\generator\Helper;
 use crud\generator\ui\UiRenderer;
 
 /**
@@ -72,7 +73,7 @@ class RemoteMultiSelect implements UiRenderer
             'required' => $p->required ? ' required' : '',
             'placeholder' => $p->placeholder,
             'key' => $p->key,
-            'url' => $p->url,
+            'url' => Helper::adminHttpUrl($p->url),
             'valueField' => $p->valueField,
             'labelField' => $p->labelField,
             'initVar' => $p->initVar,

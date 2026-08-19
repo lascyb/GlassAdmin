@@ -75,7 +75,7 @@ export type DashboardOverview = {
  * fetchUsageOverview 系统使用情况仪表盘数据
  */
 export const fetchUsageOverview = async (days = 7) => {
-    return getData<DashboardOverview>('dashboard.Usage/index', { days })
+    return getData<DashboardOverview>('admin/dashboard.Usage/index', { days })
 }
 
 /** ServerCpu CPU 指标 */
@@ -134,7 +134,7 @@ export type ServerOverview = {
  * @param includeHgfs 是否采集 HGFS 共享挂载
  */
 export const fetchServerOverview = async (includeHgfs = false) => {
-    return getData<ServerOverview>('dashboard.Server/index', {
+    return getData<ServerOverview>('admin/dashboard.Server/index', {
         include_hgfs: includeHgfs ? 1 : 0,
     })
 }

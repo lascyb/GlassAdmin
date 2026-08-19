@@ -37,8 +37,8 @@ const redirectToLogin = async (message = '未授权，请重新登录') => {
     }
 }
 /**
- * getApiBaseUrl 获取 API 基础地址
- * 从环境变量中读取，如果没有配置则使用空字符串（相对路径）
+ * getApiBaseUrl 站点入口（VITE_API_BASE_URL，不含 /admin）
+ * 未配置则为空，相对路径由调用串自带 admin/
  */
 const getApiBaseUrl = (): string => {
     return import.meta.env.VITE_API_BASE_URL || ''
