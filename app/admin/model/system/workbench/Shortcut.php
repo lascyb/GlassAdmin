@@ -163,7 +163,6 @@ class Shortcut extends Model
             }
             if ($nav !== []) {
                 self::dfsLeaves($nav, $out);
-                continue;
             }
             $type = (string) ($menu['type'] ?? '');
             if (!in_array($type, self::SHORTCUT_TYPES, true)) {

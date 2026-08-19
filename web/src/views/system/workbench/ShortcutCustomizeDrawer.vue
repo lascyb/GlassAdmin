@@ -40,19 +40,19 @@ type TreeNode = Menu & { disabled?: boolean }
 const navigableChildren = (menu: Menu): Menu[] =>
     (menu.children ?? []).filter((c) => c.type !== 'btn')
 
-/** markTree：仅 view/link/iframe 叶子可勾选（有按钮子级仍算叶子） */
+/** markTree：view/link/iframe 可勾选（有按钮或隐藏子目录仍算入口页） */
 const markTree = (menus: Menu[]): TreeNode[] => {
     return menus
         .filter((m) => m.type !== 'btn')
         .map((m) => {
             const nav = navigableChildren(m)
             const children = nav.length ? markTree(nav) : undefined
-            const isLeafShortcut =
-                !children?.length && SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN
+            const isShortcut =
+                SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN
             return {
                 ...m,
                 children,
-                disabled: !isLeafShortcut,
+                disabled: !isShortcut,
             }
         })
 }
@@ -67,10 +67,11 @@ const flatById = computed(() => {
                 continue
             }
             const nav = navigableChildren(m)
+            if (SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN) {
+                map.set(m.id, m)
+            }
             if (nav.length) {
                 walk(nav)
-            } else if (SHORTCUT_TYPES.has(m.type) && m.visibility !== VISIBILITY_HIDDEN) {
-                map.set(m.id, m)
             }
         }
     }
