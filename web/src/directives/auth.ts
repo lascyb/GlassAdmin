@@ -1,7 +1,7 @@
 import type { Menu } from '@/layouts/components/menus/types'
 import { useLayoutMenus } from '@/pinia/layout/menus'
+import { router } from '@/router'
 import type { Directive, DirectiveBinding } from 'vue'
-import { useRoute } from 'vue-router'
 
 /** AuthBindingValue 指令值：旧字符串 btn、scope 路径、或 { btn, scope }；未赋值时 Vue 传入 true */
 export type AuthBindingValue =
@@ -65,7 +65,7 @@ function pageHasBtn(page: Menu, btn: string): boolean {
 export function hasPermission(btn?: string | null, scope?: string | null): boolean {
     if (!btn) return true
 
-    const pagePath = stripPathExtras(scope || useRoute().path)
+    const pagePath = stripPathExtras(scope || router.currentRoute.value.path)
     if (!pagePath) return false
 
     const found = useLayoutMenus().find(pagePath)

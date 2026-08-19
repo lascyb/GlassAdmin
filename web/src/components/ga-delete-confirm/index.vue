@@ -40,14 +40,16 @@ const onConfirm = async () => {
 </script>
 
 <template>
-    <el-popover v-model:visible="visible" placement="right" :width="150" trigger="click">
-        <p class="mb-3 text-sm leading-5">{{ message }}</p>
-        <div class="flex justify-end gap-2">
-            <el-button size="small" :disabled="loading" @click="visible = false">取消</el-button>
-            <el-button size="small" type="danger" :loading="loading" @click="onConfirm">删除</el-button>
-        </div>
-        <template #reference>
-            <el-button title="删除行" plain type="danger" :icon="Delete" size="small" />
-        </template>
-    </el-popover>
+    <span class="inline-flex">
+        <el-popover v-model:visible="visible" placement="right" :width="150" trigger="click">
+            <p class="mb-3 text-sm leading-5">{{ message }}</p>
+            <div class="flex justify-end gap-2">
+                <el-button size="small" :disabled="loading" @click="visible = false">取消</el-button>
+                <el-button size="small" type="danger" :loading="loading" @click="onConfirm">删除</el-button>
+            </div>
+            <template #reference>
+                <el-button title="删除行" plain type="danger" :icon="Delete" size="small" />
+            </template>
+        </el-popover>
+    </span>
 </template>

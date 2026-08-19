@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { OperationLogRow } from '@/apis/account.ts'
 import * as accountApi from '@/apis/account.ts'
-import GaPasswordInput from '@components/ga-password-input/index.vue'
-import GaTablePage from '@components/ga-table-page/index.vue'
-import GaUpload from '@components/ga-upload/index.vue'
 import { usePaginatedList } from '@/composables/usePaginatedList.ts'
 import { useAdmin } from '@/pinia/admin'
 import { resolveStorageUrl } from '@/utils/storageUrl'
+import GaPasswordInput from '@components/ga-password-input/index.vue'
+import GaTablePage from '@components/ga-table-page/index.vue'
+import GaUploadImage from '@components/ga-upload/image.vue'
 import { Loading, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -133,7 +133,7 @@ const submitPassword = async () => {
                     <template #header>个人信息</template>
                     <el-form label-width="88px" @submit.prevent>
                         <el-form-item label="头像">
-                            <ga-upload
+                            <ga-upload-image
                                 v-model="avatarPath"
                                 accept="image/jpeg,image/png,image/gif,image/webp"
                                 :max-size="2 * 1024 * 1024"
@@ -172,7 +172,7 @@ const submitPassword = async () => {
                                         </div>
                                     </div>
                                 </template>
-                            </ga-upload>
+                            </ga-upload-image>
                         </el-form-item>
                         <el-form-item label="用户名">
                             <el-input v-model="form.username" disabled />
