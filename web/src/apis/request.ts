@@ -4,12 +4,14 @@
  */
 
 import { useAdmin } from '@/pinia/admin';
+import { useToken } from '@/pinia/admin/token';
 import { router } from "@/router";
 import { createFetch } from '@vueuse/core';
 import { ElMessage } from "element-plus";
 
-/** getAdmin 延迟获取 store，避免 request ↔ pinia/admin ↔ apis/http 模块循环依赖 */
+/** getAdmin / getToken 延迟获取 store，避免 request ↔ pinia 模块循环依赖 */
 const getAdmin = () => useAdmin()
+const getToken = () => useToken()
 
 /** retried401Execute 已对该 useFetch 实例执行过「刷新 + 重放」后，再次 401 则不再重试（按 execute 引用区分并发请求） */
 const retried401Execute = new WeakSet<() => Promise<Response | null>>()
@@ -117,10 +119,10 @@ export const useFetch = createFetch({
             }
 
             // 添加 token
-            const admin = getAdmin()
-            if (admin.token) {
+            const tokenStore = getToken()
+            if (tokenStore.token) {
                 options.headers = {
-                    ...options.headers, Authorization: `Bearer ${admin.token}`,
+                    ...options.headers, Authorization: `Bearer ${tokenStore.token}`,
                 } as HeadersInit
             }
 
@@ -133,20 +135,19 @@ export const useFetch = createFetch({
             void (async () => {
                 const admin = getAdmin()
                 if (!admin.data) return
-                const ok = await admin.tryRefreshAccessTokenIfNeeded()
+                const ok = await getToken().tryRefreshAccessTokenIfNeeded()
                 if (!ok) {
                     await redirectToLogin('登录已失效，请重新登录')
                 }
             })()
             return {data}
         }, async onFetchError({response, error, execute}) {
-            const admin = getAdmin()
             if (response?.status === 401) {
                 if (retried401Execute.has(execute)) {
                     await redirectToLogin()
                     return {error}
                 }
-                const refreshed = await admin.tryRefreshAccessToken()
+                const refreshed = await getToken().tryRefreshAccessToken()
                 if (!refreshed) {
                     await redirectToLogin()
                     return {error}

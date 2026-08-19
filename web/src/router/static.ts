@@ -1,6 +1,7 @@
 import { type RouteLocationNormalizedGeneric, type RouteRecordRaw } from 'vue-router'
 
 import { useAdmin } from '@/pinia/admin'
+import { useToken } from '@/pinia/admin/token'
 
 //视图路由
 export const routes: RouteRecordRaw[] = [
@@ -10,8 +11,8 @@ export const routes: RouteRecordRaw[] = [
         component: () => import("@/layouts/index.vue"), //全部走layout布局模板
         beforeEnter: async (to, _from: RouteLocationNormalizedGeneric, next) => {
             const admin = useAdmin()
-            // access 过期或即将过期时先续期；刷新失败会 clear，避免假登录态停留
-            const sessionOk = await admin.tryRefreshAccessTokenIfNeeded()
+            // access 过期或即将过期时先续期；刷新失败会 clearToken，避免假登录态停留
+            const sessionOk = await useToken().tryRefreshAccessTokenIfNeeded()
             if (sessionOk && admin.loggedIn) {
                 next()
             } else {

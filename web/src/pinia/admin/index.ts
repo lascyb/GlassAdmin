@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { ApiEnvelope } from '@/apis/envelope'
-import { unwrap } from '@/apis/envelope'
-import { useAdminTokenLocal, useAdminTokenSession } from '@/pinia/admin/token'
+import { useToken } from '@/pinia/admin/token'
 import { useSystemConfig } from '@/pinia/system/config'
 
 /** AdminUser 登录后的后台管理员信息 */
@@ -26,37 +24,20 @@ export type AdminLoginMethod = 'password' | 'feishu'
 export type AdminLoginMethodPreference = AdminLoginMethod | ''
 
 /**
- * useAdmin 登录态唯一入口。
- * remember/user 由本 store 持久化（默认 localStorage）；
- * token 拆分到 admin_token_session / admin_token_local，由 remember 决定使用哪一侧。
+ * useAdmin 登录用户态。令牌见 useToken。
  */
 export const useAdmin = defineStore('admin', () => {
-    const tokenSession = useAdminTokenSession()
-    const tokenLocal = useAdminTokenLocal()
+    const tokenStore = useToken()
 
     const data = ref<Admin | null>(null)
     const remember = ref(false)
     const loginMethod = ref<AdminLoginMethodPreference>('')
     const referer = ref("")
 
-    /** activeTokenStore 由 remember 选定的 token 容器 */
-    const activeTokenStore = computed(() => (remember.value ? tokenLocal : tokenSession))
-
-    const token = computed(() => activeTokenStore.value.token)
-    const refreshToken = computed(() => activeTokenStore.value.refreshToken)
-    const expireAt = computed(() => activeTokenStore.value.expireAt)
-    const refreshExpireAt = computed(() => activeTokenStore.value.refreshExpireAt)
-    const tokenValid = computed(() => activeTokenStore.value.valid)
-    const loggedIn = computed(() => !!data.value && tokenValid.value)
+    const loggedIn = computed(() => !!data.value && tokenStore.valid)
 
     /**
-     * init 登录成功：写入 remember / user，并把 access、refresh 写入 remember 对应侧、清掉另一侧
-     * @param accessToken 访问令牌（opaque）
-     * @param refreshToken 刷新令牌
-     * @param admin 用户信息
-     * @param expireAt access 过期秒级时间戳
-     * @param refreshExpireAt refresh 过期秒级时间戳
-     * @param rememberLogin 是否勾选「记住我」
+     * init 登录成功：写入 user / remember，并把令牌交给 useToken
      */
     const init = (
         accessToken: string,
@@ -66,20 +47,16 @@ export const useAdmin = defineStore('admin', () => {
         refreshExpireAt: number,
         rememberLogin: boolean,
     ) => {
-        const inactive = rememberLogin ? tokenSession : tokenLocal
-        const target = rememberLogin ? tokenLocal : tokenSession
-        inactive.clearToken()
-        target.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
+        tokenStore.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
         data.value = admin
         data.value.role_codes = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.code)
         data.value.role_ids = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.id)
         remember.value = rememberLogin
     }
 
-    /** clear 退出登录：清两侧 token、user、remember、运行时配置缓存 */
+    /** clear 退出登录：清 token、user、运行时配置缓存 */
     const clear = () => {
-        tokenSession.clearToken()
-        tokenLocal.clearToken()
+        tokenStore.clearToken()
         data.value = null
         useSystemConfig().clear()
     }
@@ -126,92 +103,7 @@ export const useAdmin = defineStore('admin', () => {
         loginMethod.value = method
     }
 
-    /**
-     * tryRefreshAccessToken 用 refresh_token 换发新令牌（裸 fetch，避免与 useFetch 循环依赖）
-     */
-    const tryRefreshAccessToken = async (): Promise<boolean> => {
-        const store = activeTokenStore.value
-        const rt = store.refreshToken
-        if (!rt) return false
-        const now = Math.floor(Date.now() / 1000)
-        if (store.refreshExpireAt > 0 && store.refreshExpireAt <= now) {
-            return false
-        }
-        const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-        const url = `${base}/admin/account.login.Refresh/token`
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh_token: rt }),
-            })
-            const json = (await res.json()) as ApiEnvelope<{
-                access_token: string
-                refresh_token: string
-                expire_at: number
-                refresh_expire_at: number
-                user?: Admin
-            }>
-            const payload = unwrap(json)
-            if (!payload.access_token || !payload.refresh_token || !payload.expire_at || !payload.refresh_expire_at) {
-                return false
-            }
-            store.setTokens(
-                payload.access_token,
-                payload.refresh_token,
-                payload.expire_at,
-                payload.refresh_expire_at,
-            )
-            if (payload.user) {
-                data.value = payload.user
-            }
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /**
-     * tryRefreshAccessTokenIfNeeded access 将过期或即将过期时尝试刷新。
-     * @returns true 会话可继续；false 需重新登录（失败时会 clear）
-     */
-    const tryRefreshAccessTokenIfNeeded = async (): Promise<boolean> => {
-        const store = activeTokenStore.value
-        const now = Math.floor(Date.now() / 1000)
-
-        // access 仍充足，无需刷新
-        if (store.token && store.expireAt > now + 900) {
-            return true
-        }
-
-        const accessStillOk = !!(store.token && store.expireAt > now)
-        const refreshUsable =
-            !!store.refreshToken &&
-            (store.refreshExpireAt <= 0 || store.refreshExpireAt > now)
-
-        // 无可用 refresh：仅当 access 尚未过期时继续
-        if (!refreshUsable) {
-            if (!accessStillOk) {
-                clear()
-            }
-            return accessStillOk
-        }
-
-        const ok = await tryRefreshAccessToken()
-        if (!ok) {
-            // 服务端拒绝或网络失败：清登录态，避免 canRefresh 仍为 true 而停留在页面
-            clear()
-            return false
-        }
-        return true
-    }
-
     return {
-        token,
-        refreshToken,
-        expireAt,
-        refreshExpireAt,
-        tokenValid,
         data,
         remember,
         loginMethod,
@@ -222,8 +114,6 @@ export const useAdmin = defineStore('admin', () => {
         setReferer,
         getReferer,
         setLoginMethod,
-        tryRefreshAccessToken,
-        tryRefreshAccessTokenIfNeeded,
     }
 }, {
     persist: {
