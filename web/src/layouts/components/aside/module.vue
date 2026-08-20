@@ -16,7 +16,8 @@ const asideStyle = computed(() => ({
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
 
-const menuHeight = 'calc(100vh - 60px)'
+/** 顶栏 logo 60px + 底部横向滚动条预留 20px */
+const menuHeight = 'calc(100vh - 80px)'
 </script>
 
 <template>

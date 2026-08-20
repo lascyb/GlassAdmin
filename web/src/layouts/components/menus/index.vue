@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay';
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
-import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import type { MenuItemClicked } from "element-plus";
 import { type PropType, computed } from "vue";
 import { type NavigationFailure, useRoute } from "vue-router";
@@ -25,11 +25,14 @@ const displayMenus = computed(() => menusForDisplay(props.menus))
 </script>
 
 <template>
-  <el-menu @select="select" :default-active="route.path" router :collapse="layoutMenus.collapse">
+  <el-menu class="ga-aside-menus" @select="select" :default-active="route.path" router :collapse="layoutMenus.collapse">
     <MenuTree :menus="displayMenus"></MenuTree>
   </el-menu>
 </template>
 
 <style scoped>
-
+.ga-aside-menus {
+  box-sizing: border-box;
+  overflow: auto;
+}
 </style>
