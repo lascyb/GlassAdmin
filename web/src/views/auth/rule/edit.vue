@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RulePayload, RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
+import { getIframeAuthProvider, listIframeAuthProviders } from '@/embed/iframeAuth'
 import { views } from '@/router/views'
 import BindBackendApiPanel from '@/views/auth/rule/BindBackendApiPanel.vue'
 import Picker from '@components/ga-icon/picker.vue'
@@ -61,6 +62,15 @@ const showBackendApiPanel = computed(
 
 /** dialogWidth 弹窗宽度：含接口勾选时加宽 */
 const dialogWidth = computed(() => (showBackendApiPanel.value ? '700px' : '700px'))
+
+/** iframeAuthProviders 已注册 iframe 鉴权策略 */
+const iframeAuthProviders = listIframeAuthProviders()
+
+/** iframeTargetPlaceholder 内嵌地址占位 */
+const iframeTargetPlaceholder = computed(() => {
+    const p = getIframeAuthProvider(form.method)
+    return p?.targetPlaceholder ?? '完整 URL，如 https://example.com'
+})
 
 /**
  * toViewComponentValue glob key 转为 auth_rule.component（相对 views/）
@@ -261,7 +271,10 @@ async function ruleEditSubmit() {
                 pid: form.pid,
                 name: form.name.trim(),
                 path: form.path.trim() || null,
-                method: null,
+                method:
+                    form.type === 'iframe' && form.method.trim() !== ''
+                        ? form.method.trim()
+                        : null,
                 component:
                     VIEW_TYPES.includes(form.type) || form.type === 'link' || form.type === 'iframe'
                         ? form.component.trim() || null
@@ -300,6 +313,12 @@ watch(
         if (props.scope !== 'frontend') return
         if (type === 'menu' || type === 'link' || type === 'iframe') {
             backendRuleIds.value = []
+        }
+        if (type === 'iframe' && form.method && !getIframeAuthProvider(form.method)) {
+            form.method = ''
+        }
+        if (type !== 'iframe') {
+            form.method = ''
         }
         if (!allowHidden.value && form.visibility === VISIBILITY_HIDDEN) {
             form.visibility = VISIBILITY_SIDEBAR
@@ -424,8 +443,21 @@ defineExpose({openAdd, openEdit})
                 <el-form-item v-if="form.type === 'iframe'" label="内嵌地址" required>
                     <el-input
                         v-model.trim="form.component"
-                        placeholder="如 https://example.com"
+                        :placeholder="iframeTargetPlaceholder"
                     />
+                </el-form-item>
+                <el-form-item v-if="form.type === 'iframe'" label="鉴权方式">
+                    <el-radio-group v-model="form.method">
+                        <el-radio value="">直链</el-radio>
+                        <el-radio
+                            v-for="p in iframeAuthProviders"
+                            :key="p.id"
+                            :value="p.id"
+                        >{{ p.label }}</el-radio>
+                    </el-radio-group>
+                    <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                        直链：component 填完整 URL；有策略时填该系统约定的目标路径
+                    </div>
                 </el-form-item>
                 <el-form-item v-if="form.type !== 'btn'" label="图标">
                     <Picker v-model="form.icon"/>

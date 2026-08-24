@@ -98,6 +98,7 @@ export const menusToRoutes = (
                 meta: {
                     name: menu.name,
                     url: menu.component ?? '',
+                    method: menu.method ?? '',
                 },
             })
             const childRoutes = menusToRoutes(menu.children, fullPath)

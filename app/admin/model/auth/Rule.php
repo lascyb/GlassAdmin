@@ -504,6 +504,9 @@ class Rule extends Model
             if (!empty($n['component'])) {
                 $item['component'] = $n['component'];
             }
+            if (!empty($n['method'])) {
+                $item['method'] = $n['method'];
+            }
             if (!empty($n['icon'])) {
                 $item['icon'] = $n['icon'];
             }

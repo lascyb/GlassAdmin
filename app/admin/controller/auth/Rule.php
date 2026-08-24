@@ -451,7 +451,7 @@ class Rule extends AdminController
             'pid'         => (int) ($p['pid'] ?? 0),
             'name'        => (string) ($p['name'] ?? ''),
             'path'        => $p['path'] ?? null,
-            'method'      => $scope === 'backend' && $type === 'api' ? ($p['method'] ?? null) : null,
+            'method'      => self::normalizeMethod($scope, $type, $p['method'] ?? null),
             'component'   => $p['component'] ?? null,
             'icon'        => $p['icon'] ?? null,
             'sort'        => (int) ($p['sort'] ?? 0),
@@ -461,6 +461,26 @@ class Rule extends AdminController
                 ? mb_substr(trim((string) $p['description']), 0, 500)
                 : null,
         ];
+    }
+
+    /**
+     * normalizeMethod backend api 保留 HTTP method；frontend iframe 为鉴权策略 ID
+     */
+    private static function normalizeMethod(string $scope, string $type, mixed $raw): ?string
+    {
+        if ($scope === 'backend' && $type === 'api') {
+            $m = trim((string) ($raw ?? ''));
+
+            return $m !== '' ? $m : null;
+        }
+        if ($scope === 'frontend' && $type === 'iframe') {
+            $m = strtolower(trim((string) ($raw ?? '')));
+            if ($m !== '' && preg_match('/^[a-z][a-z0-9-]{0,63}$/', $m) === 1) {
+                return $m;
+            }
+        }
+
+        return null;
     }
 
     /**
