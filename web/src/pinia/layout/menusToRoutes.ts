@@ -96,7 +96,7 @@ export const menusToRoutes = (
                 path: toRoutePath(fullPath),
                 component: menu.type === 'iframe' ? iframeView : linkView,
                 meta: {
-                    name: menu.name,
+                    title: menu.name,
                     url: menu.component ?? '',
                     method: menu.method ?? '',
                 },
@@ -116,7 +116,7 @@ export const menusToRoutes = (
                     name: String(menu.id),
                     path: toRoutePath(fullPath),
                     component,
-                    meta: { name: menu.name },
+                    meta: { title: menu.name },
                 })
             }
             if (childRoutes?.length) {

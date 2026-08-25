@@ -22,7 +22,12 @@ export const routes: RouteRecordRaw[] = [
             }
         },
         children: [
-            {name: "root-default", path: '', component: () => import("@/views/index.vue"),}, //默认首页快捷入口
+            {
+                name: 'root-default',
+                path: '',
+                component: () => import('@/views/index.vue'),
+                meta: { title: '工作台' },
+            },
             {
                 name: 'account-profile',
                 path: 'account/profile',
@@ -34,8 +39,14 @@ export const routes: RouteRecordRaw[] = [
                 name: 'root-not-found',
                 path: ':404*',
                 component: () => import('@/layouts/components/error/404.vue'),
+                meta: { title: '页面不存在' },
             },
         ],
     },
-    {name: "login", path: '/login', component: () => import("@/views/login.vue"),},
+    {
+        name: 'login',
+        path: '/login',
+        component: () => import('@/views/login.vue'),
+        meta: { title: '登录' },
+    },
 ]

@@ -7,7 +7,7 @@ const route = useRoute()
 
 /** url 外链目标地址（menusToRoutes 写入 meta.url） */
 const url = computed(() => String(route.meta.url ?? '').trim())
-const title = computed(() => String(route.meta.name ?? '外链'))
+const title = computed(() => String(route.meta.title ?? route.meta.name ?? '外链'))
 
 onMounted(() => {
     if (url.value) {

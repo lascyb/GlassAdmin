@@ -3,6 +3,7 @@ import { createWebHistory, createRouter } from 'vue-router'
 import { useAdmin } from '@/pinia/admin'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import { useWorkbenchRecent } from '@/pinia/system/workbenchRecent'
+import { applyDocumentTitle } from './documentTitle.ts'
 import { routes } from './static.ts'
 
 export const router = createRouter({
@@ -10,7 +11,8 @@ export const router = createRouter({
     routes,
 })
 
-router.beforeEach((_to, _from, next) => {
+router.beforeEach((to, _from, next) => {
+    applyDocumentTitle(to)
     next()
 })
 

@@ -6,9 +6,11 @@ import { type Admin, useAdmin } from '@/pinia/admin'
 import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { applyDocumentTitle } from '@/router/documentTitle'
 
 const router = useRouter()
+const route = useRoute()
 const admin = useAdmin()
 
 const logining = ref<boolean>(false)
@@ -133,7 +135,7 @@ onMounted(() => {
       const title = String(data.site_title ?? '').trim()
       if (title) {
         siteTitle.value = title
-        document.title = `${title} - 登录`
+        applyDocumentTitle(route, title)
       }
       const description = String(data.site_description ?? '').trim()
       if (description) {
