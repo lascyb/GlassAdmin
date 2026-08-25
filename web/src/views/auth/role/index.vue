@@ -22,6 +22,7 @@ const onAddChild = (row: RoleRow) => openAddChild(row.id)
 </script>
 
 <template>
+  <div class="p-3">
   <el-card style="min-height: max(calc(100vh - 100px), 400px)">
     <div class="mb-3">
       <el-button v-auth="'add'" type="primary" @click="openAdd">新增角色</el-button>
@@ -48,4 +49,5 @@ const onAddChild = (row: RoleRow) => openAddChild(row.id)
         @saved="onSaved"
     />
   </el-card>
+  </div>
 </template>

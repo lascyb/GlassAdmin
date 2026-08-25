@@ -112,14 +112,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 空白壳：无外边距，高度与 main.vue 滚动视口一致 */
 .iframe-wrap {
     box-sizing: border-box;
     width: 100%;
-    height: calc(100vh - 100px);
+    height: var(--ga-main-view-height);
     min-height: 320px;
+    margin: 0;
     padding: 0;
     overflow: hidden;
-    background: var(--el-bg-color);
+    background: var(--el-fill-color-light);
 }
 
 .iframe-frame {

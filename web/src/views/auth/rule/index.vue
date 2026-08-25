@@ -4,6 +4,7 @@ import Frontend from './frontend.vue'
 </script>
 
 <template>
+  <div class="p-3">
   <el-card style="min-height: max(calc(100vh - 100px), 400px);">
     <el-tabs style="min-width: 900px" type="border-card">
       <el-tab-pane label="前端页面规则">
@@ -14,4 +15,5 @@ import Frontend from './frontend.vue'
       </el-tab-pane>
     </el-tabs>
   </el-card>
+  </div>
 </template>

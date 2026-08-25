@@ -69,6 +69,12 @@ const resetAsideWidth = () => {
                     展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。
                 </div>
             </el-form-item>
+            <el-form-item label="左侧菜单手风琴">
+                <el-switch v-model="setting.layout.menuAccordion" />
+                <div class="mt-1 text-xs text-gray-400">
+                    开启后同一时刻只展开一个子菜单目录。
+                </div>
+            </el-form-item>
             <el-form-item label="展示全部可发现菜单">
                 <el-switch
                     :model-value="setting.layout.showAllMenus"

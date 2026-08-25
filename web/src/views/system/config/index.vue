@@ -124,6 +124,7 @@ const displayValue = (row: SystemConfigRow): string => {
 </script>
 
 <template>
+    <div class="p-3">
     <el-card v-loading="loading" style="min-height: max(calc(100vh - 100px), 400px)">
         <div class="flex items-center justify-between p-4 pb-2">
             <div class="text-base font-medium">系统配置</div>
@@ -170,4 +171,5 @@ const displayValue = (row: SystemConfigRow): string => {
 
         <config-edit v-if="editController.show" v-model="editController.show" :id="editController.id" :groups="groups" @saved="onSaved" />
     </el-card>
+    </div>
 </template>

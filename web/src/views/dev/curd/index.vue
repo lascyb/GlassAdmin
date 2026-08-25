@@ -11,6 +11,7 @@ const { step, loading, historyVisible, tableVisible } = storeToRefs(store)
 </script>
 
 <template>
+    <div class="p-3">
     <el-card v-loading="loading" class="!border-0" style="min-height: max(calc(100vh - 100px), 400px)">
         <EntryPage
             v-if="step === 'entry'"
@@ -23,4 +24,5 @@ const { step, loading, historyVisible, tableVisible } = storeToRefs(store)
         <HistoryDialog v-model="historyVisible" @select="store.loadFromHistory" />
         <TableDialog v-model="tableVisible" @select="store.loadFromTable" />
     </el-card>
+    </div>
 </template>

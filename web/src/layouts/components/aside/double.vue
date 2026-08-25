@@ -71,7 +71,7 @@ onMounted(() => {
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <div style="display: flex; align-items: flex-start; height: calc(100vh - 80px)">
+        <div style="display: flex; align-items: flex-start; height: calc(100vh - 60px)">
             <div style="height: 100%; background: var(--el-fill-color-light)" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
@@ -90,7 +90,7 @@ onMounted(() => {
                     </template>
                 </el-segmented>
             </div>
-            <ga-menus v-if="menus && menus.length > 0" :menus="menus" style="height: calc(100vh - 80px); flex: 1"></ga-menus>
+            <ga-menus v-if="menus && menus.length > 0" :menus="menus" style="height: calc(100vh - 60px); flex: 1"></ga-menus>
         </div>
     </el-aside>
 </template>

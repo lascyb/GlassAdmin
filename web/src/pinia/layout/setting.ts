@@ -13,6 +13,8 @@ type Layout = {
     showAllMenus: boolean
     /** 左侧菜单栏展开宽度（px） */
     asideWidth: number
+    /** 侧栏手风琴：同时只展开一个子菜单 */
+    menuAccordion: boolean
     /** 是否已用系统配置做过首次默认填充 */
     seededFromSystem: boolean
 }
@@ -46,6 +48,7 @@ export const useLayoutSetting = defineStore(
             container: 'Default',
             showAllMenus: false,
             asideWidth: ASIDE_WIDTH_DEFAULT,
+            menuAccordion: true,
             seededFromSystem: false,
         })
         const showSetting = () => {
@@ -73,8 +76,9 @@ export const useLayoutSetting = defineStore(
             }
             if (hasPersisted) {
                 layout.seededFromSystem = true
-                // 旧本地偏好可能没有 asideWidth，补默认并钳制
+                // 旧本地偏好可能没有 asideWidth / menuAccordion，补默认并钳制
                 layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
+                layout.menuAccordion = !!layout.menuAccordion
                 return
             }
             const cfg = useSystemConfig()
@@ -82,6 +86,7 @@ export const useLayoutSetting = defineStore(
             layout.asideWidth = clampAsideWidth(
                 cfg.getNumber('layout_aside_width', ASIDE_WIDTH_DEFAULT),
             )
+            layout.menuAccordion = cfg.getBool('layout_menu_accordion', true)
             const container = cfg.getString('layout_container', 'Default')
             if (isContainer(container)) {
                 layout.container = container

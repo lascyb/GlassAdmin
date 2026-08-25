@@ -43,6 +43,7 @@ const onSizeChange = () => emit('load')
 </script>
 
 <template>
+    <div class="ga-table-page p-3">
     <el-card :style="{ minHeight }">
         <template v-if="$slots.header" #header>
             <slot name="header" />
@@ -72,4 +73,5 @@ const onSizeChange = () => emit('load')
         </div>
         <slot name="footer" />
     </el-card>
+    </div>
 </template>
