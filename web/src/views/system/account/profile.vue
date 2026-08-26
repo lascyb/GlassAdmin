@@ -5,7 +5,8 @@ import { usePaginatedList } from '@/composables/usePaginatedList.ts'
 import { useAdmin } from '@/pinia/admin'
 import { resolveStorageUrl } from '@/utils/storageUrl'
 import GaPasswordInput from '@components/ga-password-input/index.vue'
-import GaTablePage from '@components/ga-table-page/index.vue'
+import GaPage from '@components/ga-page/index.vue'
+import GaTable from '@components/ga-table/index.vue'
 import GaUploadImage from '@components/ga-upload/image.vue'
 import { Loading, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -194,22 +195,22 @@ const submitPassword = async () => {
             </el-col>
 
             <el-col :xs="24" :md="14" :lg="16" class="mt-4 md:mt-0">
-                <ga-table-page shadow="never"
-                    v-model:page="logPage"
-                    v-model:limit="logLimit"
-                    :loading="logLoading"
-                    :list="logList"
-                    :total="logTotal"
-                    :border="false"
-                    :page-sizes="[10, 20]"
-                    min-height="480px"
-                    @load="loadLogs"
-                >
-                    <template #header>我的操作日志</template>
-                    <el-table-column prop="create_time" label="时间" width="180" />
-                    <el-table-column prop="summary" label="说明" min-width="200" show-overflow-tooltip />
-                    <el-table-column prop="ip" label="IP" width="140" />
-                </ga-table-page>
+                <ga-page shadow="never" padding="none" min-height="480px" title="我的操作日志">
+                    <ga-table
+                        v-model:page="logPage"
+                        v-model:limit="logLimit"
+                        :loading="logLoading"
+                        :list="logList"
+                        :total="logTotal"
+                        :border="false"
+                        :page-sizes="[10, 20]"
+                        @load="loadLogs"
+                    >
+                        <el-table-column prop="create_time" label="时间" width="180" />
+                        <el-table-column prop="summary" label="说明" min-width="200" show-overflow-tooltip />
+                        <el-table-column prop="ip" label="IP" width="140" />
+                    </ga-table>
+                </ga-page>
             </el-col>
         </el-row>
 

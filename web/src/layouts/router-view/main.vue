@@ -5,7 +5,7 @@ const mainRefresh = useMainViewRefresh()
 </script>
 
 <template>
-  <!-- 壳只负责视口滚动；边距/卡片样式由页面或 GaPage / ga-table-page 自行定义 -->
+  <!-- 壳只负责视口滚动；边距/卡片样式由页面或 GaPage / ga-table 自行定义 -->
   <el-main class="ga-main">
     <el-scrollbar height="var(--ga-main-view-height)" noresize>
       <router-view v-slot="{ Component, route }">

@@ -1,23 +1,45 @@
 <script setup lang="ts">
 import type { AdminRow } from '@/apis/auth/admin'
 import * as adminApi from '@/apis/auth/admin'
+import type { RoleRow } from '@/apis/auth/role'
+import * as roleApi from '@/apis/auth/role'
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
 import GaStatusTag from '@/components/ga-status-tag/index.vue'
-import GaTablePage from '@/components/ga-table-page/index.vue'
+import GaPage from '@/components/ga-page/index.vue'
+import GaTable from '@/components/ga-table/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 import { formatUnixTime } from '@/utils/formatUnixTime'
-import { ADMIN_STATUS_MAP } from '@/views/auth/admin/constants'
+import { ADMIN_STATUS_MAP, OAUTH_PROVIDER_OPTIONS } from '@/views/auth/admin/constants'
 import EditView from '@/views/auth/admin/edit.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, type Component } from 'vue'
+
+const props = withDefaults(
+    defineProps<{
+        /** 固定按角色筛选；有值时隐藏角色筛选项 */
+        lockedRoleId?: number
+        /** 嵌入弹窗：隐藏新增入口 */
+        embedded?: boolean
+    }>(),
+    {
+        embedded: false,
+    },
+)
 
 const keyword = ref('')
+const roleTree = ref<RoleRow[]>([])
+
+const lockedRoleId = computed(() =>
+    props.lockedRoleId && props.lockedRoleId > 0 ? props.lockedRoleId : undefined,
+)
 
 const advanced = reactive({
     username: '',
     nickname: '',
     status: undefined as number | undefined,
+    oauth_provider: undefined as string | undefined,
+    role_id: lockedRoleId.value as number | undefined,
 })
 
 const queryParams = computed(() => ({
@@ -25,6 +47,8 @@ const queryParams = computed(() => ({
     username: advanced.username.trim() || undefined,
     nickname: advanced.nickname.trim() || undefined,
     status: advanced.status === 0 || advanced.status === 1 ? advanced.status : undefined,
+    oauth_provider: advanced.oauth_provider || undefined,
+    role_id: lockedRoleId.value ?? (advanced.role_id && advanced.role_id > 0 ? advanced.role_id : undefined),
 }))
 
 const { list, total, page, limit, loading, load, search } = usePaginatedList<AdminRow>(
@@ -38,6 +62,14 @@ const editController = reactive<{
     show?: boolean
     id?: number
 }>({})
+
+onMounted(() => {
+    if (!lockedRoleId.value) {
+        void roleApi.fetchTree().then((list) => {
+            roleTree.value = list
+        })
+    }
+})
 
 const clickEdit = (id: number) => {
     Object.assign(editController, { show: true, id })
@@ -73,16 +105,31 @@ const resetAdvanced = () => {
     advanced.username = ''
     advanced.nickname = ''
     advanced.status = undefined
+    advanced.oauth_provider = undefined
+    advanced.role_id = lockedRoleId.value
 }
+
+/** shellIs 整页用 ga-page，嵌入弹窗用裸 div */
+const shellIs = computed<string | Component>(() => (props.embedded ? 'div' : GaPage))
+const shellProps = computed(() =>
+    props.embedded
+        ? {}
+        : {
+              padding: 'sm' as const,
+              minHeight: 'max(calc(100vh - 100px), 400px)',
+          },
+)
 </script>
 
 <template>
-    <ga-table-page
+    <component :is="shellIs" v-bind="shellProps">
+    <ga-table
         v-model:page="page"
         v-model:limit="limit"
         :loading="loading"
         :list="list"
         :total="total"
+        size="small"
         @load="load"
     >
         <template #toolbar>
@@ -111,6 +158,35 @@ const resetAdvanced = () => {
                             class="!w-40"
                         />
                     </el-form-item>
+                    <el-form-item v-if="!lockedRoleId" label="角色">
+                        <el-tree-select
+                            v-model="advanced.role_id"
+                            class="!w-52"
+                            :data="roleTree"
+                            :props="{ value: 'id', label: 'name', children: 'children' }"
+                            node-key="id"
+                            placeholder="全部"
+                            clearable
+                            filterable
+                            check-strictly
+                            :render-after-expand="false"
+                        />
+                    </el-form-item>
+                    <el-form-item label="三方登录">
+                        <el-select
+                            v-model="advanced.oauth_provider"
+                            clearable
+                            placeholder="全部"
+                            class="!w-28"
+                        >
+                            <el-option
+                                v-for="item in OAUTH_PROVIDER_OPTIONS"
+                                :key="item.value"
+                                :value="item.value"
+                                :label="item.label"
+                            />
+                        </el-select>
+                    </el-form-item>
                     <el-form-item label="状态">
                         <el-select v-model="advanced.status" clearable placeholder="全部" class="!w-28">
                             <el-option
@@ -122,7 +198,7 @@ const resetAdvanced = () => {
                         </el-select>
                     </el-form-item>
                 </template>
-                <template #actions>
+                <template v-if="!embedded" #actions>
                     <el-button v-auth="'add'" type="primary" :icon="Plus" @click="clickAdd">新增管理员</el-button>
                 </template>
             </ga-search-bar>
@@ -130,27 +206,13 @@ const resetAdvanced = () => {
         <el-table-column prop="id" label="ID" width="72" />
         <el-table-column label="头像" width="72" align="center">
             <template #default="{ row }">
-                <el-avatar :size="36" :src="row.avatar || undefined">
+                <el-avatar :size="28" :src="row.avatar || undefined">
                     {{ avatarInitial(row) }}
                 </el-avatar>
             </template>
         </el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
-        <el-table-column label="三方登录" width="120">
-            <template #default="{ row }">
-                <template v-if="row.oauth_providers?.length">
-                    <el-tag
-                        v-for="p in row.oauth_providers"
-                        :key="p"
-                        size="small"
-                        round
-                        class="mr-1"
-                    >{{ oauthProviderLabel(p) }}</el-tag>
-                </template>
-                <span v-else class="text-gray-400">—</span>
-            </template>
-        </el-table-column>
         <el-table-column label="角色" min-width="200">
             <template #default="{ row }">
                 <template v-if="row.roles?.length">
@@ -166,6 +228,20 @@ const resetAdvanced = () => {
         </el-table-column>
         <el-table-column label="创建时间" width="170">
             <template #default="{ row }">{{ formatUnixTime(row.create_time) }}</template>
+        </el-table-column>
+        <el-table-column label="三方登录" width="120">
+            <template #default="{ row }">
+                <template v-if="row.oauth_providers?.length">
+                    <el-tag
+                        v-for="p in row.oauth_providers"
+                        :key="p"
+                        size="small"
+                        round
+                        class="mr-1"
+                    >{{ oauthProviderLabel(p) }}</el-tag>
+                </template>
+                <span v-else class="text-gray-400">—</span>
+            </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="88">
             <template #default="{ row }">
@@ -186,5 +262,6 @@ const resetAdvanced = () => {
                 @saved="onSaved"
             />
         </template>
-    </ga-table-page>
+    </ga-table>
+    </component>
 </template>

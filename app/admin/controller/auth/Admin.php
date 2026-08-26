@@ -37,26 +37,44 @@ class Admin extends AdminController
         $username = trim((string) $request->get('username', ''));
         $nickname = trim((string) $request->get('nickname', ''));
         $statusRaw = $request->get('status');
+        $oauthProvider = trim((string) $request->get('oauth_provider', ''));
+        $roleId = (int) $request->get('role_id', 0);
 
-        $q = AdminModel::with([
+        $q = AdminModel::alias('a')->with([
             'roles' => static function ($query): void {
                 $query->field('id,name');
             },
-        ])->order('id', 'desc')->field('id,username,nickname,avatar,status,last_login_time,create_time,update_time');
+        ]);
+
+        if ($oauthProvider === 'feishu') {
+            $q->join('auth_oauth2_feishu o', 'o.admin_id = a.id');
+        } elseif ($oauthProvider === 'none') {
+            $q->leftJoin('auth_oauth2_feishu o', 'o.admin_id = a.id')
+                ->whereNull('o.id');
+        }
+
+        if ($roleId > 0) {
+            $q->join('auth_admin_role ar', 'ar.admin_id = a.id')
+                ->where('ar.role_id', $roleId);
+        }
+
+        $q->order('a.id', 'desc')
+            ->field('a.id,a.username,a.nickname,a.avatar,a.status,a.last_login_time,a.create_time,a.update_time');
+
         if ($keyword !== '') {
             $kw = addcslashes($keyword, '%_\\');
-            $q->where('username|nickname', 'like', '%' . $kw . '%');
+            $q->where('a.username|a.nickname', 'like', '%' . $kw . '%');
         }
         if ($username !== '') {
-            $q->where('username', 'like', '%' . addcslashes($username, '%_\\') . '%');
+            $q->where('a.username', 'like', '%' . addcslashes($username, '%_\\') . '%');
         }
         if ($nickname !== '') {
-            $q->where('nickname', 'like', '%' . addcslashes($nickname, '%_\\') . '%');
+            $q->where('a.nickname', 'like', '%' . addcslashes($nickname, '%_\\') . '%');
         }
         if ($statusRaw !== null && $statusRaw !== '') {
             $status = (int) $statusRaw;
             if (in_array($status, [0, 1], true)) {
-                $q->where('status', $status);
+                $q->where('a.status', $status);
             }
         }
 

@@ -22,7 +22,8 @@ const onSaved = () => {
 <%resetFn%><%extraLabelFn%></script>
 
 <template>
-    <ga-table-page
+    <ga-page padding="sm" min-height="max(calc(100vh - 100px), 400px)">
+    <ga-table
         v-model:page="page"
         v-model:limit="limit"
         :loading="loading"
@@ -59,5 +60,6 @@ const onSaved = () => {
                 @saved="onSaved"
             />
         </template>
-    </ga-table-page>
+    </ga-table>
+    </ga-page>
 </template>

@@ -41,6 +41,10 @@ export const fetchList = async (params: {
     username?: string
     nickname?: string
     status?: number
+    /** feishu=已绑定飞书；none=未绑定三方 */
+    oauth_provider?: string
+    /** 按角色 id 筛选（auth_admin_role join） */
+    role_id?: number
 }) => {
     return getData<AdminListRes>('admin/auth.Admin/list', params)
 }

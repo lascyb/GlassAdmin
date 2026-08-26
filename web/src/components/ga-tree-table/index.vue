@@ -48,6 +48,7 @@ const emit = defineEmits<{
         <el-table-column label="操作" fixed="right" :width="actionWidth">
             <template #default="{ row }">
                 <slot name="actions" :row="row">
+                    <slot name="prepend-actions" :row="row" />
                     <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="emit('edit', row)" />
                     <el-button
                         v-if="showAddChild"

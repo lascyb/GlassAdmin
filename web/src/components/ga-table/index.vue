@@ -16,12 +16,12 @@ withDefaults(
         pageSizes?: number[]
         /** showPagination 是否显示分页 */
         showPagination?: boolean
-        /** minHeight 最小高度 */
-        minHeight?: string
         /** border 表格 border */
         border?: boolean
         /** stripe 斑马纹 */
         stripe?: boolean
+        /** size 表格 size */
+        size?: 'default' | 'small' | 'large'
     }>(),
     {
         loading: false,
@@ -30,9 +30,9 @@ withDefaults(
         emptyText: '暂无数据',
         pageSizes: () => [10, 20, 50],
         showPagination: true,
-        minHeight: 'max(calc(100vh - 100px), 400px)',
         border: true,
         stripe: true,
+        size: 'default',
     },
 )
 
@@ -43,17 +43,14 @@ const onSizeChange = () => emit('load')
 </script>
 
 <template>
-    <div class="ga-table-page p-3">
-    <el-card :style="{ minHeight }">
-        <template v-if="$slots.header" #header>
-            <slot name="header" />
-        </template>
+    <div class="ga-table">
         <slot name="toolbar" />
         <el-table
             v-loading="loading"
             :data="list"
             :border="border"
             :stripe="stripe"
+            :size="size"
             highlight-current-row
             :empty-text="emptyText"
         >
@@ -72,6 +69,5 @@ const onSizeChange = () => emit('load')
             />
         </div>
         <slot name="footer" />
-    </el-card>
     </div>
 </template>

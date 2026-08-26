@@ -2,7 +2,8 @@
 import type { AttachmentRow } from '@/apis/system/attachment'
 import * as attachmentApi from '@/apis/system/attachment'
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
-import GaTablePage from '@/components/ga-table-page/index.vue'
+import GaPage from '@/components/ga-page/index.vue'
+import GaTable from '@/components/ga-table/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 import { formatUnixTime } from '@/utils/formatUnixTime'
@@ -81,7 +82,8 @@ const clickDel = (row: AttachmentRow) => {
 </script>
 
 <template>
-    <ga-table-page
+    <ga-page padding="sm" min-height="max(calc(100vh - 100px), 400px)">
+    <ga-table
         v-model:page="page"
         v-model:limit="limit"
         :loading="loading"
@@ -174,5 +176,6 @@ const clickDel = (row: AttachmentRow) => {
                 :seed="detailController.seed"
             />
         </template>
-    </ga-table-page>
+    </ga-table>
+    </ga-page>
 </template>
