@@ -56,6 +56,18 @@ const onSaved = () => {
     void load()
 }
 
+/** oauthProviderLabel 三方登录展示文案 */
+const oauthProviderLabel = (code: string): string => {
+    if (code === 'feishu') return '飞书'
+    return code
+}
+
+/** avatarInitial 无头像时的文字 */
+const avatarInitial = (row: AdminRow): string => {
+    const raw = (row.nickname || row.username || '?').trim()
+    return raw ? raw.slice(0, 1).toUpperCase() : '?'
+}
+
 /** resetAdvanced 重置高级筛选条件 */
 const resetAdvanced = () => {
     advanced.username = ''
@@ -116,8 +128,29 @@ const resetAdvanced = () => {
             </ga-search-bar>
         </template>
         <el-table-column prop="id" label="ID" width="72" />
+        <el-table-column label="头像" width="72" align="center">
+            <template #default="{ row }">
+                <el-avatar :size="36" :src="row.avatar || undefined">
+                    {{ avatarInitial(row) }}
+                </el-avatar>
+            </template>
+        </el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
+        <el-table-column label="三方登录" width="120">
+            <template #default="{ row }">
+                <template v-if="row.oauth_providers?.length">
+                    <el-tag
+                        v-for="p in row.oauth_providers"
+                        :key="p"
+                        size="small"
+                        round
+                        class="mr-1"
+                    >{{ oauthProviderLabel(p) }}</el-tag>
+                </template>
+                <span v-else class="text-gray-400">—</span>
+            </template>
+        </el-table-column>
         <el-table-column label="角色" min-width="200">
             <template #default="{ row }">
                 <template v-if="row.roles?.length">

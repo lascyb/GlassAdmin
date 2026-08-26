@@ -5,6 +5,7 @@ namespace app\admin\controller\auth;
 
 use app\admin\model\auth\Admin as AdminModel;
 use app\admin\model\auth\AdminRole;
+use app\admin\model\auth\oauth2\Feishu as OauthFeishu;
 use app\admin\model\auth\Role as RoleModel;
 use app\admin\service\RsaKeyService;
 use app\common\controller\AdminController;
@@ -68,9 +69,12 @@ class Admin extends AdminController
             unset($data['password']);
             $roles = $data['roles'] ?? [];
             $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
+            $data['oauth_providers'] = [];
 
             return $data;
         }, $paginator->items());
+
+        $items = $this->attachOauthProviders($items);
 
         return $this->paginate(
             $items,
@@ -102,7 +106,10 @@ class Admin extends AdminController
         }
         $data = $row->toArray();
         unset($data['password']);
-        $data['role_ids'] = array_column($data['roles'] ?? [],'id');
+        $data['role_ids'] = array_column($data['roles'] ?? [], 'id');
+        $data['oauth_providers'] = [];
+        $data = $this->attachOauthProviders([$data])[0];
+
         return $this->ok($data);
     }
 
@@ -270,6 +277,57 @@ class Admin extends AdminController
         }
 
         return null;
+    }
+
+    /**
+     * attachOauthProviders 为本页管理员附加 oauth_providers；无本地头像时回填飞书头像
+     *
+     * @param list<array<string, mixed>> $items
+     * @return list<array<string, mixed>>
+     */
+    private function attachOauthProviders(array $items): array
+    {
+        if ($items === []) {
+            return $items;
+        }
+        $ids = [];
+        foreach ($items as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+        if ($ids === []) {
+            return $items;
+        }
+
+        $binds = OauthFeishu::whereIn('admin_id', $ids)
+            ->field('admin_id,avatar')
+            ->select();
+        /** @var array<int, array{avatar?: string|null}> $byAdmin */
+        $byAdmin = [];
+        foreach ($binds as $bind) {
+            $aid = (int) $bind->getAttr('admin_id');
+            $byAdmin[$aid] = [
+                'avatar' => $bind->getAttr('avatar'),
+            ];
+        }
+
+        foreach ($items as &$row) {
+            $aid = (int) ($row['id'] ?? 0);
+            $providers = [];
+            if (isset($byAdmin[$aid])) {
+                $providers[] = 'feishu';
+                $avatar = $row['avatar'] ?? null;
+                if (($avatar === null || $avatar === '') && !empty($byAdmin[$aid]['avatar'])) {
+                    $row['avatar'] = $byAdmin[$aid]['avatar'];
+                }
+            }
+            $row['oauth_providers'] = $providers;
+        }
+        unset($row);
+
+        return $items;
     }
 
     /**

@@ -16,6 +16,8 @@ export type AdminRow = {
     role_ids?: number[]
     /** 预加载角色，与 with roles 字段 id,name 一致 */
     roles?: AdminRoleBrief[]
+    /** 已绑定的三方登录标识，如 feishu */
+    oauth_providers?: string[]
     create_time?: number | null
     update_time?: number | null
     last_login_time?: number | null

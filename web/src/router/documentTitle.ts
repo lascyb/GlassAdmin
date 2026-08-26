@@ -17,8 +17,8 @@ export const applyDocumentTitle = (
     siteTitleOverride?: string,
 ): void => {
     const page = resolveRouteTitle(to)
-    const fromStore = useSystemConfig().siteTitle
-    const site = String(siteTitleOverride ?? fromStore ?? '')
+    const fromStore = useSystemConfig().getString('site_title', '')
+    const site = String(siteTitleOverride ?? fromStore)
         .trim() || 'GlassAdmin'
     document.title = page ? `${page} - ${site}` : site
 }
