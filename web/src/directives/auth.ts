@@ -1,9 +1,15 @@
 import type { Menu } from '@/layouts/components/menus/types'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import { router } from '@/router'
-import type { Directive, DirectiveBinding } from 'vue'
+import { normalizeViewComponent } from '@/utils/viewComponent'
+import type {
+    ComponentInternalInstance,
+    ComponentPublicInstance,
+    Directive,
+    DirectiveBinding,
+} from 'vue'
 
-/** AuthBindingValue 指令值：旧字符串 btn、scope 路径、或 { btn, scope }；未赋值时 Vue 传入 true */
+/** AuthBindingValue 指令值：旧字符串 btn、scope 路径/component、或 { btn, scope }；未赋值时 Vue 传入 true */
 export type AuthBindingValue =
     | string
     | boolean
@@ -14,6 +20,10 @@ export type AuthBindingValue =
 type AuthQuery = {
     btn?: string
     scope?: string
+}
+
+type GaViewComponent = {
+    __gaView?: string
 }
 
 /**
@@ -60,18 +70,74 @@ function pageHasBtn(page: Menu, btn: string): boolean {
 }
 
 /**
- * hasPermission 当前页（或 scope 页）下是否有指定按钮
+ * toInternal 从指令 binding.instance（公开实例）取内部实例
  */
-export function hasPermission(btn?: string | null, scope?: string | null): boolean {
+function toInternal(
+    instance: ComponentPublicInstance | ComponentInternalInstance | null | undefined,
+): ComponentInternalInstance | null {
+    if (!instance) return null
+    const dollar = (instance as ComponentPublicInstance & { $?: ComponentInternalInstance }).$
+    if (dollar) return dollar
+    return instance as ComponentInternalInstance
+}
+
+/**
+ * resolveViewKey 从指令所在实例向上查找最近的 __gaView（views 页身份）
+ */
+function resolveViewKey(
+    instance: ComponentPublicInstance | ComponentInternalInstance | null | undefined,
+): string | undefined {
+    let cur: ComponentInternalInstance | null = toInternal(instance)
+    while (cur) {
+        const type = cur.type as GaViewComponent | string | null | undefined
+        if (type && typeof type === 'object' && typeof type.__gaView === 'string' && type.__gaView) {
+            return normalizeViewComponent(type.__gaView) ?? type.__gaView
+        }
+        cur = cur.parent
+    }
+    return undefined
+}
+
+/**
+ * hasPermissionByPath 按菜单 path 查单节点 btn（显式 path scope / 路由回退）
+ */
+function hasPermissionByPath(btn: string, pagePath: string): boolean {
+    const found = useLayoutMenus().find(stripPathExtras(pagePath))
+    if (!found) return false
+    return pageHasBtn(found.menu, btn)
+}
+
+/**
+ * hasPermission 当前页文件（或 scope）下是否有指定按钮
+ * - scope 以 / 开头：按 path
+ * - 其它非空 scope：按 component（走 hasBtnForView）
+ * - 无 scope：优先 instance.__gaView，否则当前路由 path
+ */
+export function hasPermission(
+    btn?: string | null,
+    scope?: string | null,
+    instance?: ComponentPublicInstance | ComponentInternalInstance | null,
+): boolean {
     if (!btn) return true
 
-    const pagePath = stripPathExtras(scope || router.currentRoute.value.path)
+    const store = useLayoutMenus()
+
+    if (scope) {
+        if (scope.startsWith('/')) {
+            return hasPermissionByPath(btn, scope)
+        }
+        const key = normalizeViewComponent(scope) ?? scope
+        return store.hasBtnForView(key, btn)
+    }
+
+    const viewKey = resolveViewKey(instance)
+    if (viewKey) {
+        return store.hasBtnForView(viewKey, btn)
+    }
+
+    const pagePath = stripPathExtras(router.currentRoute.value.path)
     if (!pagePath) return false
-
-    const found = useLayoutMenus().find(pagePath)
-    if (!found) return false
-
-    return pageHasBtn(found.menu, btn)
+    return hasPermissionByPath(btn, pagePath)
 }
 
 /**
@@ -79,7 +145,8 @@ export function hasPermission(btn?: string | null, scope?: string | null): boole
  */
 function applyAuth(el: HTMLElement, binding: DirectiveBinding<AuthBindingValue>) {
     const { btn, scope } = parseAuth(binding)
-    el.style.display = hasPermission(btn, scope) ? '' : 'none'
+    const instance = binding.instance as ComponentPublicInstance | null
+    el.style.display = hasPermission(btn, scope, instance) ? '' : 'none'
 }
 
 /** vAuth 前端按钮权限指令，按页面子按钮鉴权 */

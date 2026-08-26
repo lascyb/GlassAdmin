@@ -7,6 +7,13 @@ interface ImportMetaEnv {
     readonly VITE_PERSIST_STORAGE_PREFIX?: string
 }
 
+declare module 'vue' {
+    interface ComponentCustomOptions {
+        /** Vite 插件注入：相对 views/ 的页面 key，供 v-auth 反查 */
+        __gaView?: string
+    }
+}
+
 declare module 'vue-router' {
     interface RouteMeta {
         /** 浏览器 / 页面标题 */

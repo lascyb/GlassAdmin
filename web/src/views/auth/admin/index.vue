@@ -3,9 +3,9 @@ import type { AdminRow } from '@/apis/auth/admin'
 import * as adminApi from '@/apis/auth/admin'
 import type { RoleRow } from '@/apis/auth/role'
 import * as roleApi from '@/apis/auth/role'
+import GaPage from '@/components/ga-page/index.vue'
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
 import GaStatusTag from '@/components/ga-status-tag/index.vue'
-import GaPage from '@/components/ga-page/index.vue'
 import GaTable from '@/components/ga-table/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
@@ -129,7 +129,6 @@ const shellProps = computed(() =>
         :loading="loading"
         :list="list"
         :total="total"
-        size="small"
         @load="load"
     >
         <template #toolbar>
@@ -199,7 +198,7 @@ const shellProps = computed(() =>
                     </el-form-item>
                 </template>
                 <template v-if="!embedded" #actions>
-                    <el-button v-auth="'add'" type="primary" :icon="Plus" @click="clickAdd">新增管理员</el-button>
+                    <el-button v-auth:add type="primary" :icon="Plus" @click="clickAdd">新增管理员</el-button>
                 </template>
             </ga-search-bar>
         </template>
@@ -248,10 +247,24 @@ const shellProps = computed(() =>
                 <ga-status-tag :value="row.status" :map="ADMIN_STATUS_MAP" />
             </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="140">
+        <el-table-column label="操作" fixed="right">
             <template #default="{ row }">
-                <el-button v-auth="'edit'" title="编辑" plain type="primary" :icon="Edit" @click="clickEdit(row.id)" />
-                <el-button v-auth="'del'" title="删除" plain type="danger" :icon="Delete" @click="clickDel(row)" />
+                <el-button
+                    v-auth:edit
+                    title="编辑"
+                    plain
+                    type="primary"
+                    :icon="Edit"
+                    @click="clickEdit(row.id)"
+                />
+                <el-button
+                    v-auth:del
+                    title="删除"
+                    plain
+                    type="danger"
+                    :icon="Delete"
+                    @click="clickDel(row)"
+                />
             </template>
         </el-table-column>
         <template #footer>

@@ -39,7 +39,7 @@ const isUnauthorized = (menu: Menu) => menu.authorized === false
         <MenuTree :extend="{ ...props.extend, level: props.extend.level + 1 }" :menus="menu.children"/>
       </el-sub-menu>
     </template>
-    <template v-else-if="menu.type == 'page' || menu.type == 'view' || menu.type == 'route' || menu.type == 'link' || menu.type == 'iframe'">
+    <template v-else-if="menu.type == 'view' || menu.type == 'route' || menu.type == 'link' || menu.type == 'iframe'">
       <el-menu-item :index="menu.path_full" :key="menu.id"
                     :class="{ 'is-locked': isUnauthorized(menu) }"
                     @click="(index: string, indexPath: string[], active: boolean)=>click(index, indexPath, active,menu)">

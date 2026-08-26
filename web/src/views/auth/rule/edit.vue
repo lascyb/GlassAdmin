@@ -3,6 +3,7 @@ import type { RulePayload, RuleRow } from '@/apis/auth/rule'
 import * as ruleApi from '@/apis/auth/rule'
 import { getIframeAuthProvider, listIframeAuthProviders } from '@/embed/iframeAuth'
 import { views } from '@/router/views'
+import { normalizeViewComponent } from '@/utils/viewComponent'
 import BindBackendApiPanel from '@/views/auth/rule/BindBackendApiPanel.vue'
 import Picker from '@components/ga-icon/picker.vue'
 import { ElMessage } from 'element-plus'
@@ -72,21 +73,14 @@ const iframeTargetPlaceholder = computed(() => {
     return p?.targetPlaceholder ?? '完整 URL，如 https://example.com'
 })
 
-/**
- * toViewComponentValue glob key 转为 auth_rule.component（相对 views/）
- */
-function toViewComponentValue(globKey: string): string {
-    return globKey.replace(/^\/src\/views\//, '').replace(/^@\/views\//, '')
-}
-
 /** viewComponentOptions 可选页面组件（来自 import.meta.glob） */
 const viewComponentOptions = computed(() => {
     const map = new Map<string, string>()
     for (const key of Object.keys(views)) {
-        const value = toViewComponentValue(key)
+        const value = normalizeViewComponent(key)
         if (value) map.set(value, value)
     }
-    const current = form.component.trim()
+    const current = normalizeViewComponent(form.component.trim()) ?? form.component.trim()
     if (current) map.set(current, current)
     return [...map.values()]
         .sort((a, b) => a.localeCompare(b))

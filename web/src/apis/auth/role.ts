@@ -9,6 +9,8 @@ export type RoleRow = {
     desc?: string | null
     sort: number
     status: number
+    /** 绑定该角色的管理员数量 */
+    admin_count?: number
     children?: RoleRow[]
 }
 

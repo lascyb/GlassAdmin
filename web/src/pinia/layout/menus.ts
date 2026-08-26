@@ -1,13 +1,54 @@
-import {defineStore} from 'pinia'
-import {ref, shallowRef} from "vue";
-import type {Menu} from "@/layouts/components/menus/types.ts";
+import { defineStore } from 'pinia'
+import { ref, shallowRef } from 'vue'
+import type { Menu } from '@/layouts/components/menus/types.ts'
 import { menusToRoutes } from '@/pinia/layout/menusToRoutes.ts'
 import { findMenuByPath } from '@/pinia/layout/findMenuByPath.ts'
-import {router} from "@/router";
+import { router } from '@/router'
+import { normalizeViewComponent } from '@/utils/viewComponent'
 
 type FindResult = {
     menus: Menu[]
     menu: Menu
+}
+
+/** INDEXABLE_TYPES 可对应 views 下页面的菜单类型（排除 iframe/link，其 component 为 URL） */
+const INDEXABLE_TYPES = new Set(['menu', 'view', 'route'])
+
+/**
+ * stripPathExtras 去掉 query / hash，与菜单 path_full 对齐
+ */
+function stripPathExtras(path: string): string {
+    const withoutQuery = path.split('?')[0] ?? path
+    return withoutQuery.split('#')[0] ?? withoutQuery
+}
+
+/**
+ * pageHasBtn 指定页面节点的直接子级中是否有 type=btn 且 path 匹配
+ */
+function pageHasBtn(page: Menu, btn: string): boolean {
+    return (page.children ?? []).some((n) => n.type === 'btn' && n.path === btn)
+}
+
+/**
+ * buildComponentIndex DFS 收集 component → 挂载节点列表
+ */
+function buildComponentIndex(nodes: Menu[], into: Map<string, Menu[]>): void {
+    for (const node of nodes) {
+        if (INDEXABLE_TYPES.has(node.type) && node.component) {
+            const key = normalizeViewComponent(node.component)
+            if (key) {
+                const list = into.get(key)
+                if (list) {
+                    list.push(node)
+                } else {
+                    into.set(key, [node])
+                }
+            }
+        }
+        if (node.children?.length) {
+            buildComponentIndex(node.children, into)
+        }
+    }
 }
 
 export const useLayoutMenus = defineStore('layout_menus', () => {
@@ -18,6 +59,8 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
     const collapse = ref<boolean>(false)
     /** registeredRouteNames 上次 init 注册的动态路由名（便于切换 catalog 时卸掉） */
     const registeredRouteNames = ref<string[]>([])
+    /** byComponent 同一 views 文件的全部菜单挂载 */
+    const byComponent = shallowRef<Map<string, Menu[]>>(new Map())
 
     const init = (data: Menu[]) => {
         for (const name of registeredRouteNames.value) {
@@ -46,12 +89,15 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
         }
 
         menus.value = data
+        const index = new Map<string, Menu[]>()
+        buildComponentIndex(data, index)
+        byComponent.value = index
     }
 
     const find = (path: string): FindResult | undefined => {
-        let paths = findMenuByPath(menus.value, path)
+        const paths = findMenuByPath(menus.value, path)
         if (paths && paths.length > 0) {
-            let c = paths[paths.length - 1]
+            const c = paths[paths.length - 1]
             if (c) {
                 return {
                     menus: paths,
@@ -60,6 +106,30 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
             }
         }
         return undefined
+    }
+
+    /**
+     * listByComponent 返回挂载该 views 相对路径的全部菜单节点
+     */
+    const listByComponent = (component: string): Menu[] => {
+        const key = normalizeViewComponent(component)
+        if (!key) return []
+        return byComponent.value.get(key) ?? []
+    }
+
+    /**
+     * hasBtnForView 按页面文件鉴权：当前路由命中某次挂载则只查该节点，否则并集
+     */
+    const hasBtnForView = (viewKey: string, btn: string): boolean => {
+        const mounts = listByComponent(viewKey)
+        if (!mounts.length) return false
+
+        const routePath = stripPathExtras(router.currentRoute.value.path)
+        const hit = mounts.find((m) => m.path_full && stripPathExtras(m.path_full) === routePath)
+        if (hit) {
+            return pageHasBtn(hit, btn)
+        }
+        return mounts.some((m) => pageHasBtn(m, btn))
     }
 
     /**
@@ -99,6 +169,8 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
         collapse,
         init,
         find,
+        listByComponent,
+        hasBtnForView,
         setActiveModule,
         syncModuleFromPath,
     }

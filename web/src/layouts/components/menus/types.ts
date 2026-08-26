@@ -3,8 +3,8 @@ export type Menu = {
     name: string
     path: string
     path_full: string; //根据层级前端自动补全
-    /** {menu:目录,page:页面(兼容),view:页面,route:路由(不入侧栏),btn:按钮,iframe:内嵌,link:外链} */
-    type: 'menu' | 'page' | 'view' | 'route' | 'btn' | 'iframe' | 'link'
+    /** {menu:目录,view:页面,route:路由(不入侧栏),btn:按钮,iframe:内嵌,link:外链} */
+    type: 'menu' | 'view' | 'route' | 'btn' | 'iframe' | 'link'
     /** iframe 鉴权策略 ID（空 = 直链）；对应 embed/auth 提供方 */
     method?: string | null
     /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
@@ -21,9 +21,8 @@ export type Extend = {
     level: number
 }
 export const tree = {
-    "menu": ["menu", "page", "view", "route", "btn", "iframe", "link"],
-    "page": ["page", "view", "route", "btn"],
-    "view": ["page", "view", "route", "btn"],
+    "menu": ["menu", "view", "route", "btn", "iframe", "link"],
+    "view": ["view", "route", "btn"],
     "route": ["route", "btn"],
     "btn": [],
     "iframe": [],

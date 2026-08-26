@@ -122,7 +122,7 @@ DROP TABLE IF EXISTS `auth_rule`;
 CREATE TABLE `auth_rule`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `scope` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '{backend:后端,frontend:前端}',
-  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,btn,link,iframe}',
+  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,route,btn,link,iframe}',
   `pid` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级 id，0 为根',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '名称',
   `path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '后端 api 路径或前端 path 片段',

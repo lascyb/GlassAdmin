@@ -78,7 +78,7 @@ class Rule extends Model
     private const int CACHE_TTL = 60;
 
     /** 可出现在侧栏的前端规则类型 */
-    private const array MENU_DISPLAY_TYPES = ['menu', 'view', 'page', 'route', 'link', 'iframe'];
+    private const array MENU_DISPLAY_TYPES = ['menu', 'view', 'route', 'link', 'iframe'];
 
     /**
      * children 直接子节点

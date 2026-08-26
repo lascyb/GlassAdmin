@@ -1,5 +1,6 @@
 import type { Menu } from '@/layouts/components/menus/types.ts'
 import { views } from '@/router/views.ts'
+import { normalizeViewComponent, toViewsGlobKey } from '@/utils/viewComponent'
 import type { RouteRecordRaw } from 'vue-router'
 
 const iframeView = () => import('@/layouts/router-view/iframe.vue')
@@ -8,15 +9,11 @@ const noPermissionView = () => import('@/layouts/components/error/no-permission.
 
 /** getComponent 按菜单 component 字段解析懒加载视图 */
 const getComponent = (component: string | undefined): (() => Promise<unknown>) | undefined => {
-    if (!component) {
+    const key = normalizeViewComponent(component)
+    if (!key) {
         return undefined
     }
-    if (component.startsWith('/')) {
-        component = component.substring(1)
-    }
-    component = `/src/views/${component}${component.endsWith('.vue') ? '' : '.vue'}`
-
-    return views[component]
+    return views[toViewsGlobKey(key)]
 }
 
 /** isExternalPath 是否为外链 URL（不作为 vue-router path） */
@@ -67,7 +64,6 @@ export const menusToRoutes = (
             // 未授权可发现项：同一 path 进无权限说明页
             if (
                 menu.type === 'view' ||
-                menu.type === 'page' ||
                 menu.type === 'link' ||
                 menu.type === 'iframe' ||
                 menu.type === 'route'
@@ -108,7 +104,7 @@ export const menusToRoutes = (
             continue
         }
 
-        if (menu.type === 'menu' || menu.type === 'page' || menu.type === 'view' || menu.type === 'route') {
+        if (menu.type === 'menu' || menu.type === 'view' || menu.type === 'route') {
             const childRoutes = menusToRoutes(menu.children, fullPath)
             const component = getComponent(menu.component)
             if (component) {

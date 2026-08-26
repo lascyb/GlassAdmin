@@ -25,6 +25,18 @@ class Role extends AdminController
     public function tree(): Response
     {
         $rows = RoleModel::order('sort', 'asc')->order('id', 'asc')->select()->toArray();
+        $countRows = AdminRole::field('role_id, COUNT(*) AS cnt')
+            ->group('role_id')
+            ->select()
+            ->toArray();
+        $countByRole = [];
+        foreach ($countRows as $cr) {
+            $countByRole[(int) $cr['role_id']] = (int) $cr['cnt'];
+        }
+        foreach ($rows as &$row) {
+            $row['admin_count'] = $countByRole[(int) $row['id']] ?? 0;
+        }
+        unset($row);
         $tree = $this->buildTree($rows, 0);
 
         return $this->ok(['list' => $tree]);

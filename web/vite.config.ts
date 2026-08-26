@@ -6,9 +6,11 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import svgLoader from 'vite-svg-loader'
+import { gaViewPlugin } from './vite-plugin-ga-view'
 
 export default defineConfig({
     plugins: [
+        gaViewPlugin(),
         vue(),
         AutoImport({
             resolvers: [ElementPlusResolver()],
