@@ -217,6 +217,7 @@ export const emptyConfig = (): CrudGenerateConfig => {
     const paths = defaultPaths()
     const cfg: CrudGenerateConfig = {
         table: '',
+        connection: '',
         menus,
         paths,
         fields: [defaultPrimaryField()],

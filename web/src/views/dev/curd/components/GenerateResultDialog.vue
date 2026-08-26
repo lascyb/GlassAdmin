@@ -97,6 +97,9 @@ const authRows = computed(() =>
                     {{ result.module ? `${result.module}.${result.entity}` : result.entity }}
                 </el-descriptions-item>
                 <el-descriptions-item label="数据表">{{ result.table }}</el-descriptions-item>
+                <el-descriptions-item label="数据库连接">
+                    {{ result.connection || '默认连接' }}
+                </el-descriptions-item>
                 <el-descriptions-item label="写盘策略">
                     {{ result.writeMode === 'overwrite' ? '覆盖' : '跳过已存在' }}
                 </el-descriptions-item>

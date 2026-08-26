@@ -7,11 +7,11 @@ use app\admin\model\dev\curd\History;
 use crud\AuthInstaller;
 use crud\Config;
 use crud\Context;
+use crud\DbConnection;
 use crud\Generator;
 use crud\SchemaInstaller;
 use crud\TableSchema;
 use crud\Writer;
-use think\facade\Db;
 use think\Model;
 
 /**
@@ -23,17 +23,29 @@ class CrudOps
     private const string SAMPLES_DIR = 'extend/crud/samples';
 
     /**
-     * listTables 列出当前库业务表（去掉前缀；过滤系统表）
+     * listConnections 列出可选数据库连接（不含账号密码）
+     *
+     * @return array{default: string, connections: list<array<string, mixed>>}
+     */
+    public function listConnections(): array
+    {
+        return [
+            'default'     => DbConnection::defaultName(),
+            'connections' => DbConnection::options(),
+        ];
+    }
+
+    /**
+     * listTables 列出指定连接的业务表（去掉前缀；过滤系统表）
      *
      * @return list<string>
      */
-    public function listTables(): array
+    public function listTables(string $connection = ''): array
     {
-        $prefix = (string) Db::getConfig('prefix');
-        $rows = Db::query('SHOW TABLES');
+        $connection = DbConnection::normalize($connection);
+        $prefix = DbConnection::prefix($connection);
         $names = [];
-        foreach ($rows as $row) {
-            $full = (string) reset($row);
+        foreach (DbConnection::tableNames($connection) as $full) {
             $name = $prefix !== '' && str_starts_with($full, $prefix)
                 ? substr($full, strlen($prefix))
                 : $full;
@@ -52,7 +64,7 @@ class CrudOps
      *
      * @return array<string, mixed>
      */
-    public function getTableSchema(string $table): array
+    public function getTableSchema(string $table, string $connection = ''): array
     {
         $table = trim($table);
         if ($table === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
@@ -62,12 +74,13 @@ class CrudOps
             throw new \InvalidArgumentException('系统表不可用于生成');
         }
 
-        $columns = $this->showFullColumns($table);
+        $connection = DbConnection::normalize($connection);
+        $columns = $this->showFullColumns($table, $connection);
         if ($columns === []) {
             throw new \InvalidArgumentException('表无列');
         }
 
-        return TableSchema::mapTableToConfig($table, $columns);
+        return TableSchema::mapTableToConfig($table, $columns, $connection);
     }
 
     /**
@@ -175,7 +188,7 @@ class CrudOps
      *
      * @return array{table: string, pk: ?string, fields: list<array{name: string, type: string, comment: string}>}
      */
-    public function getTableColumns(string $table): array
+    public function getTableColumns(string $table, string $connection = ''): array
     {
         $table = trim($table);
         if ($table === '' || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
@@ -185,7 +198,7 @@ class CrudOps
             throw new \InvalidArgumentException('系统表不可用于远程配置');
         }
 
-        $columns = $this->showFullColumns($table);
+        $columns = $this->showFullColumns($table, DbConnection::normalize($connection));
         if ($columns === []) {
             throw new \InvalidArgumentException('表无列');
         }
@@ -321,6 +334,7 @@ class CrudOps
             'module'       => $ctx->module,
             'entity'       => $ctx->entity,
             'table'        => $ctx->table,
+            'connection'   => $ctx->connection,
             'title'        => $ctx->title,
             'writeMode'    => $normalized['writeMode'],
             'generateAuth' => $ctx->generateAuth,
@@ -381,19 +395,14 @@ class CrudOps
      *
      * @return list<array<string, mixed>>
      */
-    private function showFullColumns(string $table): array
+    private function showFullColumns(string $table, string $connection = ''): array
     {
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
-        $like = str_replace("'", "''", $like);
-        if (Db::query("SHOW TABLES LIKE '{$like}'") === []) {
+        if (!DbConnection::tableExists($connection, $table)) {
             throw new \InvalidArgumentException('表不存在');
         }
 
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
         try {
-            return Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+            return DbConnection::showFullColumns($connection, $table);
         } catch (\Throwable $e) {
             throw new \InvalidArgumentException('读取表结构失败: ' . $e->getMessage(), 0, $e);
         }
@@ -459,7 +468,7 @@ class CrudOps
         if (str_contains($full, '.')) {
             $full = substr($full, (int) strrpos($full, '.') + 1);
         }
-        $prefix = (string) Db::getConfig('prefix');
+        $prefix = DbConnection::prefix();
         if ($prefix !== '' && str_starts_with($full, $prefix)) {
             return substr($full, strlen($prefix));
         }

@@ -91,7 +91,9 @@ class ModelFile
                 'sync' => 'sync' . ucfirst($method),
                 'idsFor' => Helper::idsForMethodName((string) $f['prop']),
                 'label' => (string) $f['label'],
-                'pivot' => $pivot,
+                'pivotDb' => $ctx->connection === ''
+                    ? "Db::name('{$pivot}')"
+                    : "Db::connect('{$ctx->connection}')->name('{$pivot}')",
                 'fk' => $fk,
                 'rk' => $rk,
             ]);
@@ -104,6 +106,10 @@ class ModelFile
         $pkBlock = $pk === 'id'
             ? ''
             : "\n    /** @var string 主键 */\n    protected \$pk = '{$pk}';\n";
+        $connectionBlock = $ctx->connection === ''
+            ? ''
+            : "\n    /** @var string 数据库连接（config/database.php connections） */\n"
+                . "    protected \$connection = '{$ctx->connection}';\n";
         $autoWriteTimestamp = $ctx->hasTimestampFields() ? 'true' : 'false';
 
         return Template::render('model/model.php.tpl', [
@@ -112,6 +118,7 @@ class ModelFile
             'entity' => $ctx->entity,
             'title' => $ctx->title,
             'table' => $ctx->table,
+            'connectionBlock' => $connectionBlock,
             'pkBlock' => $pkBlock,
             'autoWriteTimestamp' => $autoWriteTimestamp,
             'typeBlock' => implode("\n", $typeLines),

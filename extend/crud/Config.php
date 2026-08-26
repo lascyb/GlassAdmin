@@ -106,6 +106,7 @@ class Config
             'module'       => $module,
             'entity'       => $entity,
             'table'        => $table,
+            'connection'   => DbConnection::normalize($data['connection'] ?? ''),
             'title'        => $title,
             'fields'       => $fields,
             'options'      => self::normalizeOptions($data['options'] ?? null),

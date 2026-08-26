@@ -17,6 +17,10 @@ class Context
     public string $entity;
     public string $entityFile;
     public string $table;
+
+    /** @var string 目标数据库连接名；空串表示应用默认连接 */
+    public string $connection;
+
     public string $title;
     public string $apiBase;
     public string $nsModel;
@@ -71,6 +75,7 @@ class Context
         $ctx->module       = (string) $config['module'];
         $ctx->entity       = (string) $config['entity'];
         $ctx->table        = (string) $config['table'];
+        $ctx->connection   = DbConnection::normalize($config['connection'] ?? '');
         $ctx->title        = (string) $config['title'];
         $moduleNs          = $ctx->module === '' ? '' : str_replace('/', '\\', $ctx->module);
         $ctx->apiBase      = $ctx->module === ''

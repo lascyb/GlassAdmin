@@ -6,7 +6,7 @@
     public static function <%sync%>(int $ownerId, array $ids): void
     {
         $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
-        Db::name('<%pivot%>')->where('<%fk%>', $ownerId)->delete();
+        <%pivotDb%>->where('<%fk%>', $ownerId)->delete();
         if ($ids === []) {
             return;
         }
@@ -14,7 +14,7 @@
         foreach ($ids as $rid) {
             $rows[] = ['<%fk%>' => $ownerId, '<%rk%>' => $rid];
         }
-        Db::name('<%pivot%>')->insertAll($rows);
+        <%pivotDb%>->insertAll($rows);
     }
 
     /**
@@ -24,5 +24,5 @@
      */
     public static function <%idsFor%>(int $ownerId): array
     {
-        return array_map('intval', Db::name('<%pivot%>')->where('<%fk%>', $ownerId)->column('<%rk%>'));
+        return array_map('intval', <%pivotDb%>->where('<%fk%>', $ownerId)->column('<%rk%>'));
     }

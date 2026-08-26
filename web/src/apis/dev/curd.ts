@@ -38,12 +38,30 @@ export type GenerateAuthMeta = {
     viewOverwritten: boolean
 }
 
+/** DbConnectionItem 可选数据库连接 */
+export type DbConnectionItem = {
+    name: string
+    type: string
+    database: string
+    hostname: string
+    prefix: string
+    /** default 是否 config/database.php 的默认连接 */
+    default: boolean
+}
+
+/** DbConnectionsRes 数据库连接列表 */
+export type DbConnectionsRes = {
+    default: string
+    connections: DbConnectionItem[]
+}
+
 /** GenerateResult 生成/预览结果 */
 export type GenerateResult = {
     dryRun: boolean
     module: string
     entity: string
     table: string
+    connection: string
     title: string
     writeMode: string
     generateAuth: boolean
@@ -126,12 +144,16 @@ const API_BASE = 'admin/dev.curd.Index'
 const HISTORY_BASE = 'admin/dev.curd.History'
 const REMOTE_BASE = 'admin/dev.curd.Remote'
 
-/** listTables 列出当前库业务表名 */
-export const listTables = () => getData<string[]>(`${API_BASE}/tables`)
+/** listConnections 列出可选数据库连接 */
+export const listConnections = () => getData<DbConnectionsRes>(`${API_BASE}/connections`)
+
+/** listTables 列出指定连接的业务表名（connection 省略为默认连接） */
+export const listTables = (connection = '') =>
+    getData<string[]>(`${API_BASE}/tables`, { connection })
 
 /** loadTableSchema 反推表结构为配置草稿 */
-export const loadTableSchema = (table: string) =>
-    getData<CrudGenerateConfig>(`${API_BASE}/tableSchema`, { table })
+export const loadTableSchema = (table: string, connection = '') =>
+    getData<CrudGenerateConfig>(`${API_BASE}/tableSchema`, { table, connection })
 
 /** generate 执行生成或 dry-run */
 export const generate = (config: CrudGenerateConfig, options: GenerateOptions = {}) =>

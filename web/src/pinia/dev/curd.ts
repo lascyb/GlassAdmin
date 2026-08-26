@@ -88,10 +88,10 @@ export const useDevCurd = defineStore('dev_curd', () => {
     }
 
     /** loadFromTable 从表结构反推 */
-    const loadFromTable = async (table: string) => {
+    const loadFromTable = async (table: string, connection = '') => {
         loading.value = true
         try {
-            const cfg = await curdApi.loadTableSchema(table)
+            const cfg = await curdApi.loadTableSchema(table, connection)
             goBuild(cfg)
             ElMessage.success(`已加载表 ${table}`)
         } catch (e: unknown) {

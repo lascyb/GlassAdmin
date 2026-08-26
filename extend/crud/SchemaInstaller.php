@@ -6,7 +6,6 @@ namespace crud;
 use crud\field\FieldMeta;
 use crud\field\Naming;
 use think\db\exception\DbException;
-use think\facade\Db;
 
 /**
  * SchemaInstaller 根据配置创建/同步主表（及 belongs_to_many 中间表）
@@ -37,9 +36,9 @@ class SchemaInstaller
         $ts = time();
 
         foreach ($this->buildPlans($ctx) as $plan) {
-            $exists = $this->tableExists($plan['table']);
+            $exists = $this->tableExists($ctx->connection, $plan['table']);
             if (!$exists) {
-                Db::execute($plan['sql']);
+                DbConnection::execute($ctx->connection, $plan['sql']);
                 $items[] = [
                     'table'  => $plan['table'],
                     'exists' => false,
@@ -61,7 +60,7 @@ class SchemaInstaller
             }
 
             foreach ($alter['statements'] as $sql) {
-                Db::execute($sql);
+                DbConnection::execute($ctx->connection, $sql);
             }
             $items[] = [
                 'table'  => $plan['table'],
@@ -85,7 +84,7 @@ class SchemaInstaller
         $ts = time();
 
         foreach ($this->buildPlans($ctx) as $plan) {
-            $exists = $this->tableExists($plan['table']);
+            $exists = $this->tableExists($ctx->connection, $plan['table']);
             if (!$exists) {
                 $items[] = [
                     'table'  => $plan['table'],
@@ -158,13 +157,13 @@ class SchemaInstaller
         ?array $pivotField,
         int $ts,
     ): array {
-        $existing = $this->fetchActiveColumns($table);
+        $existing = $this->fetchActiveColumns($ctx->connection, $table);
         $desired = $kind === 'pivot' && $pivotField !== null
             ? $this->desiredPivotColumns($ctx, $pivotField)
             : $this->desiredMainColumns($ctx);
 
         $statements = [];
-        $tableSql = $this->quoteIdent($table);
+        $tableSql = $this->quoteIdent($ctx->connection, $table);
 
         // 删除：库中有、配置无 → rename _delete_
         foreach ($existing as $name => $row) {
@@ -185,7 +184,7 @@ class SchemaInstaller
                 $statements[] = "ALTER TABLE {$tableSql} ADD COLUMN {$colDef}";
                 foreach ($spec['indexes'] as $idxSql) {
                     if (preg_match('/\b(?:UNIQUE\s+)?INDEX\s+`([^`]+)`/i', $idxSql, $m)
-                        && $this->indexExists($table, $m[1])) {
+                        && $this->indexExists($ctx->connection, $table, $m[1])) {
                         $statements[] = "ALTER TABLE {$tableSql} DROP INDEX `{$m[1]}`";
                     }
                     $statements[] = "ALTER TABLE {$tableSql} ADD {$idxSql}";
@@ -197,7 +196,7 @@ class SchemaInstaller
             $newFp = $spec['fingerprint'];
             if ($oldFp === $newFp) {
                 // 列定义一致：仅补齐缺失索引（仅索引变更场景）
-                foreach ($this->ensureIndexStatements($table, $tableSql, $spec['indexes']) as $sql) {
+                foreach ($this->ensureIndexStatements($ctx->connection, $table, $tableSql, $spec['indexes']) as $sql) {
                     $statements[] = $sql;
                 }
                 continue;
@@ -214,7 +213,7 @@ class SchemaInstaller
                 && ($oldParts[3] ?? '') === ($newParts[3] ?? '');
             if ($typeSame) {
                 $statements[] = "ALTER TABLE {$tableSql} MODIFY COLUMN {$spec['definition']}";
-                foreach ($this->ensureIndexStatements($table, $tableSql, $spec['indexes']) as $sql) {
+                foreach ($this->ensureIndexStatements($ctx->connection, $table, $tableSql, $spec['indexes']) as $sql) {
                     $statements[] = $sql;
                 }
                 continue;
@@ -224,7 +223,7 @@ class SchemaInstaller
             $archived = $this->archiveName($name, 'update', $ts);
             // RENAME 后索引名仍占用，需先删掉本列常用索引名，再为新列重建
             foreach ($this->columnIndexNames($name, $spec['indexes']) as $idxName) {
-                if ($this->indexExists($table, $idxName)) {
+                if ($this->indexExists($ctx->connection, $table, $idxName)) {
                     $statements[] = "ALTER TABLE {$tableSql} DROP INDEX `{$idxName}`";
                 }
             }
@@ -244,12 +243,16 @@ class SchemaInstaller
      * @param list<string> $indexes
      * @return list<string>
      */
-    private function ensureIndexStatements(string $table, string $tableSql, array $indexes): array
-    {
+    private function ensureIndexStatements(
+        string $connection,
+        string $table,
+        string $tableSql,
+        array $indexes,
+    ): array {
         $out = [];
         foreach ($indexes as $idxSql) {
             if (preg_match('/\b(?:UNIQUE\s+)?INDEX\s+`([^`]+)`/i', $idxSql, $m)
-                && $this->indexExists($table, $m[1])) {
+                && $this->indexExists($connection, $table, $m[1])) {
                 continue;
             }
             $out[] = "ALTER TABLE {$tableSql} ADD {$idxSql}";
@@ -337,12 +340,9 @@ class SchemaInstaller
      *
      * @return array<string, array{name: string, type: string, null: bool, default: mixed, autoIncrement: bool, primary: bool, comment: string}>
      */
-    private function fetchActiveColumns(string $table): array
+    private function fetchActiveColumns(string $connection, string $table): array
     {
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
-        $rows = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+        $rows = DbConnection::showFullColumns($connection, $table);
         $out = [];
         foreach ($rows as $row) {
             $name = (string) ($row['Field'] ?? '');
@@ -504,15 +504,15 @@ class SchemaInstaller
     }
 
     /** indexExists 索引是否存在 */
-    private function indexExists(string $table, string $indexName): bool
+    private function indexExists(string $connection, string $table, string $indexName): bool
     {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $indexName)) {
             return false;
         }
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $dbName = (string) Db::query('SELECT DATABASE() AS db')[0]['db'];
-        $rows = Db::query(
+        $full = DbConnection::prefix($connection) . $table;
+        $dbName = (string) DbConnection::query($connection, 'SELECT DATABASE() AS db')[0]['db'];
+        $rows = DbConnection::query(
+            $connection,
             'SELECT 1 AS ok FROM information_schema.statistics'
             . ' WHERE table_schema = ? AND table_name = ? AND index_name = ? LIMIT 1',
             [$dbName, $full, $indexName],
@@ -562,7 +562,7 @@ class SchemaInstaller
             $parts[] = $idx;
         }
 
-        $table = $this->quoteIdent($ctx->table);
+        $table = $this->quoteIdent($ctx->connection, $ctx->table);
         $comment = $this->quoteComment($ctx->title);
         $body = implode(",\n", $parts);
 
@@ -589,7 +589,7 @@ class SchemaInstaller
         }
 
         $label = (string) ($field['label'] ?? $method);
-        $table = $this->quoteIdent($pivot);
+        $table = $this->quoteIdent($ctx->connection, $pivot);
         $comment = $this->quoteComment("{$ctx->title}-{$label}");
 
         return "CREATE TABLE {$table} (\n"
@@ -829,29 +829,23 @@ class SchemaInstaller
     }
 
     /** tableExists 表是否已存在（含前缀） */
-    private function tableExists(string $table): bool
+    private function tableExists(string $connection, string $table): bool
     {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $table)) {
             throw new \InvalidArgumentException("非法表名: {$table}");
         }
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
-        $like = str_replace("'", "''", $like);
-        $rows = Db::query("SHOW TABLES LIKE '{$like}'");
 
-        return $rows !== [];
+        return DbConnection::tableExists($connection, $table);
     }
 
     /** quoteIdent 反引号标识符 */
-    private function quoteIdent(string $name): string
+    private function quoteIdent(string $connection, string $name): string
     {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
             throw new \InvalidArgumentException("非法标识符: {$name}");
         }
-        $prefix = (string) Db::getConfig('prefix');
 
-        return '`' . str_replace('`', '``', $prefix . $name) . '`';
+        return '`' . str_replace('`', '``', DbConnection::prefix($connection) . $name) . '`';
     }
 
     /** quoteComment SQL 字符串字面量（注释） */

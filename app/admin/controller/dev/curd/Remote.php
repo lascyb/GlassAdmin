@@ -4,7 +4,7 @@ declare (strict_types = 1);
 namespace app\admin\controller\dev\curd;
 
 use app\common\controller\AdminController;
-use think\facade\Db;
+use crud\DbConnection;
 use think\Model;
 use think\Request;
 use think\Response;
@@ -82,17 +82,12 @@ class Remote extends AdminController
 //            return $this->fail(400, '系统表不可用于远程配置');
 //        }
 
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
-        $like = str_replace("'", "''", $like);
-        if (Db::query("SHOW TABLES LIKE '{$like}'") === []) {
+        if (!DbConnection::tableExists('', $table)) {
             return $this->fail(404, '表不存在');
         }
 
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
         try {
-            $columns = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+            $columns = DbConnection::showFullColumns('', $table);
         } catch (\Throwable $e) {
             return $this->fail(400, '读取表结构失败: ' . $e->getMessage());
         }
@@ -194,11 +189,8 @@ class Remote extends AdminController
      */
     private function listBusinessTables(): array
     {
-        $prefix = (string) Db::getConfig('prefix');
-        $rows = Db::query('SHOW TABLES');
         $names = [];
-        foreach ($rows as $row) {
-            $full = (string) reset($row);
+        foreach (DbConnection::tableNames('') as $full) {
             $name = $this->normalizeTableName($full);
             if ($name === '' || $this->isSystemTable($name)) {
                 continue;
@@ -228,11 +220,8 @@ class Remote extends AdminController
         if ($this->isSystemTable($table)) {
             return null;
         }
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
         try {
-            $columns = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+            $columns = DbConnection::showFullColumns('', $table);
         } catch (\Throwable) {
             return null;
         }
@@ -273,9 +262,10 @@ class Remote extends AdminController
 
         $comment = '';
         try {
+            $full = DbConnection::prefix() . $table;
             $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
             $like = str_replace("'", "''", $like);
-            $status = Db::query("SHOW TABLE STATUS LIKE '{$like}'");
+            $status = DbConnection::query('', "SHOW TABLE STATUS LIKE '{$like}'");
             if ($status !== []) {
                 $comment = (string) ($status[0]['Comment'] ?? '');
             }
@@ -380,7 +370,7 @@ class Remote extends AdminController
         if (str_contains($full, '.')) {
             $full = substr($full, (int) strrpos($full, '.') + 1);
         }
-        $prefix = (string) Db::getConfig('prefix');
+        $prefix = DbConnection::prefix();
         if ($prefix !== '' && str_starts_with($full, $prefix)) {
             return substr($full, strlen($prefix));
         }
@@ -394,11 +384,8 @@ class Remote extends AdminController
         if ($this->isSystemTable($table)) {
             return null;
         }
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
         try {
-            $columns = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+            $columns = DbConnection::showFullColumns('', $table);
         } catch (\Throwable) {
             return null;
         }

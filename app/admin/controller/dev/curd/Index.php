@@ -8,6 +8,7 @@ use app\common\controller\AdminController;
 use crud\AuthInstaller;
 use crud\Config;
 use crud\Context;
+use crud\DbConnection;
 use crud\Generator;
 use crud\SchemaInstaller;
 use crud\Writer;
@@ -72,18 +73,38 @@ class Index extends AdminController
     }
 
     /**
-     * tables 列出当前库数据表（去掉前缀；过滤系统表）
+     * connections 列出可选数据库连接（config/database.php connections）
+     */
+    public function connections(Request $request): Response
+    {
+        if (!$request->isGet()) {
+            return $this->fail(405, '仅支持 GET');
+        }
+
+        return $this->ok([
+            'default'     => DbConnection::defaultName(),
+            'connections' => DbConnection::options(),
+        ]);
+    }
+
+    /**
+     * tables 列出指定连接的数据表（去掉前缀；过滤系统表）
      */
     public function tables(Request $request): Response
     {
         if (!$request->isGet()) {
             return $this->fail(405, '仅支持 GET');
         }
-        $prefix = (string) Db::getConfig('prefix');
-        $rows = Db::query('SHOW TABLES');
+        try {
+            $connection = DbConnection::normalize($request->get('connection', ''));
+            $prefix = DbConnection::prefix($connection);
+            $rows = DbConnection::tableNames($connection);
+        } catch (\Throwable $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+
         $names = [];
-        foreach ($rows as $row) {
-            $full = (string) reset($row);
+        foreach ($rows as $full) {
             $name = $prefix !== '' && str_starts_with($full, $prefix)
                 ? substr($full, strlen($prefix))
                 : $full;
@@ -113,17 +134,17 @@ class Index extends AdminController
             return $this->fail(400, '系统表不可用于生成');
         }
 
-        $prefix = (string) Db::getConfig('prefix');
-        $full = $prefix . $table;
-        $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $full);
-        $like = str_replace("'", "''", $like);
-        if (Db::query("SHOW TABLES LIKE '{$like}'") === []) {
+        try {
+            $connection = DbConnection::normalize($request->get('connection', ''));
+        } catch (\Throwable $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+        if (!DbConnection::tableExists($connection, $table)) {
             return $this->fail(404, '表不存在');
         }
 
-        $quoted = '`' . str_replace('`', '``', $full) . '`';
         try {
-            $columns = Db::query("SHOW FULL COLUMNS FROM {$quoted}");
+            $columns = DbConnection::showFullColumns($connection, $table);
         } catch (\Throwable $e) {
             return $this->fail(400, '读取表结构失败: ' . $e->getMessage());
         }
@@ -131,7 +152,7 @@ class Index extends AdminController
             return $this->fail(400, '表无列');
         }
 
-        return $this->ok($this->mapTableToConfig($table, $columns));
+        return $this->ok($this->mapTableToConfig($table, $columns, $connection));
     }
 
     /**
@@ -202,6 +223,7 @@ class Index extends AdminController
             'module'       => $ctx->module,
             'entity'       => $ctx->entity,
             'table'        => $ctx->table,
+            'connection'   => $ctx->connection,
             'title'        => $ctx->title,
             'writeMode'    => $config['writeMode'],
             'generateAuth' => $ctx->generateAuth,
@@ -299,8 +321,8 @@ class Index extends AdminController
      * @param list<array<string, mixed>> $columns
      * @return array<string, mixed>
      */
-    private function mapTableToConfig(string $table, array $columns): array
+    private function mapTableToConfig(string $table, array $columns, string $connection = ''): array
     {
-        return \crud\TableSchema::mapTableToConfig($table, $columns);
+        return \crud\TableSchema::mapTableToConfig($table, $columns, $connection);
     }
 }

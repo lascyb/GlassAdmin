@@ -35,9 +35,10 @@ class TableSchema
      * mapTableToConfig 表列 → CrudGenerateConfig 草稿
      *
      * @param list<array<string, mixed>> $columns
+     * @param string $connection 目标连接名；空串表示默认连接
      * @return array<string, mixed>
      */
-    public static function mapTableToConfig(string $table, array $columns): array
+    public static function mapTableToConfig(string $table, array $columns, string $connection = ''): array
     {
         $meta = self::guessMetaFromTable($table);
         $fields = [];
@@ -47,6 +48,7 @@ class TableSchema
 
         return [
             'table'        => $table,
+            'connection'   => $connection,
             'title'        => $meta['title'],
             'module'       => $meta['module'],
             'entity'       => $meta['entity'],

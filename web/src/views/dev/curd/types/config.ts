@@ -50,6 +50,8 @@ export type CrudMenuLevel = {
 export type CrudGenerateConfig = {
     /** table 数据表名（无前缀，如 example_data） */
     table: string
+    /** connection 目标数据库连接名（config/database.php connections）；空表示应用默认连接 */
+    connection?: string
     /** menus 无限级菜单（末项 type=view；enabled=false 时下级升一级） */
     menus: CrudMenuLevel[]
     /** paths 生成文件相对路径 */

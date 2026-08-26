@@ -21,18 +21,25 @@ class CrudCapabilities
         $this->ops = $ops ?? new CrudOps();
     }
 
-    /** crud_list_tables 列出可生成业务表 */
-    #[McpTool(name: 'crud_list_tables', description: '列出当前库可生成的业务表名（已过滤系统表）')]
-    public function listTables(): array
+    /** crud_list_connections 列出可选数据库连接 */
+    #[McpTool(name: 'crud_list_connections', description: '列出 config/database.php 中可选的数据库连接（不含账号密码）')]
+    public function listConnections(): array
     {
-        return $this->ops->listTables();
+        return $this->ops->listConnections();
+    }
+
+    /** crud_list_tables 列出可生成业务表 */
+    #[McpTool(name: 'crud_list_tables', description: '列出指定连接可生成的业务表名（已过滤系统表；connection 省略为默认连接）')]
+    public function listTables(string $connection = ''): array
+    {
+        return $this->ops->listTables($connection);
     }
 
     /** crud_get_table_schema 反推表结构为 CRUD 配置草稿 */
-    #[McpTool(name: 'crud_get_table_schema', description: '按表名反推 CrudGenerateConfig 草稿')]
-    public function getTableSchema(string $table): array
+    #[McpTool(name: 'crud_get_table_schema', description: '按表名反推 CrudGenerateConfig 草稿（connection 省略为默认连接）')]
+    public function getTableSchema(string $table, string $connection = ''): array
     {
-        return $this->ops->getTableSchema($table);
+        return $this->ops->getTableSchema($table, $connection);
     }
 
     /** crud_list_samples 列出 CRUD 样例 */
@@ -57,10 +64,10 @@ class CrudCapabilities
     }
 
     /** crud_get_table_columns 表字段元数据 */
-    #[McpTool(name: 'crud_get_table_columns', description: '按无前缀表名返回字段列表（含 pk）')]
-    public function getTableColumns(string $table): array
+    #[McpTool(name: 'crud_get_table_columns', description: '按无前缀表名返回字段列表（含 pk；connection 省略为默认连接）')]
+    public function getTableColumns(string $table, string $connection = ''): array
     {
-        return $this->ops->getTableColumns($table);
+        return $this->ops->getTableColumns($table, $connection);
     }
 
     /** crud_list_history 生成历史分页 */
@@ -111,8 +118,15 @@ class CrudCapabilities
         );
     }
 
+    /** glassadmin://crud/connections 可选数据库连接 */
+    #[McpResource(uri: 'glassadmin://crud/connections', name: 'crud_connections', mimeType: 'application/json', description: '可选数据库连接列表')]
+    public function resourceConnections(): array
+    {
+        return $this->ops->listConnections();
+    }
+
     /** glassadmin://crud/tables 业务表名列表 */
-    #[McpResource(uri: 'glassadmin://crud/tables', name: 'crud_tables', mimeType: 'application/json', description: '可生成业务表名列表')]
+    #[McpResource(uri: 'glassadmin://crud/tables', name: 'crud_tables', mimeType: 'application/json', description: '默认连接可生成业务表名列表')]
     public function resourceTables(): array
     {
         return $this->ops->listTables();

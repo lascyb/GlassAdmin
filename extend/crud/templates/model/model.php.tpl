@@ -12,7 +12,7 @@ class <%entity%> extends Model
 {
     /** @var string 数据表名称 */
     protected $name = '<%table%>';
-<%pkBlock%>
+<%connectionBlock%><%pkBlock%>
     /** @var list<string>|true|false */
     protected array|bool $autoWriteTimestamp = <%autoWriteTimestamp%>;
 

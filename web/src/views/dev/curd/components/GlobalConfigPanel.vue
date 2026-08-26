@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import * as curdApi from '@/apis/dev/curd'
 import { useDevCurd } from '@/pinia/dev/curd'
 import { useDevCurdGlobal } from '@/pinia/dev/curdGlobal'
 import GaPicker from '@components/ga-icon/picker.vue'
 import { ArrowDown, ArrowUp, Back, Delete, Plus } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const curd = useDevCurd()
 const global = useDevCurdGlobal()
 const {
     table,
+    connection,
     menus,
     paths,
     generateAuth,
@@ -20,6 +22,23 @@ const {
 } = storeToRefs(global)
 
 const collapsed = ref(true)
+const connections = ref<curdApi.DbConnectionItem[]>([])
+const defaultConnection = ref('')
+
+/** defaultLabel 默认连接选项文案 */
+const defaultLabel = computed(() =>
+    defaultConnection.value ? `默认（${defaultConnection.value}）` : '默认连接',
+)
+
+onMounted(async () => {
+    try {
+        const res = await curdApi.listConnections()
+        connections.value = res.connections
+        defaultConnection.value = res.default
+    } catch {
+        connections.value = []
+    }
+})
 </script>
 
 <template>
@@ -34,6 +53,16 @@ const collapsed = ref(true)
                         placeholder="如 countries 或 demo_item"
                         @update:model-value="global.onTableInput"
                     />
+                    <el-text>数据库连接</el-text>
+                    <el-select v-model="connection" style="width: 160px" @change="global.syncMeta">
+                        <el-option :value="''" :label="defaultLabel" />
+                        <el-option
+                            v-for="item in connections"
+                            :key="item.name"
+                            :value="item.name"
+                            :label="item.name"
+                        />
+                    </el-select>
                     <el-text>页面名称</el-text>
                     <el-input
                         v-model="leafTitle"

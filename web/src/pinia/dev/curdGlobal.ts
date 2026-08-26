@@ -17,6 +17,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
     const seed = emptyConfig()
 
     const table = ref(seed.table)
+    const connection = ref(seed.connection ?? '')
     const menus = ref<CrudMenuLevel[]>(seed.menus)
     const paths = ref<CrudOutputPaths>(structuredClone(seed.paths))
     const generateAuth = ref(seed.generateAuth !== false)
@@ -37,6 +38,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
     const asMetaConfig = (): CrudGenerateConfig =>
         ({
             table: table.value,
+            connection: connection.value,
             menus: menus.value,
             paths: paths.value,
             generateAuth: generateAuth.value,
@@ -70,6 +72,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
     /** hydrate 从完整配置灌入全局态 */
     const hydrate = (cfg: CrudGenerateConfig) => {
         table.value = cfg.table ?? ''
+        connection.value = cfg.connection ?? ''
         menus.value = structuredClone(cfg.menus ?? [])
         fillMenuLevelIcons(menus.value)
         paths.value = structuredClone(cfg.paths ?? emptyConfig().paths)
@@ -82,6 +85,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
     const toMeta = (): Pick<
         CrudGenerateConfig,
         | 'table'
+        | 'connection'
         | 'menus'
         | 'paths'
         | 'generateAuth'
@@ -93,6 +97,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
         | 'menuSort'
     > => ({
         table: table.value,
+        connection: connection.value,
         menus: menus.value,
         paths: paths.value,
         generateAuth: generateAuth.value,
@@ -171,6 +176,7 @@ export const useDevCurdGlobal = defineStore('dev_curd_global', () => {
 
     return {
         table,
+        connection,
         menus,
         paths,
         generateAuth,
