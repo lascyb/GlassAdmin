@@ -2,9 +2,8 @@
 import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay';
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
 import { useLayoutSetting } from '@/pinia/layout/setting.ts';
-import type { MenuItemClicked } from "element-plus";
 import { type PropType, computed } from "vue";
-import { type NavigationFailure, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 import MenuTree from "./MenuTree.vue";
 import type { Menu } from "./types.ts";
 
@@ -17,9 +16,6 @@ const props = defineProps({
     default: () => []
   },
 })
-const select = (index: string, indexPath: string[], item: MenuItemClicked, routerResult?: Promise<void | NavigationFailure>) => {
-  console.log(index, indexPath, item, routerResult)
-}
 
 const route = useRoute()
 const displayMenus = computed(() => menusForDisplay(props.menus))
@@ -29,7 +25,6 @@ const displayMenus = computed(() => menusForDisplay(props.menus))
 <template>
   <el-menu
     class="ga-aside-menus"
-    @select="select"
     :default-active="route.path"
     router
     :collapse="layoutMenus.collapse"

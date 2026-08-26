@@ -1,10 +1,10 @@
-import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
 import type { Menu } from '@/layouts/components/menus/types.ts'
-import { menusToRoutes } from '@/pinia/layout/menusToRoutes.ts'
 import { findMenuByPath } from '@/pinia/layout/findMenuByPath.ts'
+import { menusToRoutes } from '@/pinia/layout/menusToRoutes.ts'
 import { router } from '@/router'
 import { normalizeViewComponent } from '@/utils/viewComponent'
+import { defineStore } from 'pinia'
+import { ref, shallowRef } from 'vue'
 
 type FindResult = {
     menus: Menu[]
@@ -118,17 +118,27 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
     }
 
     /**
-     * hasBtnForView 按页面文件鉴权：当前路由命中某次挂载则只查该节点，否则并集
+     * hasBtnForView 按页面文件鉴权
+     * - 当前路由菜单的 component 与 viewKey 一致：只查该节点（整页）
+     * - 否则（嵌入/跨页）：对该 component 的全部挂载做并集
+     * - 索引未命中：false
      */
     const hasBtnForView = (viewKey: string, btn: string): boolean => {
-        const mounts = listByComponent(viewKey)
-        if (!mounts.length) return false
+        const key = normalizeViewComponent(viewKey) ?? viewKey
+        const mounts = listByComponent(key)
+        if (!mounts.length) {
+            return false
+        }
 
         const routePath = stripPathExtras(router.currentRoute.value.path)
-        const hit = mounts.find((m) => m.path_full && stripPathExtras(m.path_full) === routePath)
-        if (hit) {
-            return pageHasBtn(hit, btn)
+        const byRoute = routePath ? find(routePath) : undefined
+        if (byRoute?.menu) {
+            const routeKey = normalizeViewComponent(byRoute.menu.component)
+            if (routeKey && routeKey === key) {
+                return pageHasBtn(byRoute.menu, btn)
+            }
         }
+
         return mounts.some((m) => pageHasBtn(m, btn))
     }
 

@@ -82,20 +82,29 @@ function toInternal(
 }
 
 /**
- * resolveViewKey 从指令所在实例向上查找最近的 __gaView（views 页身份）
+ * resolveViewKey 从指令所在实例向上查找 __gaView；
+ * 优先取「已出现在菜单 component 索引」的节点（子页如 rule/backend 对齐到菜单的 rule/index）
  */
 function resolveViewKey(
     instance: ComponentPublicInstance | ComponentInternalInstance | null | undefined,
 ): string | undefined {
     let cur: ComponentInternalInstance | null = toInternal(instance)
+    let fallback: string | undefined
+    const store = useLayoutMenus()
     while (cur) {
         const type = cur.type as GaViewComponent | string | null | undefined
         if (type && typeof type === 'object' && typeof type.__gaView === 'string' && type.__gaView) {
-            return normalizeViewComponent(type.__gaView) ?? type.__gaView
+            const key = normalizeViewComponent(type.__gaView) ?? type.__gaView
+            if (store.listByComponent(key).length > 0) {
+                return key
+            }
+            if (!fallback) {
+                fallback = key
+            }
         }
         cur = cur.parent
     }
-    return undefined
+    return fallback
 }
 
 /**

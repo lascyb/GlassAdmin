@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { router } from "@/router";
 import GaIcon from "@components/ga-icon/index.vue";
 import { Lock } from "@element-plus/icons-vue";
 import type { PropType } from "vue";
@@ -17,11 +16,6 @@ const props = defineProps({
     })
   }
 })
-
-const click = (index: string, indexPath: string[], active: boolean, menu: Menu) => {
-  console.log(index, indexPath, active, menu)
-  console.log(router.getRoutes())
-}
 
 const isUnauthorized = (menu: Menu) => menu.authorized === false
 </script>
@@ -41,8 +35,7 @@ const isUnauthorized = (menu: Menu) => menu.authorized === false
     </template>
     <template v-else-if="menu.type == 'view' || menu.type == 'route' || menu.type == 'link' || menu.type == 'iframe'">
       <el-menu-item :index="menu.path_full" :key="menu.id"
-                    :class="{ 'is-locked': isUnauthorized(menu) }"
-                    @click="(index: string, indexPath: string[], active: boolean)=>click(index, indexPath, active,menu)">
+                    :class="{ 'is-locked': isUnauthorized(menu) }">
         <GaIcon :icon="menu.icon" />
         <span>{{ menu.name }}</span>
         <el-icon v-if="isUnauthorized(menu)" class="menu-lock-icon"><Lock /></el-icon>
