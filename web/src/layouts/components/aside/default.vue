@@ -8,10 +8,10 @@ import GaMenus from '../menus/index.vue'
 const layoutMenus = useLayoutMenus()
 const layoutSetting = useLayoutSetting()
 
-/** asideStyle 侧栏宽度：与 el-menu collapse 同步，避免 scoped 内 --el-aside-width 覆盖 useCssVar 写入的根变量 */
+/** asideStyle 侧栏宽度：收起态含玻璃 1px 边，与 el-menu--collapse 内容宽对齐 */
 const asideStyle = computed(() => ({
     width: layoutMenus.collapse
-        ? 'calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding) * 2)'
+        ? 'var(--ga-aside-collapse-width)'
         : `${layoutSetting.layout.asideWidth}px`,
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
@@ -20,7 +20,7 @@ const asideStyle = computed(() => ({
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <ga-menus :menus="layoutMenus.menus"></ga-menus>
+        <ga-menus :menus="layoutMenus.menus" style="height: calc(100vh - 60px)"></ga-menus>
     </el-aside>
 </template>
 

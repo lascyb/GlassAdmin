@@ -8,14 +8,16 @@ import GaMenus from '../menus/index.vue'
 const layoutMenus = useLayoutMenus()
 const layoutSetting = useLayoutSetting()
 
-/** asideStyle 侧栏宽度：与 el-menu collapse 同步 */
+/** asideStyle 侧栏宽度：收起态含玻璃 1px 边，与 el-menu--collapse 内容宽对齐 */
 const asideStyle = computed(() => ({
     width: layoutMenus.collapse
-        ? 'calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding) * 2)'
+        ? 'var(--ga-aside-collapse-width)'
         : `${layoutSetting.layout.asideWidth}px`,
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
 
+/** 顶栏 logo 60px（含 1px 底边，border-box） */
+const menuHeight = 'calc(100vh - 60px)'
 </script>
 
 <template>
@@ -24,10 +26,12 @@ const asideStyle = computed(() => ({
         <ga-menus
             v-if="layoutMenus.subMenus.length > 0"
             :menus="layoutMenus.subMenus"
+            :style="{ height: menuHeight }"
         />
         <div
             v-else
-            class="ga-aside-fill flex items-center justify-center text-xs text-ga-text-secondary"
+            class="flex items-center justify-center text-xs text-ga-text-secondary"
+            :style="{ height: menuHeight }"
         >
             暂无子菜单
         </div>

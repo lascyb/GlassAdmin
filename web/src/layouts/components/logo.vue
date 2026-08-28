@@ -45,8 +45,7 @@ const btnStyle = computed(() => ({
 
 <style scoped>
 .ga-logo-bar {
-    flex-shrink: 0;
-    box-shadow: inset 0 -1px 0 var(--ga-glass-border);
-    transition: box-shadow var(--ga-duration) var(--ga-ease);
+    border-bottom: 1px solid var(--ga-glass-border);
+    transition: border-color var(--ga-duration) var(--ga-ease);
 }
 </style>

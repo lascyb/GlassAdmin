@@ -18,10 +18,10 @@ const layoutSetting = useLayoutSetting()
 const menus = ref<Menu[]>([])
 const moduleOptions = computed(() => menusForDisplay(layoutMenus.menus))
 
-/** asideStyle 侧栏宽度与收起态同步（避免 scoped 内 --el-aside-width 与 useCssVar 目标不一致） */
+/** asideStyle 侧栏宽度与收起态同步（收起态含玻璃 1px 边） */
 const asideStyle = computed(() => ({
     width: layoutMenus.collapse
-        ? 'calc(var(--el-menu-icon-width) + var(--el-menu-base-level-padding) * 2)'
+        ? 'var(--ga-aside-collapse-width)'
         : `${layoutSetting.layout.asideWidth}px`,
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
@@ -71,7 +71,7 @@ onMounted(() => {
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <div class="ga-double-body">
+        <div style="display: flex; align-items: flex-start; height: calc(100vh - 60px)">
             <div class="ga-double-modules" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
@@ -91,26 +91,16 @@ onMounted(() => {
                     </template>
                 </el-segmented>
             </div>
-            <ga-menus v-if="menus && menus.length > 0" :menus="menus"></ga-menus>
+            <ga-menus v-if="menus && menus.length > 0" :menus="menus" style="height: calc(100vh - 60px); flex: 1"></ga-menus>
         </div>
     </el-aside>
 </template>
 
 <style scoped>
-.ga-double-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    min-width: 0;
-    display: flex;
-    align-items: stretch;
-    overflow: hidden;
-}
-
 .ga-double-modules {
-    flex-shrink: 0;
-    overflow: auto;
+    height: 100%;
     background: color-mix(in srgb, var(--ga-color-fill-light) 42%, transparent);
-    box-shadow: inset -1px 0 0 var(--ga-glass-border);
+    border-right: 1px solid var(--ga-glass-border);
 }
 
 .ga-double-segmented {
