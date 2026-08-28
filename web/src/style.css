@@ -324,6 +324,10 @@ html.dark {
 }
 
 .ga-shell .el-aside {
+    /* EP 默认 overflow:auto。width 过渡时文案仍宽于侧栏，会闪横向条并连带竖条。
+       横向永远裁切；纵向交给 .ga-aside-menus 的 overflow-y:auto，长菜单仍可滚。 */
+    overflow-x: hidden;
+    overflow-y: hidden;
     border-right: 1px solid var(--ga-glass-border);
     box-shadow: inset 1px 0 0 var(--ga-glass-highlight);
     /* hover 用半透明 fill，避免实色条盖住霜面；不改 --el-menu-bg-color，以免折叠弹出菜单变透 */
@@ -338,6 +342,7 @@ html.dark {
     background-color: transparent;
     /* 右边线改走 aside 的玻璃边，避免菜单 1px + aside 1px 把收起态撑出横向滚动条 */
     border-right: none;
+    overflow-x: hidden;
 }
 
 @supports ((-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))) {

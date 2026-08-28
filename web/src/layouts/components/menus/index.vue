@@ -37,6 +37,8 @@ const displayMenus = computed(() => menusForDisplay(props.menus))
 <style scoped>
 .ga-aside-menus {
   box-sizing: border-box;
-  overflow: auto;
+  /* 覆盖 EP / 旧 overflow:auto：收起 width 过渡时不要闪横向条；条目多时仍纵向滚动 */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>
