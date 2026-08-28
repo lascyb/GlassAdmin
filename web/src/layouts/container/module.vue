@@ -7,7 +7,7 @@ import GaMain from '../router-view/main.vue';
 
 
 <template>
-    <el-container class="h-screen">
+    <el-container class="ga-shell h-screen">
         <ga-aside />
         <el-container direction="vertical">
             <ga-header />

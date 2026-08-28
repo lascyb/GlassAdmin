@@ -27,7 +27,7 @@ const btnStyle = computed(() => ({
 </script>
 
 <template>
-    <div style="height: 60px; border-right: 1px solid var(--el-menu-border-color); box-sizing: border-box"
+    <div style="height: 60px; box-sizing: border-box"
          class="ga-logo-bar flex items-center justify-between">
         <div v-if="!layoutMenus.collapse"
              class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
@@ -45,6 +45,7 @@ const btnStyle = computed(() => ({
 
 <style scoped>
 .ga-logo-bar {
+    border-bottom: 1px solid var(--ga-glass-border);
     transition: border-color var(--ga-duration) var(--ga-ease);
 }
 </style>

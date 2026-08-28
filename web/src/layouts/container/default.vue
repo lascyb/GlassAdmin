@@ -6,7 +6,7 @@ import GaAside from "../components/aside/default.vue"
 </script>
 
 <template>
-  <el-container>
+  <el-container class="ga-shell">
     <ga-aside></ga-aside>
     <el-container direction="vertical">
       <ga-header></ga-header>

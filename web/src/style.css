@@ -108,6 +108,25 @@ body,
     --ga-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --ga-ease-out: cubic-bezier(0, 0, 0.2, 1);
 
+    /* SHELL 毛玻璃：浅色用白底半透明，避免菜单字发糊 */
+    --ga-glass-bg: color-mix(in srgb, var(--ga-color-bg) 72%, transparent);
+    --ga-glass-fallback-bg: var(--ga-color-bg);
+    --ga-glass-blur: 18px;
+    --ga-glass-saturate: 1.2;
+    --ga-glass-border: color-mix(in srgb, var(--ga-color-border-lighter) 90%, transparent);
+    --ga-glass-highlight: rgb(255 255 255 / 58%);
+    --ga-shell-wash:
+        radial-gradient(
+            ellipse 90% 55% at 0% 0%,
+            color-mix(in srgb, var(--ga-color-primary) 9%, transparent),
+            transparent 54%
+        ),
+        radial-gradient(
+            ellipse 60% 42% at 100% 0%,
+            color-mix(in srgb, var(--ga-color-primary) 5%, transparent),
+            transparent 48%
+        );
+
     --el-color-primary-light-1: color-mix(in srgb, var(--ga-color-primary) 90%, #fff);
     --el-color-primary-light-2: color-mix(in srgb, var(--ga-color-primary) 80%, #fff);
     --el-color-primary-light-3: color-mix(in srgb, var(--ga-color-primary) 70%, #fff);
@@ -150,6 +169,25 @@ html.dark {
     --ga-color-fill-lighter: #1d1d1d;
     --ga-color-fill-extra-light: #191919;
     --ga-color-fill-blank: #141414;
+
+    /* 深色玻璃走暗底半透明，不要乳白雾面 */
+    --ga-glass-bg: color-mix(in srgb, var(--ga-color-bg) 58%, transparent);
+    --ga-glass-fallback-bg: var(--ga-color-bg);
+    --ga-glass-blur: 20px;
+    --ga-glass-saturate: 1.28;
+    --ga-glass-border: rgb(255 255 255 / 8%);
+    --ga-glass-highlight: rgb(255 255 255 / 6%);
+    --ga-shell-wash:
+        radial-gradient(
+            ellipse 90% 55% at 0% 0%,
+            color-mix(in srgb, var(--ga-color-primary) 16%, transparent),
+            transparent 54%
+        ),
+        radial-gradient(
+            ellipse 60% 42% at 100% 0%,
+            color-mix(in srgb, var(--ga-color-primary) 8%, transparent),
+            transparent 48%
+        );
 
     --el-color-primary-light-1: color-mix(in srgb, var(--ga-color-primary) 90%, #000);
     --el-color-primary-light-2: color-mix(in srgb, var(--ga-color-primary) 80%, #000);
@@ -256,11 +294,58 @@ html.dark {
 
 .el-header {
     --el-header-padding: 0;
-    background-color: var(--ga-color-bg);
 }
 
-.el-aside {
-    background-color: var(--ga-color-bg);
+/**
+ * 布局壳毛玻璃：仅侧栏 / 顶栏。主内容、卡片、登录、弹层不走这套。
+ * 无 backdrop-filter 时回退为不透明 --ga-glass-fallback-bg，避免半透明却不模糊。
+ */
+.ga-shell {
+    min-height: 100vh;
+    background-color: var(--ga-color-fill-light);
+    background-image: var(--ga-shell-wash);
+}
+
+.ga-shell .el-header,
+.ga-shell .el-aside {
+    position: relative;
+    z-index: 2;
+    background-color: var(--ga-glass-fallback-bg);
+}
+
+.ga-shell .el-header {
+    border-bottom: 1px solid var(--ga-glass-border);
+    box-shadow: inset 0 1px 0 var(--ga-glass-highlight);
+}
+
+.ga-shell .el-aside {
+    border-right: 1px solid var(--ga-glass-border);
+    box-shadow: inset 1px 0 0 var(--ga-glass-highlight);
+    /* hover 用半透明 fill，避免实色条盖住霜面；不改 --el-menu-bg-color，以免折叠弹出菜单变透 */
+    --el-menu-hover-bg-color: color-mix(in srgb, var(--ga-color-fill) 62%, transparent);
+}
+
+.ga-shell .el-aside .el-menu-item.is-active {
+    background-color: color-mix(in srgb, var(--ga-color-primary) 10%, transparent);
+}
+
+.ga-shell .el-aside .el-menu {
+    background-color: transparent;
+    border-right-color: transparent;
+}
+
+.ga-shell .el-aside .el-menu {
+    background-color: transparent;
+    border-right-color: transparent;
+}
+
+@supports ((-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))) {
+    .ga-shell .el-header,
+    .ga-shell .el-aside {
+        background-color: var(--ga-glass-bg);
+        -webkit-backdrop-filter: blur(var(--ga-glass-blur)) saturate(var(--ga-glass-saturate));
+        backdrop-filter: blur(var(--ga-glass-blur)) saturate(var(--ga-glass-saturate));
+    }
 }
 
 /**

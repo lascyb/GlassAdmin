@@ -72,9 +72,10 @@ onMounted(() => {
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
         <div style="display: flex; align-items: flex-start; height: calc(100vh - 60px)">
-            <div style="height: 100%; background: var(--el-fill-color-light)" v-if="!layoutMenus.collapse">
+            <div class="ga-double-modules" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
+                    class="ga-double-segmented"
                     :options="moduleOptions"
                     size="small"
                     direction="vertical"
@@ -95,4 +96,15 @@ onMounted(() => {
     </el-aside>
 </template>
 
-<style scoped></style>
+<style scoped>
+.ga-double-modules {
+    height: 100%;
+    background: color-mix(in srgb, var(--ga-color-fill-light) 42%, transparent);
+    border-right: 1px solid var(--ga-glass-border);
+}
+
+.ga-double-segmented {
+    --el-border-radius-base: 0;
+    background: transparent;
+}
+</style>

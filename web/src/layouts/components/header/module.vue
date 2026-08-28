@@ -47,10 +47,6 @@ watch(
 </template>
 
 <style scoped>
-.module-header {
-    border-bottom: 1px solid var(--el-border-color-light);
-}
-
 .module-bar {
     height: 100%;
 }
