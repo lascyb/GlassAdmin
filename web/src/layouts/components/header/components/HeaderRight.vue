@@ -111,7 +111,7 @@ const logout = async () => {
                             {{ accountInitial }}
                         </el-avatar>
                         <div class="account-identity-meta">
-                            <el-text truncated class="account-name-text">{{ accountName }}</el-text>
+                            <span class="account-name-text">{{ accountName }}</span>
                             <span v-if="accountUsername" class="account-username">{{
                                 accountUsername
                             }}</span>
@@ -236,12 +236,18 @@ const logout = async () => {
     flex: 1;
     min-width: 0;
     flex-direction: column;
+    align-items: flex-start;
     gap: 2px;
 }
 
 .account-name-text {
+    overflow: hidden;
+    max-width: 100%;
     font-weight: 500;
+    line-height: 1.4;
     color: var(--ga-color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .account-username {
