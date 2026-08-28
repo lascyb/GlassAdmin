@@ -20,7 +20,7 @@ const asideStyle = computed(() => ({
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <ga-menus :menus="layoutMenus.menus" style="height: calc(100vh - 60px)"></ga-menus>
+        <ga-menus :menus="layoutMenus.menus"></ga-menus>
     </el-aside>
 </template>
 

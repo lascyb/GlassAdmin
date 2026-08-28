@@ -16,8 +16,6 @@ const asideStyle = computed(() => ({
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
 }))
 
-/** 顶栏 logo 60px */
-const menuHeight = 'calc(100vh - 60px)'
 </script>
 
 <template>
@@ -26,12 +24,10 @@ const menuHeight = 'calc(100vh - 60px)'
         <ga-menus
             v-if="layoutMenus.subMenus.length > 0"
             :menus="layoutMenus.subMenus"
-            :style="{ height: menuHeight }"
         />
         <div
             v-else
-            class="flex items-center justify-center text-xs text-ga-text-secondary"
-            :style="{ height: menuHeight }"
+            class="ga-aside-fill flex items-center justify-center text-xs text-ga-text-secondary"
         >
             暂无子菜单
         </div>

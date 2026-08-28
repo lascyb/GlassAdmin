@@ -38,5 +38,6 @@ const displayMenus = computed(() => menusForDisplay(props.menus))
 .ga-aside-menus {
   box-sizing: border-box;
   overflow: auto;
+  height: 100%;
 }
 </style>

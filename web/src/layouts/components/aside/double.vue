@@ -71,7 +71,7 @@ onMounted(() => {
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <div style="display: flex; align-items: flex-start; height: calc(100vh - 60px)">
+        <div class="ga-double-body">
             <div class="ga-double-modules" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
@@ -91,16 +91,26 @@ onMounted(() => {
                     </template>
                 </el-segmented>
             </div>
-            <ga-menus v-if="menus && menus.length > 0" :menus="menus" style="height: calc(100vh - 60px); flex: 1"></ga-menus>
+            <ga-menus v-if="menus && menus.length > 0" :menus="menus"></ga-menus>
         </div>
     </el-aside>
 </template>
 
 <style scoped>
+.ga-double-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
 .ga-double-modules {
-    height: 100%;
+    flex-shrink: 0;
+    overflow: auto;
     background: color-mix(in srgb, var(--ga-color-fill-light) 42%, transparent);
-    border-right: 1px solid var(--ga-glass-border);
+    box-shadow: inset -1px 0 0 var(--ga-glass-border);
 }
 
 .ga-double-segmented {
