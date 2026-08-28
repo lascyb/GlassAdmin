@@ -334,11 +334,6 @@ html.dark {
     border-right-color: transparent;
 }
 
-.ga-shell .el-aside .el-menu {
-    background-color: transparent;
-    border-right-color: transparent;
-}
-
 @supports ((-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))) {
     .ga-shell .el-header,
     .ga-shell .el-aside {
