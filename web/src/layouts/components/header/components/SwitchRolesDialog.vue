@@ -63,6 +63,7 @@ watch(visible, (open) => {
         v-model="visible"
         title="切换角色"
         width="420px"
+        append-to-body
         destroy-on-close
         :close-on-click-modal="false"
         draggable
