@@ -82,7 +82,7 @@ class Index extends AdminController
         }
 
         return $this->ok([
-            'default'     => DbConnection::defaultName(),
+            'default'     => DbConnection::defaultCrudName(),
             'connections' => DbConnection::options(),
         ]);
     }

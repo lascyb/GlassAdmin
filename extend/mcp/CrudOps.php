@@ -30,7 +30,7 @@ class CrudOps
     public function listConnections(): array
     {
         return [
-            'default'     => DbConnection::defaultName(),
+            'default'     => DbConnection::defaultCrudName(),
             'connections' => DbConnection::options(),
         ];
     }

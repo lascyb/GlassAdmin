@@ -17,6 +17,9 @@ class DbConnection
     /** NAME_PATTERN 连接名合法字符 */
     private const string NAME_PATTERN = '/^[A-Za-z][A-Za-z0-9_\-]*$/';
 
+    /** MYSQL_TYPES CRUD 支持的数据库类型（生成器使用 SHOW TABLES 等 MySQL 语法） */
+    private const array MYSQL_TYPES = ['mysql', 'mysqli'];
+
     /** defaultName 默认连接名 */
     public static function defaultName(): string
     {
@@ -27,7 +30,21 @@ class DbConnection
     }
 
     /**
-     * names 已配置的连接名
+     * defaultCrudName CRUD 默认选用的连接名（应用默认若非 MySQL 则取首个 MySQL 连接）
+     */
+    public static function defaultCrudName(): string
+    {
+        $default = self::defaultName();
+        if (self::isMySqlType($default)) {
+            return $default;
+        }
+        $names = self::names();
+
+        return $names[0] ?? $default;
+    }
+
+    /**
+     * names 已配置的 MySQL 连接名
      *
      * @return list<string>
      */
@@ -35,7 +52,7 @@ class DbConnection
     {
         $names = [];
         foreach (array_keys(self::connections()) as $name) {
-            if (is_string($name) && $name !== '') {
+            if (is_string($name) && $name !== '' && self::isMySqlType($name)) {
                 $names[] = $name;
             }
         }
@@ -51,7 +68,7 @@ class DbConnection
      */
     public static function options(): array
     {
-        $default = self::defaultName();
+        $default = self::defaultCrudName();
         $out = [];
         foreach (self::names() as $name) {
             $cfg = self::connectionConfig($name);
@@ -194,6 +211,14 @@ class DbConnection
         $cfg = self::connections()[$name] ?? null;
 
         return is_array($cfg) ? $cfg : [];
+    }
+
+    /** isMySqlType 连接是否为 MySQL 类型 */
+    private static function isMySqlType(string $name): bool
+    {
+        $type = strtolower((string) (self::connectionConfig($name)['type'] ?? 'mysql'));
+
+        return in_array($type, self::MYSQL_TYPES, true);
     }
 
     /**
