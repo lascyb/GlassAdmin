@@ -141,11 +141,8 @@ const logout = async () => {
                 </el-icon>
             </button>
         </el-tooltip>
-
     </div>
-    <Teleport to="body">
-        <switch-roles-dialog v-model="rolesDialogVisible" />
-    </Teleport>
+    <switch-roles-dialog v-model="rolesDialogVisible" />
 </template>
 
 <style scoped>

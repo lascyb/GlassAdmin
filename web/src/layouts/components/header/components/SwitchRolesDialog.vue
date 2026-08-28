@@ -68,7 +68,7 @@ watch(visible, (open) => {
         :close-on-click-modal="false"
         draggable
     >
-        <div v-loading="rolesLoading" class="min-h-[120px]">
+        <div v-loading="rolesLoading" class="min-h-30">
             <div
                 v-if="!rolesLoading && roleOptions.length === 0"
                 class="py-6 text-center text-sm text-ga-text-secondary"
