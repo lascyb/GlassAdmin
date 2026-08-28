@@ -56,7 +56,7 @@ const onSizeChange = () => emit('load')
         >
             <slot />
         </el-table>
-        <div v-if="showPagination" class="mt-3 flex justify-end p-2">
+        <div v-if="showPagination" class="ga-table__pager flex justify-end">
             <el-pagination
                 v-model:current-page="page"
                 v-model:page-size="limit"
@@ -71,3 +71,15 @@ const onSizeChange = () => emit('load')
         <slot name="footer" />
     </div>
 </template>
+
+<style scoped>
+.ga-table {
+    --el-table-border-color: var(--ga-color-border-lighter);
+    --el-table-header-bg-color: var(--ga-color-fill-light);
+}
+
+.ga-table__pager {
+    margin-top: var(--ga-space-3);
+    padding: var(--ga-space-2);
+}
+</style>

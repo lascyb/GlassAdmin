@@ -25,8 +25,8 @@ const open = (item: WorkbenchRecent) => {
         <template #header>
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <el-icon class="text-gray-500"><Clock /></el-icon>
-                    <span class="text-[15px] font-medium text-gray-800">最近访问</span>
+                    <el-icon class="text-ga-text-regular"><Clock /></el-icon>
+                    <span class="text-[15px] font-medium text-ga-text">最近访问</span>
                 </div>
                 <el-button
                     v-if="items.length"

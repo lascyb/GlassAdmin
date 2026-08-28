@@ -2,6 +2,7 @@
 import type { ServerOverview } from '@/apis/dashboard'
 import * as dashboardApi from '@/apis/dashboard'
 import GaPage from '@/components/ga-page/index.vue'
+import { chartChromeColors, readThemeColor, useResolvedDark } from '@/composables/useColorMode'
 import { useWindowSize } from '@vueuse/core'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -52,12 +53,12 @@ const formatUptime = (sec: number | null | undefined) => {
 /** formatPct 百分比展示 */
 const formatPct = (n: number | null | undefined) => (n == null ? '-' : `${n.toFixed(1)}%`)
 
-/** pctColor 占用率颜色 */
+/** pctColor 占用率颜色（跟随主题语义色） */
 const pctColor = (n: number | null | undefined) => {
-    if (n == null) return '#909399'
-    if (n >= 90) return '#f56c6c'
-    if (n >= 70) return '#e6a23c'
-    return '#67c23a'
+    if (n == null) return readThemeColor('--el-text-color-secondary', '#909399')
+    if (n >= 90) return readThemeColor('--el-color-danger', '#f56c6c')
+    if (n >= 70) return readThemeColor('--el-color-warning', '#e6a23c')
+    return readThemeColor('--el-color-success', '#67c23a')
 }
 
 const primaryDisk = computed(() => data.value?.disks?.[0] ?? null)
@@ -117,12 +118,19 @@ const pushHistory = (snap: ServerOverview) => {
 
 /** lineOption 折线图配置 */
 const lineOption = (name: string, color: string, labels: string[], values: (number | null)[]) => {
-    const axisLabel = { color: '#909399', fontSize: 11 }
-    const splitLine = { lineStyle: { color: '#ebeef5', type: 'dashed' as const } }
+    const chrome = chartChromeColors()
+    const axisLabel = { color: chrome.text, fontSize: 11 }
+    const splitLine = { lineStyle: { color: chrome.split, type: 'dashed' as const } }
     return {
-        tooltip: { trigger: 'axis', valueFormatter: (v: number | null) => (v == null ? '-' : `${v}%`) },
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: chrome.bg,
+            borderColor: chrome.line,
+            textStyle: { color: chrome.fg },
+            valueFormatter: (v: number | null) => (v == null ? '-' : `${v}%`),
+        },
         grid: { left: 8, right: 12, top: 28, bottom: 4, containLabel: true },
-        xAxis: { type: 'category', data: labels, boundaryGap: false, axisLabel, axisLine: { lineStyle: { color: '#dcdfe6' } } },
+        xAxis: { type: 'category', data: labels, boundaryGap: false, axisLabel, axisLine: { lineStyle: { color: chrome.line } } },
         yAxis: { type: 'value', min: 0, max: 100, axisLabel: { ...axisLabel, formatter: '{value}%' }, splitLine },
         series: [
             {
@@ -197,7 +205,11 @@ const stopTimer = () => {
 }
 
 const { width } = useWindowSize()
+const isDark = useResolvedDark()
 watch(width, resizeCharts)
+watch(isDark, () => {
+    void nextTick(renderCharts)
+})
 watch(autoRefresh, startTimer)
 watch(includeHgfs, () => {
     void load(true)
@@ -224,7 +236,7 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <span>服务器性能</span>
                 <div class="flex flex-wrap items-center gap-3">
-                    <span class="text-sm font-normal text-gray-500">自动刷新（{{ REFRESH_MS / 1000 }}s）</span>
+                    <span class="text-sm font-normal text-ga-text-secondary">自动刷新（{{ REFRESH_MS / 1000 }}s）</span>
                     <el-switch v-model="autoRefresh" />
                     <el-button @click="load()">刷新</el-button>
                 </div>
@@ -235,13 +247,13 @@ onUnmounted(() => {
                 <div
                     v-for="item in kpiCards"
                     :key="item.label"
-                    class="flex h-[90px] flex-col justify-between rounded border border-gray-100 bg-white px-3 py-2"
+                    class="ga-surface flex h-[90px] flex-col justify-between px-3 py-2"
                 >
-                    <div class="text-xs text-gray-800">{{ item.label }}</div>
+                    <div class="text-xs text-ga-text">{{ item.label }}</div>
                     <div class="text-lg font-semibold leading-none" :style="{ color: pctColor(item.pct) }">
                         {{ item.value }}
                     </div>
-                    <div class="truncate text-[11px] leading-none text-gray-500">{{ item.sub }}</div>
+                    <div class="truncate text-[11px] leading-none text-ga-text-secondary">{{ item.sub }}</div>
                 </div>
             </div>
 
@@ -255,7 +267,7 @@ onUnmounted(() => {
                                 :color="pctColor(data.cpu.usage_percent)"
                                 :format="() => formatPct(data!.cpu.usage_percent)"
                             />
-                            <div class="mt-2 space-y-1 text-center text-xs text-gray-500">
+                            <div class="mt-2 space-y-1 text-center text-xs text-ga-text-secondary">
                                 <div>核数 {{ data.cpu.cores }}</div>
                                 <div v-if="data.cpu.load_1 != null">
                                     Load {{ data.cpu.load_1 }} / {{ data.cpu.load_5 }} / {{ data.cpu.load_15 }}
@@ -273,7 +285,7 @@ onUnmounted(() => {
                                 :color="pctColor(data.memory.usage_percent)"
                                 :format="() => formatPct(data!.memory.usage_percent)"
                             />
-                            <div class="mt-2 space-y-1 text-center text-xs text-gray-500">
+                            <div class="mt-2 space-y-1 text-center text-xs text-ga-text-secondary">
                                 <div>{{ formatBytes(data.memory.used) }} / {{ formatBytes(data.memory.total) }}</div>
                                 <div>可用 {{ formatBytes(data.memory.available) }}</div>
                             </div>
@@ -289,7 +301,7 @@ onUnmounted(() => {
                                 :color="pctColor(primaryDisk?.usage_percent)"
                                 :format="() => formatPct(primaryDisk?.usage_percent ?? null)"
                             />
-                            <div class="mt-2 space-y-1 text-center text-xs text-gray-500">
+                            <div class="mt-2 space-y-1 text-center text-xs text-ga-text-secondary">
                                 <div>{{ primaryDisk?.mount ?? '-' }}</div>
                                 <div v-if="primaryDisk">
                                     {{ formatBytes(primaryDisk.used) }} / {{ formatBytes(primaryDisk.total) }}
@@ -324,7 +336,7 @@ onUnmounted(() => {
                         <template #header>
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span>磁盘分区</span>
-                                <div class="flex items-center gap-2 text-sm font-normal text-gray-500">
+                                <div class="flex items-center gap-2 text-sm font-normal text-ga-text-secondary">
                                     <span>含 HGFS</span>
                                     <el-switch v-model="includeHgfs" />
                                 </div>

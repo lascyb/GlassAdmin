@@ -17,16 +17,22 @@ withDefaults(
     },
 )
 
-const paddingClass: Record<string, string> = {
-    none: 'p-0',
-    sm: 'p-2',
-    md: 'p-4',
-    lg: 'p-6',
+const paddingVar: Record<string, string> = {
+    none: '0',
+    sm: 'var(--ga-space-2)',
+    md: 'var(--ga-space-4)',
+    lg: 'var(--ga-space-6)',
 }
 </script>
 
 <template>
-    <div :class="paddingClass[padding]" :style="minHeight ? { minHeight } : undefined">
+    <div
+        class="ga-page"
+        :style="{
+            padding: paddingVar[padding],
+            minHeight: minHeight || undefined,
+        }"
+    >
         <el-card :shadow="shadow" :body-style="padding === 'none' ? 'padding:0' : undefined">
             <template v-if="title || $slots.header" #header>
                 <slot name="header">{{ title }}</slot>

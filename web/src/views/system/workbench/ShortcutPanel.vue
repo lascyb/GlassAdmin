@@ -26,8 +26,8 @@ const open = (item: WorkbenchShortcut) => {
         <template #header>
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <span class="text-[15px] font-medium text-gray-800">快捷入口</span>
-                    <span class="text-xs font-normal text-gray-400">点击进入 · 可自定义</span>
+                    <span class="text-[15px] font-medium text-ga-text">快捷入口</span>
+                    <span class="text-xs font-normal text-ga-text-secondary">点击进入 · 可自定义</span>
                 </div>
                 <el-button text type="primary" :icon="Setting" @click="emit('customize')">自定义</el-button>
             </div>
@@ -48,7 +48,7 @@ const open = (item: WorkbenchShortcut) => {
             </button>
         </div>
 
-        <div v-else class="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
+        <div v-else class="flex flex-col items-center justify-center gap-3 py-10 text-ga-text-secondary">
             <el-empty description="还没有快捷入口" :image-size="72">
                 <el-button type="primary" :icon="Plus" @click="emit('customize')">添加入口</el-button>
             </el-empty>

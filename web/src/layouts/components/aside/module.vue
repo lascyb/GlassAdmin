@@ -30,7 +30,7 @@ const menuHeight = 'calc(100vh - 60px)'
         />
         <div
             v-else
-            class="flex items-center justify-center text-xs text-gray-400"
+            class="flex items-center justify-center text-xs text-ga-text-secondary"
             :style="{ height: menuHeight }"
         >
             暂无子菜单

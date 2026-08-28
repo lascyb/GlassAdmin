@@ -1,20 +1,200 @@
 @import "tailwindcss";
-html {
-    font-family: ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+
+/**
+ * class 暗色（html.dark），与个人偏好 Light / Dark / System 对齐。
+ * 覆盖 Tailwind v4 默认的 prefers-color-scheme，避免和显式选择打架。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * 把 GA token 暴露给 Tailwind 工具类（bg-ga-bg、text-ga-text、rounded-ga-md 等）。
+ * 颜色走 CSS 变量，随 :root / html.dark 切换，不与 Element Plus 变量抢定义。
+ */
+@theme {
+    --color-ga-primary: var(--ga-color-primary);
+    --color-ga-on-primary: var(--ga-color-on-primary);
+    --color-ga-bg: var(--ga-color-bg);
+    --color-ga-bg-page: var(--ga-color-bg-page);
+    --color-ga-overlay: var(--ga-color-overlay);
+    --color-ga-text: var(--ga-color-text);
+    --color-ga-text-regular: var(--ga-color-text-regular);
+    --color-ga-text-secondary: var(--ga-color-text-secondary);
+    --color-ga-text-placeholder: var(--ga-color-text-placeholder);
+    --color-ga-border: var(--ga-color-border);
+    --color-ga-border-light: var(--ga-color-border-light);
+    --color-ga-border-lighter: var(--ga-color-border-lighter);
+    --color-ga-fill: var(--ga-color-fill);
+    --color-ga-fill-light: var(--ga-color-fill-light);
+    --color-ga-fill-lighter: var(--ga-color-fill-lighter);
+    --color-ga-fill-blank: var(--ga-color-fill-blank);
+    --radius-ga-sm: var(--ga-radius-sm);
+    --radius-ga-md: var(--ga-radius-md);
+    --radius-ga-lg: var(--ga-radius-lg);
+    --radius-ga-xl: var(--ga-radius-xl);
+    --spacing-ga-1: var(--ga-space-1);
+    --spacing-ga-2: var(--ga-space-2);
+    --spacing-ga-3: var(--ga-space-3);
+    --spacing-ga-4: var(--ga-space-4);
+    --spacing-ga-5: var(--ga-space-5);
+    --spacing-ga-6: var(--ga-space-6);
+    --spacing-ga-8: var(--ga-space-8);
+    --spacing-ga-10: var(--ga-space-10);
 }
-html, body, #app {
+
+html {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body,
+#app {
     margin: 0;
+    min-height: 100%;
+    background-color: var(--ga-color-bg-page);
+    color: var(--ga-color-text);
 }
 
 /**
- * 全局动效时长与曲线（侧栏、路由、布局壳等共用）
- * prefers-reduced-motion 时近似关闭动画
+ * 设计 token（品牌 / 表面 / 文本 / 边框 / 圆角 / 间距 / 动效）
+ * 浅色默认对齐 Element Plus 默认色板，再映射到 --el-*，让 el-* 组件自动跟随。
  */
 :root {
+    color-scheme: light;
+
+    --ga-color-primary: #409eff;
+    --ga-color-on-primary: #ffffff;
+
+    --ga-color-bg: #ffffff;
+    --ga-color-bg-page: #f2f3f5;
+    --ga-color-overlay: #ffffff;
+    --ga-color-mask: rgb(0 0 0 / 50%);
+
+    --ga-color-text: #303133;
+    --ga-color-text-regular: #606266;
+    --ga-color-text-secondary: #909399;
+    --ga-color-text-placeholder: #a8abb2;
+    --ga-color-text-disabled: #c0c4cc;
+
+    --ga-color-border: #dcdfe6;
+    --ga-color-border-light: #e4e7ed;
+    --ga-color-border-lighter: #ebeef5;
+    --ga-color-border-extra-light: #f2f6fc;
+
+    --ga-color-fill: #f0f2f5;
+    --ga-color-fill-light: #f5f7fa;
+    --ga-color-fill-lighter: #fafafa;
+    --ga-color-fill-extra-light: #fafcff;
+    --ga-color-fill-blank: #ffffff;
+
+    --ga-radius-sm: 4px;
+    --ga-radius-md: 8px;
+    --ga-radius-lg: 12px;
+    --ga-radius-xl: 16px;
+
+    --ga-space-1: 4px;
+    --ga-space-2: 8px;
+    --ga-space-3: 12px;
+    --ga-space-4: 16px;
+    --ga-space-5: 20px;
+    --ga-space-6: 24px;
+    --ga-space-8: 32px;
+    --ga-space-10: 40px;
+
     --ga-duration: 0.22s;
     --ga-duration-slow: 0.32s;
     --ga-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --ga-ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+    --el-color-primary-light-1: color-mix(in srgb, var(--ga-color-primary) 90%, #fff);
+    --el-color-primary-light-2: color-mix(in srgb, var(--ga-color-primary) 80%, #fff);
+    --el-color-primary-light-3: color-mix(in srgb, var(--ga-color-primary) 70%, #fff);
+    --el-color-primary-light-4: color-mix(in srgb, var(--ga-color-primary) 60%, #fff);
+    --el-color-primary-light-5: color-mix(in srgb, var(--ga-color-primary) 50%, #fff);
+    --el-color-primary-light-6: color-mix(in srgb, var(--ga-color-primary) 40%, #fff);
+    --el-color-primary-light-7: color-mix(in srgb, var(--ga-color-primary) 30%, #fff);
+    --el-color-primary-light-8: color-mix(in srgb, var(--ga-color-primary) 20%, #fff);
+    --el-color-primary-light-9: color-mix(in srgb, var(--ga-color-primary) 10%, #fff);
+    --el-color-primary-dark-2: color-mix(in srgb, var(--ga-color-primary) 80%, #000);
+}
+
+/**
+ * 暗色：对齐 Element Plus theme-chalk/dark 色板，品牌色仍走 --ga-color-primary。
+ * html.dark 由个人偏好写入；浅色档位会去掉该类。
+ */
+html.dark {
+    color-scheme: dark;
+
+    --ga-color-bg: #141414;
+    --ga-color-bg-page: #0a0a0a;
+    --ga-color-overlay: #1d1e1f;
+    --ga-color-mask: rgb(0 0 0 / 80%);
+
+    --ga-color-text: #e5eaf3;
+    --ga-color-text-regular: #cfd3dc;
+    --ga-color-text-secondary: #a3a6ad;
+    --ga-color-text-placeholder: #8d9095;
+    --ga-color-text-disabled: #6c6e72;
+
+    --ga-color-border: #4c4d4f;
+    --ga-color-border-light: #414243;
+    --ga-color-border-lighter: #363637;
+    --ga-color-border-extra-light: #2b2b2c;
+
+    --ga-color-fill: #303030;
+    --ga-color-fill-light: #262727;
+    --ga-color-fill-lighter: #1d1d1d;
+    --ga-color-fill-extra-light: #191919;
+    --ga-color-fill-blank: #141414;
+
+    --el-color-primary-light-1: color-mix(in srgb, var(--ga-color-primary) 90%, #000);
+    --el-color-primary-light-2: color-mix(in srgb, var(--ga-color-primary) 80%, #000);
+    --el-color-primary-light-3: color-mix(in srgb, var(--ga-color-primary) 70%, #000);
+    --el-color-primary-light-4: color-mix(in srgb, var(--ga-color-primary) 60%, #000);
+    --el-color-primary-light-5: color-mix(in srgb, var(--ga-color-primary) 50%, #000);
+    --el-color-primary-light-6: color-mix(in srgb, var(--ga-color-primary) 40%, #000);
+    --el-color-primary-light-7: color-mix(in srgb, var(--ga-color-primary) 30%, #000);
+    --el-color-primary-light-8: color-mix(in srgb, var(--ga-color-primary) 20%, #000);
+    --el-color-primary-light-9: color-mix(in srgb, var(--ga-color-primary) 10%, #000);
+    --el-color-primary-dark-2: color-mix(in srgb, var(--ga-color-primary) 80%, #fff);
+}
+
+/**
+ * 映射到 Element Plus。必须写在 html.dark 上，否则 EP dark css-vars 的同名变量会盖过 :root。
+ */
+:root,
+html.dark {
+    --el-color-primary: var(--ga-color-primary);
+
+    --el-bg-color: var(--ga-color-bg);
+    --el-bg-color-page: var(--ga-color-bg-page);
+    --el-bg-color-overlay: var(--ga-color-overlay);
+    --el-mask-color: var(--ga-color-mask);
+
+    --el-text-color-primary: var(--ga-color-text);
+    --el-text-color-regular: var(--ga-color-text-regular);
+    --el-text-color-secondary: var(--ga-color-text-secondary);
+    --el-text-color-placeholder: var(--ga-color-text-placeholder);
+    --el-text-color-disabled: var(--ga-color-text-disabled);
+
+    --el-border-color: var(--ga-color-border);
+    --el-border-color-light: var(--ga-color-border-light);
+    --el-border-color-lighter: var(--ga-color-border-lighter);
+    --el-border-color-extra-light: var(--ga-color-border-extra-light);
+
+    --el-fill-color: var(--ga-color-fill);
+    --el-fill-color-light: var(--ga-color-fill-light);
+    --el-fill-color-lighter: var(--ga-color-fill-lighter);
+    --el-fill-color-extra-light: var(--ga-color-fill-extra-light);
+    --el-fill-color-blank: var(--ga-color-fill-blank);
+
+    --el-border-radius-base: var(--ga-radius-sm);
+    --el-border-radius-small: 2px;
+
+    --el-menu-bg-color: var(--ga-color-bg);
+    --el-menu-hover-bg-color: var(--ga-color-fill-light);
+    --el-menu-text-color: var(--ga-color-text);
+    --el-menu-active-color: var(--ga-color-primary);
+    --el-menu-border-color: var(--ga-color-border-lighter);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -61,4 +241,27 @@ html, body, #app {
 
 .el-header {
     --el-header-padding: 0;
+    background-color: var(--ga-color-bg);
+}
+
+.el-aside {
+    background-color: var(--ga-color-bg);
+}
+
+/**
+ * ga-page 卡片表面：圆角 / 边框走 token，内容由 el-card 继承 --el-*
+ */
+.ga-page .el-card {
+    --el-card-border-radius: var(--ga-radius-md);
+    border-color: var(--ga-color-border-lighter);
+}
+
+/**
+ * 仪表盘 KPI 等轻量表面，避免业务页再写 bg-white / border-gray-100
+ */
+.ga-surface {
+    background-color: var(--ga-color-overlay);
+    border: 1px solid var(--ga-color-border-lighter);
+    border-radius: var(--ga-radius-md);
+    color: var(--ga-color-text);
 }

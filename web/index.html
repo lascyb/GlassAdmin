@@ -6,6 +6,28 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GlassAdmin</title>
+    <script>
+        (function () {
+            var prefix = '%VITE_PERSIST_STORAGE_PREFIX%';
+            if (!prefix || prefix.indexOf('%') !== -1) {
+                prefix = '__GA__';
+            }
+            var mode = 'system';
+            try {
+                var raw = localStorage.getItem(prefix + 'layout_setting');
+                if (raw) {
+                    var data = JSON.parse(raw);
+                    var stored = data && data.layout && data.layout.colorMode;
+                    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+                        mode = stored;
+                    }
+                }
+            } catch (e) {}
+            var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.classList.toggle('dark', dark);
+            document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        })();
+    </script>
 </head>
 
 <body>

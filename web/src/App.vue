@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useAppColorMode } from '@/composables/useColorMode'
 import GaSetting from '@/layouts/setting/index.vue';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
+
+useAppColorMode()
 </script>
 
 <template>

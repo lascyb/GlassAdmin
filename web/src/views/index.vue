@@ -114,7 +114,7 @@ onMounted(() => {
 <template>
     <div class="workbench p-4" style="min-height: calc(100vh - 120px)">
         <div class="welcome mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h1 class="m-0 text-xl font-semibold tracking-tight text-gray-800">
+            <h1 class="m-0 text-xl font-semibold tracking-tight text-ga-text">
                 {{ greeting }}，{{ displayName }}
             </h1>
             <el-button type="primary" plain @click="goProfile">

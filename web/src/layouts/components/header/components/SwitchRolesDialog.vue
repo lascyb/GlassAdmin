@@ -70,12 +70,12 @@ watch(visible, (open) => {
         <div v-loading="rolesLoading" class="min-h-[120px]">
             <div
                 v-if="!rolesLoading && roleOptions.length === 0"
-                class="py-6 text-center text-sm text-gray-400"
+                class="py-6 text-center text-sm text-ga-text-secondary"
             >
                 未分配角色
             </div>
             <template v-else>
-                <p class="mb-3 text-xs text-gray-400">仅启用的角色参与菜单与权限；应用后将刷新页面。</p>
+                <p class="mb-3 text-xs text-ga-text-secondary">仅启用的角色参与菜单与权限；应用后将刷新页面。</p>
                 <el-checkbox-group v-model="selectedRoleIds" class="flex flex-col gap-2">
                     <el-checkbox
                         v-for="role in roleOptions"

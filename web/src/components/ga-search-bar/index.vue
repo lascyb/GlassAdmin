@@ -44,7 +44,7 @@ const onReset = () => {
         <el-form
             v-if="expanded && $slots.advanced"
             inline
-            class="ga-search-bar__advanced flex flex-wrap "
+            class="ga-search-bar__advanced flex flex-wrap"
             @submit.prevent="onSearch"
         >
             <slot name="advanced"/>
@@ -54,7 +54,7 @@ const onReset = () => {
             </el-form-item>
         </el-form>
         <el-divider v-if="expanded && $slots.advanced" class="!my-0"/>
-        <div class="ga-search-bar__main flex items-center gap-2 py-2">
+        <div class="ga-search-bar__main flex items-center gap-2">
             <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <slot name="actions"/>
             </div>
@@ -75,3 +75,10 @@ const onReset = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.ga-search-bar__main,
+.ga-search-bar__advanced {
+    padding-block: var(--ga-space-2);
+}
+</style>

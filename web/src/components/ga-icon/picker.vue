@@ -91,7 +91,7 @@ const clearIcon = () => {
                         <span class="shrink-0"><GaIcon :icon="model" :fallback="true" /></span>
                         <span
                             v-if="!props.hideName"
-                            class="block min-w-0 flex-1 truncate text-left text-xs text-gray-500"
+                            class="block min-w-0 flex-1 truncate text-left text-xs text-ga-text-regular"
                             :title="model || undefined"
                             >{{ model || '未设置' }}</span
                         >
@@ -120,7 +120,7 @@ const clearIcon = () => {
                 <el-tab-pane label="本地图标" name="local">
                     <el-input v-model="keyword" clearable placeholder="搜索路径或文件名（不含 .svg）" class="mb-2" />
                     <el-scrollbar max-height="280px">
-                        <div v-if="!filteredLocalStems.length" class="py-3 text-center text-xs text-gray-400">
+                        <div v-if="!filteredLocalStems.length" class="py-3 text-center text-xs text-ga-text-secondary">
                             将 svg 放入 src/assets/icons 后重新构建即可列出
                         </div>
                         <div v-else class="grid grid-cols-6 gap-1 p-1">
@@ -155,7 +155,7 @@ const clearIcon = () => {
                     </div>
                 </el-tab-pane>
             </el-tabs>
-            <div class="mt-2 flex justify-end border-t border-gray-100 pt-2">
+            <div class="mt-2 flex justify-end border-t border-ga-border-lighter pt-2">
                 <el-button size="small" text type="danger" @click="clearIcon">清除图标</el-button>
             </div>
         </el-popover>

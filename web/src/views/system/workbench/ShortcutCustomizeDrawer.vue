@@ -180,8 +180,8 @@ const onRestore = () => {
                 title="勾选常用页面，拖拽右侧调整顺序；保存后按账号同步到服务器。"
             />
             <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
-                <div class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-gray-100">
-                    <div class="border-b border-gray-100 px-3 py-2 text-sm text-gray-600">菜单</div>
+                <div class="flex min-h-0 flex-col overflow-hidden rounded-ga-md border border-ga-border-lighter">
+                    <div class="border-b border-ga-border-lighter px-3 py-2 text-sm text-ga-text-regular">菜单</div>
                     <div class="min-h-0 flex-1 overflow-auto p-2">
                         <el-tree
                             ref="treeRef"
@@ -207,8 +207,8 @@ const onRestore = () => {
                         </el-tree>
                     </div>
                 </div>
-                <div class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-gray-100">
-                    <div class="border-b border-gray-100 px-3 py-2 text-sm text-gray-600">
+                <div class="flex min-h-0 flex-col overflow-hidden rounded-ga-md border border-ga-border-lighter">
+                    <div class="border-b border-ga-border-lighter px-3 py-2 text-sm text-ga-text-regular">
                         已选（{{ selectedMenus.length }}/{{ MAX_ITEMS }}）
                     </div>
                     <ul
@@ -222,7 +222,7 @@ const onRestore = () => {
                             class="selected-item"
                             :data-id="m.id"
                         >
-                            <el-icon class="drag-handle cursor-grab text-gray-400"><Rank /></el-icon>
+                            <el-icon class="drag-handle cursor-grab text-ga-text-secondary"><Rank /></el-icon>
                             <GaIcon :icon="m.icon" :url-size="16" class="shrink-0 text-[16px]" />
                             <span class="min-w-0 flex-1 truncate text-sm">{{ m.name }}</span>
                             <el-button text type="danger" size="small" @click="removeOne(m.id)">
@@ -233,7 +233,7 @@ const onRestore = () => {
                     <el-empty v-else description="尚未选择" :image-size="56" class="py-8" />
                 </div>
             </div>
-            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-ga-border-lighter pt-3">
                 <el-button :icon="RefreshLeft" @click="onRestore">恢复默认</el-button>
                 <div class="flex gap-2">
                     <el-button @click="open = false">取消</el-button>

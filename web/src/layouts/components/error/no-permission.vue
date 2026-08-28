@@ -53,11 +53,11 @@ watch(ruleId, () => {
                 <span>{{ title }}</span>
             </template>
             <template #sub-title>
-                <p class="m-0 text-sm text-gray-500">您当前没有该菜单的访问权限</p>
+                <p class="m-0 text-sm text-ga-text-secondary">您当前没有该菜单的访问权限</p>
             </template>
             <template #extra>
                 <div class="no-perm-body">
-                    <div v-if="detail?.icon || detail?.path" class="mb-3 flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500">
+                    <div v-if="detail?.icon || detail?.path" class="mb-3 flex flex-wrap items-center justify-center gap-2 text-sm text-ga-text-secondary">
                         <GaIcon v-if="detail?.icon" :icon="detail.icon" class="shrink-0" />
                         <span v-if="detail?.path" class="font-mono text-xs">{{ detail.path }}</span>
                     </div>

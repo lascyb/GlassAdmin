@@ -19,13 +19,13 @@ const levelType = (level?: WorkbenchTodo['level']) => {
         <template #header>
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <el-icon class="text-gray-500"><Bell /></el-icon>
-                    <span class="text-[15px] font-medium text-gray-800">待办事项</span>
+                    <el-icon class="text-ga-text-regular"><Bell /></el-icon>
+                    <span class="text-[15px] font-medium text-ga-text">待办事项</span>
                     <el-tag v-if="items.length" size="small" type="danger" effect="plain" round>
                         {{ items.length }}
                     </el-tag>
                 </div>
-                <span class="text-xs text-gray-400">审批 / 通知预留</span>
+                <span class="text-xs text-ga-text-secondary">审批 / 通知预留</span>
             </div>
         </template>
 
@@ -35,12 +35,12 @@ const levelType = (level?: WorkbenchTodo['level']) => {
                     {{ item.level === 'warning' ? '紧急' : item.level === 'info' ? '通知' : '待办' }}
                 </el-tag>
                 <div class="min-w-0 flex-1">
-                    <div class="truncate text-[13px] text-gray-800">{{ item.title }}</div>
-                    <div v-if="item.summary" class="mt-0.5 truncate text-xs text-gray-400">
+                    <div class="truncate text-[13px] text-ga-text">{{ item.title }}</div>
+                    <div v-if="item.summary" class="mt-0.5 truncate text-xs text-ga-text-secondary">
                         {{ item.summary }}
                     </div>
                 </div>
-                <span v-if="item.created_at" class="shrink-0 text-xs text-gray-400">{{ item.created_at }}</span>
+                <span v-if="item.created_at" class="shrink-0 text-xs text-ga-text-secondary">{{ item.created_at }}</span>
             </li>
         </ul>
 

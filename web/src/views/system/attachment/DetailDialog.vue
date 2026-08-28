@@ -91,7 +91,7 @@ onMounted(() => {
                 <div class="flex flex-col gap-4 sm:flex-row">
                     <div
                         v-if="isImage"
-                        class="flex shrink-0 items-center justify-center rounded border border-gray-100 bg-gray-50 p-3 sm:w-56"
+                        class="flex shrink-0 items-center justify-center rounded-ga-md border border-ga-border-lighter bg-ga-fill-light p-3 sm:w-56"
                     >
                         <el-image
                             :src="detail.url!"

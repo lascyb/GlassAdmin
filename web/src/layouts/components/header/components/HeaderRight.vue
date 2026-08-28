@@ -130,7 +130,7 @@ const logout = async () => {
         cursor: pointer;
 
         &:hover {
-            background: #f0f2f5;
+            background: var(--ga-color-fill);
         }
     }
 }

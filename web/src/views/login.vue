@@ -154,7 +154,7 @@ onMounted(() => {
     <div class="login-box">
       <div class="logo-section">
         <div class="logo-icon">
-          <el-icon :size="48" color="#409EFF">
+          <el-icon :size="48" color="var(--ga-color-on-primary)">
             <User />
           </el-icon>
         </div>
@@ -247,18 +247,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background:
+    radial-gradient(
+      1200px 600px at 50% -10%,
+      color-mix(in srgb, var(--ga-color-primary) 22%, var(--ga-color-bg-page)),
+      var(--ga-color-bg-page)
+    );
+  padding: var(--ga-space-5);
 }
 
 .login-box {
   width: 100%;
   max-width: 500px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 40px;
-  animation: slideUp 0.5s ease-out;
+  background: var(--ga-color-bg);
+  border: 1px solid var(--ga-color-border-lighter);
+  border-radius: var(--ga-radius-xl);
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--ga-color-text) 16%, transparent);
+  padding: var(--ga-space-10);
+  animation: slideUp var(--ga-duration-slow) var(--ga-ease-out);
 }
 
 @keyframes slideUp {
@@ -274,7 +280,7 @@ onMounted(() => {
 
 .logo-section {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: var(--ga-space-8);
 }
 
 .logo-icon {
@@ -283,43 +289,44 @@ onMounted(() => {
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
-  margin-bottom: 16px;
+  background: var(--ga-color-primary);
+  border-radius: var(--ga-radius-lg);
+  margin-bottom: var(--ga-space-4);
+  color: var(--ga-color-on-primary);
 }
 
 .logo-title {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
-  margin: 0 0 8px 0;
+  color: var(--ga-color-text);
+  margin: 0 0 var(--ga-space-2) 0;
 }
 
 .logo-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: var(--ga-color-text-secondary);
   margin: 0;
 }
 
 .login-form {
-  margin-top: 8px;
+  margin-top: var(--ga-space-2);
 }
 
 .login-form :deep(.el-form-item) {
-  margin-bottom: 20px;
+  margin-bottom: var(--ga-space-5);
 }
 
 .login-form :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: var(--ga-radius-md);
 }
 
 .login-button {
   width: 100%;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--ga-radius-md);
   font-size: 16px;
   font-weight: 500;
-  margin-top: 8px;
+  margin-top: var(--ga-space-2);
 }
 
 .form-options {
@@ -330,13 +337,13 @@ onMounted(() => {
 }
 
 .third-party-section {
-  margin-top: 8px;
+  margin-top: var(--ga-space-2);
 }
 
 .divider {
   position: relative;
   text-align: center;
-  margin: 0 0 20px;
+  margin: 0 0 var(--ga-space-5);
 }
 
 .divider::before {
@@ -346,14 +353,14 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 1px;
-  background: #ebeef5;
+  background: var(--ga-color-border-lighter);
 }
 
 .divider-text {
   position: relative;
-  background: white;
+  background: var(--ga-color-bg);
   padding: 0 14px;
-  color: #a8abb2;
+  color: var(--ga-color-text-placeholder);
   font-size: 13px;
 }
 
@@ -365,25 +372,28 @@ onMounted(() => {
   justify-content: center;
   gap: 10px;
   margin: 0;
-  padding: 0 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  background: #fff;
-  color: #303133;
+  padding: 0 var(--ga-space-4);
+  border: 1px solid var(--ga-color-border);
+  border-radius: var(--ga-radius-md);
+  background: var(--ga-color-bg);
+  color: var(--ga-color-text);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color var(--ga-duration) var(--ga-ease),
+    background-color var(--ga-duration) var(--ga-ease),
+    box-shadow var(--ga-duration) var(--ga-ease);
 }
 
 .feishu-login-btn:hover:not(:disabled) {
-  border-color: #3370ff;
-  background: #f5f8ff;
-  box-shadow: 0 2px 8px rgba(51, 112, 255, 0.12);
+  border-color: var(--ga-color-primary);
+  background: color-mix(in srgb, var(--ga-color-primary) 8%, var(--ga-color-bg));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ga-color-primary) 16%, transparent);
 }
 
 .feishu-login-btn:active:not(:disabled) {
-  background: #eef3ff;
+  background: color-mix(in srgb, var(--ga-color-primary) 12%, var(--ga-color-bg));
 }
 
 .feishu-login-btn:disabled {
@@ -403,13 +413,13 @@ onMounted(() => {
 .password-switch-btn {
   width: 100%;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--ga-radius-md);
 }
 
 @media (max-width: 480px) {
   .login-box {
-    padding: 24px;
-    border-radius: 12px;
+    padding: var(--ga-space-6);
+    border-radius: var(--ga-radius-lg);
   }
 
   .logo-icon {

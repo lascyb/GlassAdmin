@@ -48,6 +48,16 @@ const resetAsideWidth = () => {
 <template>
     <el-drawer v-model="setting.layout.showSetting" direction="rtl" title="个人偏好">
         <el-form v-loading="reloading" label-position="top">
+            <el-form-item label="外观">
+                <el-radio-group v-model="setting.layout.colorMode">
+                    <el-radio-button value="light">浅色</el-radio-button>
+                    <el-radio-button value="dark">深色</el-radio-button>
+                    <el-radio-button value="system">跟随系统</el-radio-button>
+                </el-radio-group>
+                <div class="mt-1 text-xs text-ga-text-secondary">
+                    未手动选择时默认跟随操作系统的浅色 / 深色。
+                </div>
+            </el-form-item>
             <el-form-item label="菜单样式">
                 <LayoutPicker v-model="setting.layout.container" />
             </el-form-item>
@@ -65,13 +75,13 @@ const resetAsideWidth = () => {
                     />
                     <el-button link type="primary" @click="resetAsideWidth">重置</el-button>
                 </div>
-                <div class="mt-1 text-xs text-gray-400">
+                <div class="mt-1 text-xs text-ga-text-secondary">
                     展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。
                 </div>
             </el-form-item>
             <el-form-item label="左侧菜单手风琴">
                 <el-switch v-model="setting.layout.menuAccordion" />
-                <div class="mt-1 text-xs text-gray-400">
+                <div class="mt-1 text-xs text-ga-text-secondary">
                     开启后同一时刻只展开一个子菜单目录。
                 </div>
             </el-form-item>
@@ -80,7 +90,7 @@ const resetAsideWidth = () => {
                     :model-value="setting.layout.showAllMenus"
                     @change="onShowAllMenusChange"
                 />
-                <div class="mt-1 text-xs text-gray-400">
+                <div class="mt-1 text-xs text-ga-text-secondary">
                     开启后侧栏会显示标记为「可发现」但尚未授权的菜单，点击进入说明页。
                 </div>
             </el-form-item>

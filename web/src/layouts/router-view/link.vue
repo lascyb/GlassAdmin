@@ -26,7 +26,7 @@ onMounted(() => {
                 <el-button type="primary" tag="a" :href="url" target="_blank" rel="noopener noreferrer">
                     再次打开
                 </el-button>
-                <div class="mt-3 max-w-xl break-all text-left text-xs text-gray-400">{{ url }}</div>
+                <div class="mt-3 max-w-xl break-all text-left text-xs text-ga-text-secondary">{{ url }}</div>
             </template>
         </el-result>
         <el-empty v-else description="未配置外链地址" />

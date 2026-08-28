@@ -2,6 +2,7 @@
 import type { DashboardOverview } from '@/apis/dashboard'
 import * as dashboardApi from '@/apis/dashboard'
 import GaPage from '@/components/ga-page/index.vue'
+import { chartChromeColors, useResolvedDark } from '@/composables/useColorMode'
 import { useWindowSize } from '@vueuse/core'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -46,17 +47,30 @@ const renderCharts = () => {
     if (!trend) return
 
     const dates = formatTrendDates(trend.dates)
-    const axisLabel = { color: '#909399', fontSize: 11 }
-    const splitLine = { lineStyle: { color: '#ebeef5', type: 'dashed' as const } }
+    const chrome = chartChromeColors()
+    const axisLabel = { color: chrome.text, fontSize: 11 }
+    const splitLine = { lineStyle: { color: chrome.split, type: 'dashed' as const } }
+    const tooltip = {
+        trigger: 'axis' as const,
+        backgroundColor: chrome.bg,
+        borderColor: chrome.line,
+        textStyle: { color: chrome.fg },
+    }
 
     if (opsTrendRef.value) {
         opsChart ??= echarts.init(opsTrendRef.value)
         opsChart.setOption(
             {
-                tooltip: { trigger: 'axis' },
-                legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12 } },
+                tooltip,
+                legend: {
+                    top: 0,
+                    right: 0,
+                    itemWidth: 10,
+                    itemHeight: 10,
+                    textStyle: { fontSize: 12, color: chrome.text },
+                },
                 grid: { left: 8, right: 8, top: 32, bottom: 4, containLabel: true },
-                xAxis: { type: 'category', data: dates, axisLabel, axisLine: { lineStyle: { color: '#dcdfe6' } } },
+                xAxis: { type: 'category', data: dates, axisLabel, axisLine: { lineStyle: { color: chrome.line } } },
                 yAxis: { type: 'value', minInterval: 1, axisLabel, splitLine },
                 series: [
                     { name: '写操作', type: 'bar', barMaxWidth: 16, itemStyle: { color: '#60a5fa' }, data: trend.write_ops },
@@ -71,9 +85,9 @@ const renderCharts = () => {
         activeChart ??= echarts.init(activeTrendRef.value)
         activeChart.setOption(
             {
-                tooltip: { trigger: 'axis' },
+                tooltip,
                 grid: { left: 8, right: 8, top: 16, bottom: 4, containLabel: true },
-                xAxis: { type: 'category', data: dates, axisLabel, axisLine: { lineStyle: { color: '#dcdfe6' } } },
+                xAxis: { type: 'category', data: dates, axisLabel, axisLine: { lineStyle: { color: chrome.line } } },
                 yAxis: { type: 'value', minInterval: 1, axisLabel, splitLine },
                 series: [
                     {
@@ -108,7 +122,11 @@ const load = async () => {
 }
 
 const { width } = useWindowSize()
+const isDark = useResolvedDark()
 watch(width, resizeCharts)
+watch(isDark, () => {
+    void nextTick(renderCharts)
+})
 
 watch(
     () => data.value?.trend,
@@ -135,7 +153,7 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <span>系统使用情况</span>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-normal text-gray-500">趋势范围</span>
+                    <span class="text-sm font-normal text-ga-text-secondary">趋势范围</span>
                     <el-radio-group v-model="trendDays" @change="load">
                         <el-radio-button :value="7">近 7 日</el-radio-button>
                         <el-radio-button :value="30">近 30 日</el-radio-button>
@@ -149,11 +167,11 @@ onUnmounted(() => {
                 <div
                     v-for="item in kpiCards"
                     :key="item.label"
-                    class="flex h-[90px] flex-col justify-between rounded border border-gray-100 bg-white px-3 py-2"
+                    class="ga-surface flex h-[90px] flex-col justify-between px-3 py-2"
                 >
-                    <div class="text-xs text-gray-800">{{ item.label }}</div>
+                    <div class="text-xs text-ga-text">{{ item.label }}</div>
                     <div class="text-lg font-semibold leading-none">{{ item.value }}</div>
-                    <div class="truncate text-[11px] leading-none text-gray-500">{{ item.sub }}</div>
+                    <div class="truncate text-[11px] leading-none text-ga-text-secondary">{{ item.sub }}</div>
                 </div>
             </div>
 
