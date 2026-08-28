@@ -480,7 +480,7 @@ const onConfirm = () => {
                     >
                         <div class="flex justify-between gap-3">
                             <span>{{ c.controller }}</span>
-                            <span class="text-xs text-gray-400">{{ c.listUrl }}</span>
+                            <span class="text-xs text-ga-text-placeholder">{{ c.listUrl }}</span>
                         </div>
                     </el-option>
                 </el-select>
@@ -537,7 +537,7 @@ const onConfirm = () => {
 
             <template v-if="isMulti && field">
                 <el-divider content-position="left">多对多中间表</el-divider>
-                <p class="text-xs text-gray-500 -mt-2 mb-1">{{ pivotHint }}</p>
+                <p class="text-xs text-ga-text-secondary -mt-2 mb-1">{{ pivotHint }}</p>
                 <el-form-item label="中间表">
                     <el-select
                         :model-value="field.relation.pivotTable"

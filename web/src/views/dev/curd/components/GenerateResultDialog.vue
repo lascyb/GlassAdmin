@@ -110,12 +110,12 @@ const authRows = computed(() =>
                     {{ result.historyId }}
                 </el-descriptions-item>
                 <el-descriptions-item v-if="result.historyError" label="历史错误" :span="2">
-                    <span class="text-amber-700">{{ result.historyError }}</span>
+                    <span class="text-[var(--el-color-warning)]">{{ result.historyError }}</span>
                 </el-descriptions-item>
             </el-descriptions>
 
             <div class="mt-4 text-xs font-medium">计划文件（{{ fileRows.length }}）</div>
-            <ul class="mt-1 text-xs text-gray-600 max-h-40 overflow-auto space-y-1">
+            <ul class="mt-1 text-xs text-ga-text-regular max-h-40 overflow-auto space-y-1">
                 <li v-for="f in fileRows" :key="f.path" class="flex items-center gap-2 flex-wrap">
                     <span>{{ f.path }} ({{ f.bytes }})</span>
                     <el-tag v-if="f.statusView" size="small" :type="f.statusView.type" effect="plain">
@@ -125,7 +125,7 @@ const authRows = computed(() =>
             </ul>
 
             <div class="mt-3 text-xs font-medium">建表计划（{{ schemaRows.length }}）</div>
-            <ul class="mt-1 text-xs text-gray-600 max-h-52 overflow-auto space-y-2">
+            <ul class="mt-1 text-xs text-ga-text-regular max-h-52 overflow-auto space-y-2">
                 <li v-for="s in schemaRows" :key="s.table" class="space-y-1">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span>{{ s.table }}</span>
@@ -135,7 +135,7 @@ const authRows = computed(() =>
                     </div>
                     <pre
                         v-if="s.sql"
-                        class="whitespace-pre-wrap break-all rounded bg-gray-50 px-2 py-1 text-[11px] text-gray-500"
+                        class="whitespace-pre-wrap break-all rounded bg-ga-fill-light px-2 py-1 text-[11px] text-ga-text-secondary"
                     >{{ s.sql }}</pre>
                 </li>
             </ul>
@@ -143,7 +143,7 @@ const authRows = computed(() =>
             <div v-if="authRows.length" class="mt-3 text-xs font-medium">
                 权限计划（{{ authRows.length }}）
             </div>
-            <ul v-if="authRows.length" class="mt-1 text-xs text-gray-600 max-h-40 overflow-auto space-y-1">
+            <ul v-if="authRows.length" class="mt-1 text-xs text-ga-text-regular max-h-40 overflow-auto space-y-1">
                 <li v-for="a in authRows" :key="a.name" class="flex items-center gap-2 flex-wrap">
                     <span>{{ a.name }}</span>
                     <el-tag v-if="a.statusView" size="small" :type="a.statusView.type" effect="plain">

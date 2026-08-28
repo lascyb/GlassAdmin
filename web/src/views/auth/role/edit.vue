@@ -291,7 +291,7 @@ const submit = async () => {
                                 <el-tag size="small" :type="ruleTypeTagType(data.type)">{{ ruleTypeLabel(data.type) }}</el-tag>
                                 <GaIcon v-if="data.icon" :icon="data.icon" class="shrink-0"/>
                                 <span>{{ data.name }}</span>
-                                <span v-if="data.path" class="text-xs text-gray-500">{{ data.path }}</span>
+                                <span v-if="data.path" class="text-xs text-ga-text-secondary">{{ data.path }}</span>
                             </span>
               </template>
             </el-tree>

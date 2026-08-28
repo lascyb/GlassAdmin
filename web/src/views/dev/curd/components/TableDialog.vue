@@ -105,7 +105,7 @@ const onDblClick = (row: TableRow) => {
                     >
                         <span>{{ item.name }}</span>
                         <el-tag v-if="item.default" size="small" type="success" class="ml-2">默认</el-tag>
-                        <span class="ml-2 text-xs text-gray-400">{{ item.database }}</span>
+                        <span class="ml-2 text-xs text-ga-text-placeholder">{{ item.database }}</span>
                     </el-option>
                 </el-select>
                 <el-text v-if="connectionHint" type="info" size="small">{{ connectionHint }}</el-text>
@@ -124,7 +124,7 @@ const onDblClick = (row: TableRow) => {
         >
             <el-table-column prop="name" label="表名" min-width="200" />
         </el-table>
-        <div v-if="selected" class="mt-2 text-xs text-gray-500">已选：{{ selected }}</div>
+        <div v-if="selected" class="mt-2 text-xs text-ga-text-secondary">已选：{{ selected }}</div>
         <template #footer>
             <el-button @click="visible = false">取消</el-button>
             <el-button type="primary" :disabled="!selected" @click="onConfirm">确定</el-button>

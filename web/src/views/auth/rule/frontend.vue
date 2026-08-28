@@ -56,7 +56,7 @@ onMounted(load)
                     <el-tag :type="ruleTypeTagType(data.type)">{{ ruleTypeLabel(data.type) }}</el-tag>
                     <GaIcon v-if="data.icon" :icon="data.icon" class="shrink-0" />
                     <span>{{ data.name }}</span>
-                    <span v-if="data.path" class="text-xs text-gray-500">{{ data.path }}</span>
+                    <span v-if="data.path" class="text-xs text-ga-text-secondary">{{ data.path }}</span>
                     <el-tag v-if="data.component" type="info" size="small">{{ data.component }}</el-tag>
                     <template
                         v-if="

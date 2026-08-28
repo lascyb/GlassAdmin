@@ -91,7 +91,7 @@ onMounted(() => {
 
 <template>
     <div v-loading="loading" class="w-full">
-        <p class="mt-2 mb-2 text-sm text-gray-500">按目录分组勾选接口；目录不可选，仅「api」类型会提交到后端。</p>
+        <p class="mt-2 mb-2 text-sm text-ga-text-secondary">按目录分组勾选接口；目录不可选，仅「api」类型会提交到后端。</p>
         <el-scrollbar max-height="320px">
             <el-tree
                 v-if="treeData.length"
@@ -111,7 +111,7 @@ onMounted(() => {
                         <el-tag v-if="data.type === 'api'" type="warning">api</el-tag>
                         <el-tag v-else type="info">{{ data.type }}</el-tag>
                         <span>{{ data.name }}</span>
-                        <span v-if="data.type === 'api' && (data.path || data.method)" class="text-xs text-gray-500">
+                        <span v-if="data.type === 'api' && (data.path || data.method)" class="text-xs text-ga-text-secondary">
                             {{ data.method ?? '*' }} {{ data.path ?? '' }}
                         </span>
                     </span>

@@ -217,7 +217,7 @@ const shellProps = computed(() =>
                 <template v-if="row.roles?.length">
                     <el-tag v-for="r in row.roles" :key="r.id"  round class="mr-1 mb-1">{{ r.name }}</el-tag>
                 </template>
-                <span v-else class="text-gray-400">—</span>
+                <span v-else class="text-ga-text-placeholder">—</span>
             </template>
         </el-table-column>
         <el-table-column label="上次登录" width="170">
@@ -239,7 +239,7 @@ const shellProps = computed(() =>
                         class="mr-1"
                     >{{ oauthProviderLabel(p) }}</el-tag>
                 </template>
-                <span v-else class="text-gray-400">—</span>
+                <span v-else class="text-ga-text-placeholder">—</span>
             </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="88">

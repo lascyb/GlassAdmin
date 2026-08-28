@@ -261,7 +261,7 @@ const submitPassword = async () => {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    color: #fff;
+    color: var(--ga-color-on-primary);
     font-size: 12px;
     background: rgba(0, 0, 0, 0.45);
     opacity: 0;

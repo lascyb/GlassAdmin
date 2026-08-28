@@ -131,7 +131,7 @@ const clickDel = (row: AttachmentRow) => {
                     :preview-src-list="[row.url]"
                     preview-teleported
                 />
-                <span v-else class="text-xs text-gray-400">{{ row.ext || '文件' }}</span>
+                <span v-else class="text-xs text-ga-text-placeholder">{{ row.ext || '文件' }}</span>
             </template>
         </el-table-column>
         <el-table-column prop="name" label="文件名" min-width="160" show-overflow-tooltip />

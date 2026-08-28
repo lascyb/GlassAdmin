@@ -53,7 +53,7 @@ onMounted(load)
                 <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2">
                     <el-tag :type="data.type === 'api' ? 'warning' : 'info'">{{ data.type }}</el-tag>
                     <span>{{ data.name }}</span>
-                    <span v-if="data.type === 'api' && data.path" class="text-xs text-gray-500"
+                    <span v-if="data.type === 'api' && data.path" class="text-xs text-ga-text-secondary"
                         >{{ data.method }} {{ data.path }}</span
                     >
                     <span v-if="!batchMode" class="ml-auto flex gap-1">
