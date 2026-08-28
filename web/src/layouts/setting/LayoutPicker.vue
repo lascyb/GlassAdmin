@@ -22,7 +22,8 @@ const selectLayout = (value: LayoutContainer) => {
             type="button"
             class="layout-picker__item"
             :class="{ 'is-active': model === item.value }"
-            :title="item.label"
+            :aria-label="item.label"
+            :aria-pressed="model === item.value"
             @click="selectLayout(item.value)"
         >
             <div class="layout-preview" :class="`layout-preview--${item.value.toLowerCase()}`">
@@ -55,6 +56,7 @@ const selectLayout = (value: LayoutContainer) => {
                     </div>
                 </template>
             </div>
+            <span class="layout-picker__caption">{{ item.label }}</span>
         </button>
     </div>
 </template>
@@ -62,15 +64,21 @@ const selectLayout = (value: LayoutContainer) => {
 <style scoped>
 .layout-picker {
     display: flex;
-    gap: 12px;
+    gap: var(--ga-space-3);
+    width: 100%;
 }
 
 .layout-picker__item {
     display: flex;
-    padding: 6px;
-    border: 2px solid var(--el-border-color);
-    border-radius: 8px;
-    background: var(--el-bg-color);
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ga-space-2);
+    padding: var(--ga-space-2);
+    border: 2px solid var(--ga-color-border);
+    border-radius: var(--ga-radius-md);
+    background: var(--ga-color-bg);
     cursor: pointer;
     transition:
         border-color var(--ga-duration) var(--ga-ease),
@@ -86,20 +94,32 @@ const selectLayout = (value: LayoutContainer) => {
     box-shadow: 0 0 0 1px var(--el-color-primary);
 }
 
+.layout-picker__caption {
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--ga-color-text-regular);
+}
+
+.layout-picker__item.is-active .layout-picker__caption {
+    font-weight: 500;
+    color: var(--el-color-primary);
+}
+
 .layout-preview {
     display: flex;
-    width: 72px;
-    height: 48px;
+    width: 100%;
+    aspect-ratio: 3 / 2;
     overflow: hidden;
-    border-radius: 4px;
-    border: 1px solid var(--el-border-color-lighter);
-    background: var(--el-fill-color-blank);
+    border-radius: var(--ga-radius-sm);
+    border: 1px solid var(--ga-color-border-lighter);
+    background: var(--ga-color-fill-blank);
 }
 
 .layout-preview__aside {
     flex: 0 0 22px;
     background: var(--el-color-primary-light-7);
-    border-right: 1px solid var(--el-border-color-lighter);
+    border-right: 1px solid var(--ga-color-border-lighter);
 }
 
 .layout-preview__aside--double {
@@ -110,7 +130,7 @@ const selectLayout = (value: LayoutContainer) => {
 .layout-preview__module-col {
     flex: 0 0 12px;
     background: var(--el-color-primary-light-5);
-    border-right: 1px solid var(--el-border-color-lighter);
+    border-right: 1px solid var(--ga-color-border-lighter);
 }
 
 .layout-preview__sub-col {
@@ -127,8 +147,8 @@ const selectLayout = (value: LayoutContainer) => {
 
 .layout-preview__header {
     flex: 0 0 10px;
-    background: var(--el-fill-color);
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    background: var(--ga-color-fill);
+    border-bottom: 1px solid var(--ga-color-border-lighter);
 }
 
 .layout-preview__module-header {
@@ -137,8 +157,8 @@ const selectLayout = (value: LayoutContainer) => {
     align-items: center;
     gap: 2px;
     padding: 0 3px;
-    background: var(--el-fill-color);
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    background: var(--ga-color-fill);
+    border-bottom: 1px solid var(--ga-color-border-lighter);
 }
 
 .layout-preview__module-header span {
@@ -154,6 +174,6 @@ const selectLayout = (value: LayoutContainer) => {
 
 .layout-preview__main {
     flex: 1;
-    background: var(--el-fill-color-light);
+    background: var(--ga-color-fill-light);
 }
 </style>

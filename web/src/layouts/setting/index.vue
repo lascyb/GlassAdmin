@@ -46,22 +46,31 @@ const resetAsideWidth = () => {
 </script>
 
 <template>
-    <el-drawer v-model="setting.layout.showSetting" direction="rtl" title="个人偏好">
-        <el-form v-loading="reloading" label-position="top">
-            <el-form-item label="外观">
-                <el-radio-group v-model="setting.layout.colorMode">
+    <el-drawer
+        v-model="setting.layout.showSetting"
+        class="ga-pref-drawer"
+        direction="rtl"
+        size="400px"
+        title="个人偏好"
+    >
+        <div class="pref-panel" v-loading="reloading">
+            <section class="pref-block">
+                <div class="pref-label">外观</div>
+                <el-radio-group v-model="setting.layout.colorMode" class="pref-radio">
                     <el-radio-button value="light">浅色</el-radio-button>
                     <el-radio-button value="dark">深色</el-radio-button>
                     <el-radio-button value="system">跟随系统</el-radio-button>
                 </el-radio-group>
-                <div class="mt-1 text-xs text-ga-text-secondary">
-                    未手动选择时默认跟随操作系统的浅色 / 深色。
-                </div>
-            </el-form-item>
-            <el-form-item label="菜单样式">
+                <p class="pref-hint">未手动选择时默认跟随操作系统的浅色 / 深色。</p>
+            </section>
+
+            <section class="pref-block">
+                <div class="pref-label">菜单样式</div>
                 <LayoutPicker v-model="setting.layout.container" />
-            </el-form-item>
-            <el-form-item label="左侧菜单宽度">
+            </section>
+
+            <section class="pref-block">
+                <div class="pref-label">左侧菜单宽度</div>
                 <div class="aside-width-row">
                     <el-slider
                         class="aside-width-slider"
@@ -75,38 +84,137 @@ const resetAsideWidth = () => {
                     />
                     <el-button link type="primary" @click="resetAsideWidth">重置</el-button>
                 </div>
-                <div class="mt-1 text-xs text-ga-text-secondary">
+                <p class="pref-hint">
                     展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。
+                </p>
+            </section>
+
+            <section class="pref-block">
+                <div class="pref-switch-row">
+                    <div class="pref-switch-copy">
+                        <div class="pref-label">左侧菜单手风琴</div>
+                        <p class="pref-hint">开启后同一时刻只展开一个子菜单目录。</p>
+                    </div>
+                    <el-switch v-model="setting.layout.menuAccordion" />
                 </div>
-            </el-form-item>
-            <el-form-item label="左侧菜单手风琴">
-                <el-switch v-model="setting.layout.menuAccordion" />
-                <div class="mt-1 text-xs text-ga-text-secondary">
-                    开启后同一时刻只展开一个子菜单目录。
+            </section>
+
+            <section class="pref-block">
+                <div class="pref-switch-row">
+                    <div class="pref-switch-copy">
+                        <div class="pref-label">展示全部可发现菜单</div>
+                        <p class="pref-hint">
+                            开启后侧栏会显示标记为「可发现」但尚未授权的菜单，点击进入说明页。
+                        </p>
+                    </div>
+                    <el-switch
+                        :model-value="setting.layout.showAllMenus"
+                        @change="onShowAllMenusChange"
+                    />
                 </div>
-            </el-form-item>
-            <el-form-item label="展示全部可发现菜单">
-                <el-switch
-                    :model-value="setting.layout.showAllMenus"
-                    @change="onShowAllMenusChange"
-                />
-                <div class="mt-1 text-xs text-ga-text-secondary">
-                    开启后侧栏会显示标记为「可发现」但尚未授权的菜单，点击进入说明页。
-                </div>
-            </el-form-item>
-        </el-form>
+            </section>
+        </div>
     </el-drawer>
 </template>
 
 <style scoped>
+.pref-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.pref-block + .pref-block {
+    margin-top: var(--ga-space-5);
+    padding-top: var(--ga-space-5);
+    border-top: 1px solid var(--ga-color-border-lighter);
+}
+
+.pref-label {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ga-color-text);
+}
+
+.pref-hint {
+    margin: 0;
+    width: 100%;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: left;
+    color: var(--ga-color-text-secondary);
+}
+
+.pref-block > .pref-label + * {
+    margin-top: var(--ga-space-2);
+}
+
+.pref-block > * + .pref-hint {
+    margin-top: var(--ga-space-2);
+}
+
+.pref-radio {
+    display: flex;
+    width: 100%;
+}
+
+.pref-radio :deep(.el-radio-button) {
+    flex: 1;
+}
+
+.pref-radio :deep(.el-radio-button__inner) {
+    width: 100%;
+    padding-inline: var(--ga-space-2);
+}
+
+.pref-switch-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ga-space-4);
+    width: 100%;
+}
+
+.pref-switch-copy {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--ga-space-1);
+}
+
+.pref-switch-row :deep(.el-switch) {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
 .aside-width-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--ga-space-2);
     width: 100%;
 }
+
 .aside-width-slider {
     flex: 1;
     min-width: 0;
+}
+</style>
+
+<style>
+/* Drawer 传送到 body：外壳样式用独立类，保持实色，不加玻璃 */
+.ga-pref-drawer.el-drawer {
+    background: var(--ga-color-overlay);
+}
+
+.ga-pref-drawer .el-drawer__header {
+    margin-bottom: 0;
+    padding: var(--ga-space-4) var(--ga-space-5);
+    border-bottom: 1px solid var(--ga-color-border-lighter);
+    color: var(--ga-color-text);
+}
+
+.ga-pref-drawer .el-drawer__body {
+    padding: var(--ga-space-5);
+    background: var(--ga-color-overlay);
 }
 </style>
