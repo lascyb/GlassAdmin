@@ -50,7 +50,8 @@ body,
 #app {
     margin: 0;
     min-height: 100%;
-    background-color: var(--ga-color-bg-page);
+    /* 与主内容区 ga-main 同色，避免路由空帧 / 过滚动露出近黑的 bg-page */
+    background-color: var(--ga-color-fill-light);
     color: var(--ga-color-text);
 }
 
@@ -67,7 +68,9 @@ body,
     --ga-color-bg: #ffffff;
     --ga-color-bg-page: #f2f3f5;
     --ga-color-overlay: #ffffff;
-    --ga-color-mask: rgb(0 0 0 / 50%);
+    /* 对齐 EP 默认：loading 蒙层为浅色半透明，切勿用黑，否则列表进页会闪黑纱 */
+    --ga-color-mask: rgb(255 255 255 / 90%);
+    --ga-color-mask-extra-light: rgb(255 255 255 / 30%);
 
     --ga-color-text: #303133;
     --ga-color-text-regular: #606266;
@@ -127,7 +130,9 @@ html.dark {
     --ga-color-bg: #141414;
     --ga-color-bg-page: #0a0a0a;
     --ga-color-overlay: #1d1e1f;
-    --ga-color-mask: rgb(0 0 0 / 80%);
+    /* 跟随主区 fill，而不是 void 黑，避免 v-loading 在暗色里闪黑蒙层 */
+    --ga-color-mask: color-mix(in srgb, var(--ga-color-fill-light) 90%, transparent);
+    --ga-color-mask-extra-light: rgb(0 0 0 / 30%);
 
     --ga-color-text: #e5eaf3;
     --ga-color-text-regular: #cfd3dc;
@@ -169,6 +174,7 @@ html.dark {
     --el-bg-color-page: var(--ga-color-bg-page);
     --el-bg-color-overlay: var(--ga-color-overlay);
     --el-mask-color: var(--ga-color-mask);
+    --el-mask-color-extra-light: var(--ga-color-mask-extra-light);
 
     --el-text-color-primary: var(--ga-color-text);
     --el-text-color-regular: var(--ga-color-text-regular);
@@ -205,11 +211,20 @@ html.dark {
 }
 
 /**
- * ga-page 主内容区路由切换（与 router-view/main 中 name 一致），仅淡入淡出
+ * ga-page 主内容区路由切换（与 router-view/main 中 name 一致）
+ * 离开页绝对定位做交叉淡入：不用 out-in，避免中间空一帧露出近黑画布
  */
 .ga-page-enter-active,
 .ga-page-leave-active {
     transition: opacity var(--ga-duration) var(--ga-ease);
+}
+
+.ga-page-leave-active {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: 1;
+    pointer-events: none;
 }
 
 .ga-page-enter-from,
