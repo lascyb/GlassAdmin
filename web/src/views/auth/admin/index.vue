@@ -126,6 +126,7 @@ const shellProps = computed(() =>
     <ga-table
         v-model:page="page"
         v-model:limit="limit"
+        :fill="!embedded"
         :loading="loading"
         :list="list"
         :total="total"
@@ -247,7 +248,7 @@ const shellProps = computed(() =>
                 <ga-status-tag :value="row.status" :map="ADMIN_STATUS_MAP" />
             </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right">
+        <el-table-column label="操作" fixed="right" width="130">
             <template #default="{ row }">
                 <el-button
                     v-auth:edit

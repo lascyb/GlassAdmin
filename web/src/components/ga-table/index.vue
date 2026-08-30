@@ -22,6 +22,8 @@ withDefaults(
         stripe?: boolean
         /** size 表格 size */
         size?: 'default' | 'small' | 'large'
+        /** fill 是否在可用高度内撑满（列表页默认开启；弹窗嵌入等场景可关闭） */
+        fill?: boolean
     }>(),
     {
         loading: false,
@@ -33,6 +35,7 @@ withDefaults(
         border: true,
         stripe: true,
         size: 'default',
+        fill: true,
     },
 )
 
@@ -43,19 +46,22 @@ const onSizeChange = () => emit('load')
 </script>
 
 <template>
-    <div class="ga-table">
+    <div class="ga-table" :class="{ 'ga-table--fill': fill }">
         <slot name="toolbar" />
-        <el-table
-            v-loading="loading"
-            :data="list"
-            :border="border"
-            :stripe="stripe"
-            :size="size"
-            highlight-current-row
-            :empty-text="emptyText"
-        >
-            <slot />
-        </el-table>
+        <div class="ga-table__main">
+            <el-table
+                v-loading="loading"
+                :data="list"
+                :border="border"
+                :stripe="stripe"
+                :size="size"
+                :height="fill ? '100%' : undefined"
+                highlight-current-row
+                :empty-text="emptyText"
+            >
+                <slot />
+            </el-table>
+        </div>
         <div v-if="showPagination" class="ga-table__pager flex justify-end">
             <el-pagination
                 v-model:current-page="page"
@@ -76,9 +82,35 @@ const onSizeChange = () => emit('load')
 .ga-table {
     --el-table-border-color: var(--ga-color-border-lighter);
     --el-table-header-bg-color: var(--ga-color-fill-light);
+    --ga-table-body-min-height: 360px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ga-table--fill {
+    flex: 1;
+    min-height: 0;
+}
+
+.ga-table__main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ga-table--fill .ga-table__main {
+    min-height: var(--ga-table-body-min-height);
+}
+
+.ga-table--fill .ga-table__main :deep(.el-table) {
+    height: 100%;
+}
+
+.ga-table--fill .ga-table__main :deep(.el-table__body-wrapper) {
+    min-height: var(--ga-table-body-min-height);
 }
 
 .ga-table__pager {
+    flex-shrink: 0;
     margin-top: var(--ga-space-3);
     padding: var(--ga-space-2);
 }

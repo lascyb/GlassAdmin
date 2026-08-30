@@ -2,9 +2,23 @@
 import SwitchRolesDialog from '@/layouts/components/header/components/SwitchRolesDialog.vue'
 import { useAdmin } from '@/pinia/admin'
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
-import { useLayoutSetting } from '@/pinia/layout/setting.ts'
+import {
+    normalizeColorMode,
+    useLayoutSetting,
+} from '@/pinia/layout/setting.ts'
 import { resolveStorageUrl } from '@/utils/storageUrl'
-import { HomeFilled, Refresh, Switch, SwitchButton, Tools, User } from '@element-plus/icons-vue'
+import {
+    ArrowDown,
+    HomeFilled,
+    Monitor,
+    Moon,
+    Refresh,
+    Sunny,
+    Switch,
+    SwitchButton,
+    Tools,
+    User,
+} from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -15,6 +29,8 @@ const route = useRoute()
 const router = useRouter()
 const mainRefresh = useMainViewRefresh()
 const rolesDialogVisible = ref(false)
+const refreshSpinning = ref(false)
+const accountMenuOpen = ref(false)
 
 const headerAvatarSrc = computed(() => resolveStorageUrl(admin.data?.avatar))
 
@@ -36,8 +52,42 @@ const accountInitial = computed(() => {
 
 const hasRoles = computed(() => (admin.data?.role_ids?.length ?? 0) > 0)
 
+const colorMode = computed(() => normalizeColorMode(setting.layout.colorMode))
+
+const colorModeLabel = computed(() => {
+    switch (colorMode.value) {
+        case 'light':
+            return '浅色'
+        case 'dark':
+            return '深色'
+        case 'system':
+            return '跟随系统'
+    }
+})
+
+const themeTooltip = computed(() => `当前：${colorModeLabel.value}，点击切换`)
+
 const refreshPage = () => {
+    refreshSpinning.value = true
     mainRefresh.bumpForPath(route.fullPath)
+    window.setTimeout(() => {
+        refreshSpinning.value = false
+    }, 1000)
+}
+
+const cycleColorMode = () => {
+    const current = colorMode.value
+    if (current === 'light') {
+        setting.layout.colorMode = 'dark'
+    } else if (current === 'dark') {
+        setting.layout.colorMode = 'system'
+    } else {
+        setting.layout.colorMode = 'light'
+    }
+}
+
+const onAccountMenuVisibleChange = (visible: boolean) => {
+    accountMenuOpen.value = visible
 }
 
 type AccountCommand = 'workbench' | 'profile' | 'roles' | 'logout'
@@ -77,24 +127,69 @@ const logout = async () => {
 </script>
 
 <template>
-    <div class="navs">
-        <el-tooltip content="刷新当前页" placement="bottom">
-            <button type="button" class="navs-btn" aria-label="刷新当前页" @click="refreshPage">
-                <el-icon :size="20">
-                    <Refresh />
-                </el-icon>
-            </button>
-        </el-tooltip>
+    <div class="header-right">
+        <div class="header-tools">
+            <el-tooltip content="个人偏好" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    aria-label="个人偏好"
+                    @click="setting.showSetting()"
+                >
+                    <el-icon :size="18">
+                        <Tools />
+                    </el-icon>
+                </button>
+            </el-tooltip>
+            <el-tooltip content="刷新当前页" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    aria-label="刷新当前页"
+                    @click="refreshPage"
+                >
+                    <el-icon :size="18" :class="{ 'is-spinning': refreshSpinning }">
+                        <Refresh />
+                    </el-icon>
+                </button>
+            </el-tooltip>
+            <el-tooltip :content="themeTooltip" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    :aria-label="themeTooltip"
+                    @click="cycleColorMode"
+                >
+                    <el-icon :size="18">
+                        <Sunny v-if="colorMode === 'light'" />
+                        <Moon v-else-if="colorMode === 'dark'" />
+                        <Monitor v-else />
+                    </el-icon>
+                </button>
+            </el-tooltip>
+        </div>
+
+        <div class="header-divider" role="separator" aria-hidden="true" />
+
         <el-dropdown
             trigger="click"
             placement="bottom-end"
             popper-class="ga-account-dropdown"
             @command="onAccountCommand"
+            @visible-change="onAccountMenuVisibleChange"
         >
-            <button type="button" class="navs-btn account-trigger" aria-label="账号菜单">
+            <button type="button" class="account-trigger" aria-label="账号菜单">
                 <el-avatar :size="32" :src="headerAvatarSrc || undefined">
                     {{ accountInitial }}
                 </el-avatar>
+                <span class="account-trigger-name">{{ accountName }}</span>
+                <el-icon
+                    :size="14"
+                    class="account-trigger-arrow"
+                    :class="{ 'is-open': accountMenuOpen }"
+                >
+                    <ArrowDown />
+                </el-icon>
             </button>
             <template #dropdown>
                 <el-dropdown-menu>
@@ -129,51 +224,110 @@ const logout = async () => {
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
-        <el-tooltip content="个人偏好" placement="bottom">
-            <button
-                type="button"
-                class="navs-btn"
-                aria-label="个人偏好"
-                @click="setting.showSetting()"
-            >
-                <el-icon :size="20">
-                    <Tools />
-                </el-icon>
-            </button>
-        </el-tooltip>
     </div>
     <switch-roles-dialog v-model="rolesDialogVisible" />
 </template>
 
 <style scoped>
-.navs {
+.header-right {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     height: 100%;
+    gap: var(--ga-space-2);
+    padding: 0 var(--ga-space-2);
 }
 
-.navs :deep(.el-tooltip__trigger),
-.navs :deep(.el-dropdown) {
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--ga-space-1);
+}
+
+.header-tools :deep(.el-tooltip__trigger) {
     display: inline-flex;
-    height: 100%;
 }
 
-.navs-btn {
+.header-tool-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
     margin: 0;
-    padding: 0 var(--ga-space-2);
-    min-width: 40px;
-    height: 100%;
+    padding: 0;
+    width: 36px;
+    height: 36px;
     border: 0;
+    border-radius: var(--ga-radius-md);
     background: transparent;
     color: var(--ga-color-text-regular);
     cursor: pointer;
+    transition:
+        background-color var(--ga-duration) var(--ga-ease),
+        color var(--ga-duration) var(--ga-ease);
 
     &:hover {
         background: color-mix(in srgb, var(--ga-color-fill) 72%, transparent);
+        color: var(--ga-color-text);
+    }
+
+    &:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--ga-color-primary) 36%, transparent);
+        outline-offset: 1px;
+    }
+}
+
+.header-tool-btn :deep(.is-spinning) {
+    animation: header-refresh-spin 1s linear;
+}
+
+@keyframes header-refresh-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.header-divider {
+    flex-shrink: 0;
+    width: 1px;
+    height: 24px;
+    margin: 0 var(--ga-space-1);
+    background: var(--ga-color-border-lighter);
+}
+
+.header-right :deep(.el-dropdown) {
+    display: inline-flex;
+    height: 100%;
+    align-items: center;
+}
+
+.account-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ga-space-2);
+    box-sizing: border-box;
+    margin: 0;
+    padding: var(--ga-space-1) var(--ga-space-2);
+    max-width: 220px;
+    height: auto;
+    min-height: 40px;
+    border: 0;
+    border-radius: var(--ga-radius-md);
+    background: transparent;
+    color: var(--ga-color-text);
+    cursor: pointer;
+    transition: background-color var(--ga-duration) var(--ga-ease);
+
+    &:hover {
+        background: color-mix(in srgb, var(--ga-color-fill) 72%, transparent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--ga-color-primary) 36%, transparent);
+        outline-offset: 1px;
     }
 }
 
@@ -189,6 +343,33 @@ const logout = async () => {
 .account-trigger:hover :deep(.el-avatar),
 .account-trigger:focus-visible :deep(.el-avatar) {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--ga-color-primary) 36%, transparent);
+}
+
+.account-trigger-name {
+    overflow: hidden;
+    min-width: 0;
+    max-width: 8rem;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-trigger-arrow {
+    flex-shrink: 0;
+    color: var(--ga-color-text-secondary);
+    transition: transform var(--ga-duration) var(--ga-ease);
+}
+
+.account-trigger-arrow.is-open {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 767px) {
+    .account-trigger-name {
+        display: none;
+    }
 }
 </style>
 

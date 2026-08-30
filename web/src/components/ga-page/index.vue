@@ -28,6 +28,7 @@ const paddingVar: Record<string, string> = {
 <template>
     <div
         class="ga-page"
+        :class="{ 'ga-page--stretch': !!minHeight }"
         :style="{
             padding: paddingVar[padding],
             minHeight: minHeight || undefined,
@@ -41,3 +42,24 @@ const paddingVar: Record<string, string> = {
         </el-card>
     </div>
 </template>
+
+<style scoped>
+.ga-page--stretch {
+    display: flex;
+    flex-direction: column;
+}
+
+.ga-page--stretch :deep(.el-card) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.ga-page--stretch :deep(.el-card__body) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+</style>
