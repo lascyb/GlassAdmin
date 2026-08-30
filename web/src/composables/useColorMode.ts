@@ -1,4 +1,5 @@
 import { normalizeColorMode, useLayoutSetting, type ColorMode } from '@/pinia/layout/setting'
+import { applyDocumentTheme } from '@/theme'
 import { usePreferredDark } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
@@ -46,6 +47,21 @@ export const useAppColorMode = () => {
     )
 
     return { colorMode, isDark, prefersDark }
+}
+
+/**
+ * useAppThemeColor 把个人偏好主题色写到根节点。
+ * 仅在 App 入口调用一次。
+ */
+export const useAppThemeColor = () => {
+    const setting = useLayoutSetting()
+    watch(
+        () => setting.layout.themeColor,
+        (color) => {
+            applyDocumentTheme(color)
+        },
+        { immediate: true },
+    )
 }
 
 /** readThemeColor 读取根节点 CSS 变量（图表轴色等无法直接用 var() 时） */

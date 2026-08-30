@@ -3,6 +3,12 @@ import { reactive } from 'vue'
 
 import { persistStorageKeyPrefix } from '@/config/persistStorage'
 import { useSystemConfig } from '@/pinia/system/config'
+import {
+    THEME_COLOR_DEFAULT,
+    THEME_SETTINGS_VERSION,
+    isCurrentThemeVersion,
+    normalizeThemeColor,
+} from '@/theme'
 
 export type LayoutContainer = 'Default' | 'Double' | 'Module'
 
@@ -20,6 +26,10 @@ type Layout = {
     menuAccordion: boolean
     /** 外观：浅色 / 深色 / 跟随系统（未选时默认跟随） */
     colorMode: ColorMode
+    /** 品牌主题色（#rrggbb） */
+    themeColor: string
+    /** 主题字段 schema 版本；不匹配时回落默认主色 */
+    themeVersion: number
     /** 是否已用系统配置做过首次默认填充 */
     seededFromSystem: boolean
 }
@@ -72,10 +82,29 @@ export const useLayoutSetting = defineStore(
             asideWidth: ASIDE_WIDTH_DEFAULT,
             menuAccordion: true,
             colorMode: 'system',
+            themeColor: THEME_COLOR_DEFAULT,
+            themeVersion: THEME_SETTINGS_VERSION,
             seededFromSystem: false,
         })
         const showSetting = () => {
             layout.showSetting = true
+        }
+
+        /** hydrateTheme 规范化主题色；版本不匹配则回落默认 */
+        const hydrateTheme = () => {
+            if (!isCurrentThemeVersion(layout.themeVersion)) {
+                layout.themeColor = THEME_COLOR_DEFAULT
+                layout.themeVersion = THEME_SETTINGS_VERSION
+                return
+            }
+            layout.themeColor = normalizeThemeColor(layout.themeColor)
+            layout.themeVersion = THEME_SETTINGS_VERSION
+        }
+
+        /** setThemeColor 设置品牌色并规范化 */
+        const setThemeColor = (color: string) => {
+            layout.themeColor = normalizeThemeColor(color)
+            layout.themeVersion = THEME_SETTINGS_VERSION
         }
 
         /** setAsideWidth 设置侧栏宽度并钳制范围 */
@@ -115,6 +144,7 @@ export const useLayoutSetting = defineStore(
                 }
                 layout.menuAccordion = !!layout.menuAccordion
                 layout.colorMode = normalizeColorMode(layout.colorMode)
+                hydrateTheme()
                 return
             }
             const cfg = useSystemConfig()
@@ -131,6 +161,10 @@ export const useLayoutSetting = defineStore(
                 layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
             }
             layout.colorMode = normalizeColorMode(layout.colorMode)
+            layout.themeColor = normalizeThemeColor(
+                cfg.getString('layout_theme_color', THEME_COLOR_DEFAULT),
+            )
+            layout.themeVersion = THEME_SETTINGS_VERSION
             layout.seededFromSystem = true
         }
 
@@ -138,6 +172,7 @@ export const useLayoutSetting = defineStore(
             layout,
             showSetting,
             setAsideWidth,
+            setThemeColor,
             setContainer,
             applySystemDefaults,
         }
@@ -151,6 +186,12 @@ export const useLayoutSetting = defineStore(
                 layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
                 if (layout.container === 'Double') {
                     layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
+                }
+                if (!isCurrentThemeVersion(layout.themeVersion)) {
+                    layout.themeColor = THEME_COLOR_DEFAULT
+                    layout.themeVersion = THEME_SETTINGS_VERSION
+                } else {
+                    layout.themeColor = normalizeThemeColor(layout.themeColor)
                 }
             },
         },

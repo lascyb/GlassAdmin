@@ -145,5 +145,6 @@ INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`descripti
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (8,'layout_show_all_menus','0','布局配置','展示全部可发现菜单','个人偏好的系统默认值；开启后侧栏可显示可发现但未授权的菜单','switch',NULL,10,2,1785567993,1785567993);
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (9,'layout_container','Default','布局配置','菜单样式','个人偏好的系统默认值：Default=左侧单层，Double=左侧双层，Module=顶侧双栏','select','["Default","Double","Module"]',20,2,1785567993,1785567993);
 INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (10,'layout_aside_width','220','布局配置','侧栏宽度','个人偏好的系统默认值（像素）','number',NULL,30,2,1785567993,1785567993);
+INSERT IGNORE INTO `system_config` (`id`,`key`,`value`,`group`,`name`,`description`,`type`,`options`,`sort`,`status`,`create_time`,`update_time`) VALUES (12,'layout_theme_color','#409eff','布局配置','主题色','个人偏好的系统默认主题色（#rrggbb）','color',NULL,40,2,1785567993,1785567993);
 
 SET FOREIGN_KEY_CHECKS=1;

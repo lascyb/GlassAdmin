@@ -13,6 +13,7 @@ import { router } from '@/router'
 import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
 import LayoutPicker from './LayoutPicker.vue'
+import ThemeColorPicker from './ThemeColorPicker.vue'
 
 const setting = useLayoutSetting()
 const layoutMenus = useLayoutMenus()
@@ -69,6 +70,12 @@ const onContainerChange = (value: LayoutContainer) => {
                     <el-radio-button value="system">跟随系统</el-radio-button>
                 </el-radio-group>
                 <p class="pref-hint">未手动选择时默认跟随操作系统的浅色 / 深色。</p>
+                <div class="pref-label pref-label--sub">主题色</div>
+                <ThemeColorPicker
+                    :model-value="setting.layout.themeColor"
+                    @update:model-value="setting.setThemeColor"
+                />
+                <p class="pref-hint">按钮、侧栏高亮与品牌色会即时跟随；与浅色 / 深色互不影响。</p>
             </section>
 
             <section class="pref-block">
@@ -145,6 +152,10 @@ const onContainerChange = (value: LayoutContainer) => {
     font-weight: 500;
     line-height: 1.4;
     color: var(--ga-color-text);
+}
+
+.pref-label--sub {
+    margin-top: var(--ga-space-4);
 }
 
 .pref-hint {

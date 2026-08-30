@@ -13,19 +13,39 @@
                 prefix = '__GA__';
             }
             var mode = 'system';
+            var themeColor = '#409eff';
             try {
                 var raw = localStorage.getItem(prefix + 'layout_setting');
                 if (raw) {
                     var data = JSON.parse(raw);
-                    var stored = data && data.layout && data.layout.colorMode;
+                    var layout = data && data.layout;
+                    var stored = layout && layout.colorMode;
                     if (stored === 'light' || stored === 'dark' || stored === 'system') {
                         mode = stored;
+                    }
+                    var hex = layout && typeof layout.themeColor === 'string'
+                        ? layout.themeColor.trim().toLowerCase()
+                        : '';
+                    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/.test(hex)) {
+                        if (hex.length === 4) {
+                            themeColor = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+                        } else {
+                            themeColor = hex.slice(0, 7);
+                        }
                     }
                 }
             } catch (e) {}
             var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
             document.documentElement.classList.toggle('dark', dark);
             document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+            document.documentElement.style.setProperty('--ga-color-primary', themeColor);
+            var toLin = function (c) {
+                var s = c / 255;
+                return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+            };
+            var n = parseInt(themeColor.slice(1), 16);
+            var l = 0.2126 * toLin((n >> 16) & 255) + 0.7152 * toLin((n >> 8) & 255) + 0.0722 * toLin(n & 255);
+            document.documentElement.style.setProperty('--ga-color-on-primary', l > 0.45 ? '#303133' : '#ffffff');
         })();
     </script>
 </head>

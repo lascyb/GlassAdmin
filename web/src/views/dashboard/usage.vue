@@ -3,6 +3,7 @@ import type { DashboardOverview } from '@/apis/dashboard'
 import * as dashboardApi from '@/apis/dashboard'
 import GaPage from '@/components/ga-page/index.vue'
 import { chartChromeColors, useResolvedDark } from '@/composables/useColorMode'
+import { useLayoutSetting } from '@/pinia/layout/setting.ts'
 import { useWindowSize } from '@vueuse/core'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -123,8 +124,9 @@ const load = async () => {
 
 const { width } = useWindowSize()
 const isDark = useResolvedDark()
+const layoutSetting = useLayoutSetting()
 watch(width, resizeCharts)
-watch(isDark, () => {
+watch([isDark, () => layoutSetting.layout.themeColor], () => {
     void nextTick(renderCharts)
 })
 

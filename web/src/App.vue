@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAppColorMode } from '@/composables/useColorMode';
+import { useAppColorMode, useAppThemeColor } from '@/composables/useColorMode';
 import GaSetting from '@/layouts/setting/index.vue';
 import type { CardConfigContext } from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
@@ -10,6 +10,7 @@ const card = reactive<CardConfigContext>({
     shadow: 'never',
 })
 useAppColorMode()
+useAppThemeColor()
 
 </script>
 
