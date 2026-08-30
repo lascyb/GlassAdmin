@@ -9,6 +9,8 @@ export type Menu = {
     method?: string | null
     /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
     visibility?: number
+    /** {1:页面缓存,0:离开即销毁} 仅 view/route；缺省当缓存 */
+    keep_alive?: number
     /** 图标存储串：el:组件名、url:图片地址、local:stem */
     icon?: string | null
     component?: string

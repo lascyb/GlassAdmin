@@ -35,6 +35,7 @@ type RuleEditForm = {
     sort: number
     status: number
     visibility: number
+    keep_alive: number
     description: string
 }
 
@@ -47,6 +48,11 @@ const showVisibilityFields = computed(
 
 /** allowHidden 仅目录可设为不入侧栏（页面用 route 类型） */
 const allowHidden = computed(() => form.type === 'menu')
+
+/** showKeepAliveField 仅前端页面规则可配缓存 */
+const showKeepAliveField = computed(
+    () => props.scope === 'frontend' && VIEW_TYPES.includes(form.type),
+)
 
 const visible = ref(false)
 const title = ref('')
@@ -115,6 +121,7 @@ const form = reactive<RuleEditForm>({
     sort: 0,
     status: 1,
     visibility: VISIBILITY_SIDEBAR,
+    keep_alive: 1,
     description: '',
 })
 
@@ -147,6 +154,7 @@ function ruleEditResetForAdd(pid: number, type: string) {
     form.sort = 0
     form.status = 1
     form.visibility = VISIBILITY_SIDEBAR
+    form.keep_alive = 1
     form.description = ''
     backendRuleIds.value = []
 }
@@ -200,6 +208,7 @@ function ruleEditMapRow(row: RuleRow) {
     form.sort = row.sort
     form.status = row.status
     form.visibility = row.visibility ?? VISIBILITY_SIDEBAR
+    form.keep_alive = row.keep_alive === 0 ? 0 : 1
     form.description = row.description ?? ''
 }
 
@@ -277,6 +286,7 @@ async function ruleEditSubmit() {
                 sort: form.sort,
                 status: form.status,
                 visibility: showVisibilityFields.value ? form.visibility : VISIBILITY_SIDEBAR,
+                keep_alive: showKeepAliveField.value ? form.keep_alive : 0,
                 description: showVisibilityFields.value
                     ? form.description.trim() || null
                     : null,
@@ -441,16 +451,18 @@ defineExpose({openAdd, openEdit})
                     />
                 </el-form-item>
                 <el-form-item v-if="form.type === 'iframe'" label="鉴权方式">
-                    <el-radio-group v-model="form.method">
-                        <el-radio value="">直链</el-radio>
-                        <el-radio
-                            v-for="p in iframeAuthProviders"
-                            :key="p.id"
-                            :value="p.id"
-                        >{{ p.label }}</el-radio>
-                    </el-radio-group>
-                    <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
-                        直链：component 填完整 URL；有策略时填该系统约定的目标路径
+                    <div class="flex w-full flex-col items-start">
+                        <el-radio-group v-model="form.method">
+                            <el-radio value="">直链</el-radio>
+                            <el-radio
+                                v-for="p in iframeAuthProviders"
+                                :key="p.id"
+                                :value="p.id"
+                            >{{ p.label }}</el-radio>
+                        </el-radio-group>
+                        <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                            直链：component 填完整 URL；有策略时填该系统约定的目标路径
+                        </div>
                     </div>
                 </el-form-item>
                 <el-form-item v-if="form.type !== 'btn'" label="图标">
@@ -471,14 +483,28 @@ defineExpose({openAdd, openEdit})
                     <el-radio :value="0">禁用</el-radio>
                 </el-radio-group>
             </el-form-item>
+            <el-form-item v-if="showKeepAliveField" label="页面缓存">
+                <div class="flex w-full flex-col items-start">
+                    <el-switch
+                        v-model="form.keep_alive"
+                        :active-value="1"
+                        :inactive-value="0"
+                    />
+                    <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                        开启后离开再进入仍保留筛选、滚动等状态；关闭则每次重新挂载。
+                    </div>
+                </div>
+            </el-form-item>
             <el-form-item v-if="showVisibilityFields" label="可见性">
-                <el-radio-group v-model="form.visibility">
-                    <el-radio :value="VISIBILITY_SIDEBAR">侧栏可见</el-radio>
-                    <el-radio :value="VISIBILITY_CATALOG">可发现</el-radio>
-                    <el-radio v-if="allowHidden" :value="VISIBILITY_HIDDEN">不入侧栏</el-radio>
-                </el-radio-group>
-                <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
-                    侧栏可见：授权后显示；可发现：未授权时也能在「展示全部」中出现<template v-if="allowHidden">；不入侧栏：隐藏本目录，子节点提升到同级</template>
+                <div class="flex w-full flex-col items-start">
+                    <el-radio-group v-model="form.visibility">
+                        <el-radio :value="VISIBILITY_SIDEBAR">侧栏可见</el-radio>
+                        <el-radio :value="VISIBILITY_CATALOG">可发现</el-radio>
+                        <el-radio v-if="allowHidden" :value="VISIBILITY_HIDDEN">不入侧栏</el-radio>
+                    </el-radio-group>
+                    <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
+                        侧栏可见：授权后显示；可发现：未授权时也能在「展示全部」中出现<template v-if="allowHidden">；不入侧栏：隐藏本目录，子节点提升到同级</template>
+                    </div>
                 </div>
             </el-form-item>
             <el-form-item v-if="showVisibilityFields" label="描述">

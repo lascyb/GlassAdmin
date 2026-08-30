@@ -76,6 +76,7 @@ export const menusToRoutes = (
                         title: menu.name,
                         ruleId: menu.id,
                         unauthorized: true,
+                        keepAlive: false,
                     },
                 })
             }
@@ -95,6 +96,7 @@ export const menusToRoutes = (
                     title: menu.name,
                     url: menu.component ?? '',
                     method: menu.method ?? '',
+                    keepAlive: false,
                 },
             })
             const childRoutes = menusToRoutes(menu.children, fullPath)
@@ -112,7 +114,7 @@ export const menusToRoutes = (
                     name: String(menu.id),
                     path: toRoutePath(fullPath),
                     component,
-                    meta: { title: menu.name },
+                    meta: { title: menu.name, keepAlive: menu.keep_alive !== 0 },
                 })
             }
             if (childRoutes?.length) {

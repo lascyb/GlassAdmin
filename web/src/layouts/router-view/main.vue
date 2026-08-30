@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 const mainRefresh = useMainViewRefresh()
+const route = useRoute()
+
+/** pageKey 按 fullPath + 刷新 nonce，缓存页与非缓存页共用 */
+const pageKey = computed(
+    () => `${route.fullPath}:${mainRefresh.nonceFor(route.fullPath)}`,
+)
+
+/** keepAlive 缺省 true，与规则默认 keep_alive=1 对齐 */
+const keepAlive = computed(() => route.meta.keepAlive !== false)
 </script>
 
 <template>
@@ -10,15 +21,22 @@ const mainRefresh = useMainViewRefresh()
     <el-scrollbar height="var(--ga-main-view-height)" noresize>
       <!-- relative：离开页绝对定位时仍锚在主视口内，交叉淡入避免 out-in 空帧 -->
       <div class="ga-main-view">
-        <router-view v-slot="{ Component, route }">
+        <router-view v-slot="{ Component }">
           <transition name="ga-page">
             <keep-alive>
               <component
-                v-if="Component"
+                v-if="Component && keepAlive"
                 :is="Component"
-                :key="`${route.fullPath}:${mainRefresh.nonceFor(route.fullPath)}`"
+                :key="pageKey"
               />
             </keep-alive>
+          </transition>
+          <transition name="ga-page">
+            <component
+              v-if="Component && !keepAlive"
+              :is="Component"
+              :key="pageKey"
+            />
           </transition>
         </router-view>
       </div>

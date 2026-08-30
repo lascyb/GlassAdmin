@@ -22,6 +22,7 @@ use think\Model;
  * @property int         $sort
  * @property int         $status  {1:启用,0:禁用}
  * @property int         $visibility {0:侧栏可见,1:展示全部时可发现,2:不入侧栏}
+ * @property int         $keep_alive {1:页面缓存,0:离开即销毁} 仅 frontend view/route
  * @property string|null $description
  */
 class Rule extends Model
@@ -42,6 +43,7 @@ class Rule extends Model
         'sort'       => 'integer',
         'status'     => 'integer',
         'visibility' => 'integer',
+        'keep_alive' => 'integer',
     ];
 
     /** 授权后侧栏可见（默认） */
@@ -64,6 +66,9 @@ class Rule extends Model
 
     /** 可关联后端 api 的前端类型 */
     public const array API_BINDABLE_TYPES = ['view', 'route', 'btn'];
+
+    /** 可配置 keep_alive 的前端类型 */
+    public const array KEEP_ALIVE_TYPES = ['view', 'route'];
 
     /** 超级管理员 role_id */
     private const int SUPER_ROLE_ID = 1;
@@ -493,14 +498,18 @@ class Rule extends Model
         $out = [];
         foreach ($tree as $n) {
             $id = (int) $n['id'];
+            $type = (string) ($n['type'] ?? '');
             $item = [
                 'id'         => $id,
                 'name'       => $n['name'],
-                'type'       => $n['type'],
+                'type'       => $type,
                 'path'       => $n['path'] ?? '',
                 'visibility' => (int) ($n['visibility'] ?? self::VISIBILITY_SIDEBAR),
                 'authorized' => $allAuthorized || ($granted !== null && isset($granted[$id])),
             ];
+            if (in_array($type, self::KEEP_ALIVE_TYPES, true)) {
+                $item['keep_alive'] = (int) ($n['keep_alive'] ?? 1) === 0 ? 0 : 1;
+            }
             if (!empty($n['component'])) {
                 $item['component'] = $n['component'];
             }

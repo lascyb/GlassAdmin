@@ -132,6 +132,7 @@ CREATE TABLE `auth_rule`  (
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '{1:启用,0:禁用}',
   `visibility` tinyint NOT NULL DEFAULT 0 COMMENT '{0:授权后侧栏可见,1:展示全部时可发现,2:不入侧栏}',
+  `keep_alive` tinyint NOT NULL DEFAULT 1 COMMENT '{1:页面缓存,0:离开即销毁} 仅 frontend view/route 有效',
   `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '功能描述（无权限页展示）',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',

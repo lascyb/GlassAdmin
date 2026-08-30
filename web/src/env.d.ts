@@ -28,6 +28,8 @@ declare module 'vue-router' {
         ruleId?: number
         /** 是否未授权可发现路由 */
         unauthorized?: boolean
+        /** 是否 keep-alive；缺省 true */
+        keepAlive?: boolean
     }
 }
 

@@ -16,6 +16,8 @@ export type RuleRow = {
     status: number
     /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
     visibility?: number
+    /** {1:页面缓存,0:离开即销毁} 仅 view/route */
+    keep_alive?: number
     description?: string | null
     children?: RuleRow[]
 }
@@ -49,6 +51,8 @@ export type RulePayload = {
     status: number
     /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
     visibility?: number
+    /** {1:页面缓存,0:离开即销毁} 仅 view/route */
+    keep_alive?: number
     description?: string | null
     /** backend_rule_ids 前端 view/route/btn 关联的后端 api 规则 id */
     backend_rule_ids?: number[]

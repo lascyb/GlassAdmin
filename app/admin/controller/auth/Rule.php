@@ -444,6 +444,10 @@ class Rule extends AdminController
                 $visibility = $vis;
             }
         }
+        $keepAlive = 0;
+        if ($scope === 'frontend' && in_array($type, RuleModel::KEEP_ALIVE_TYPES, true)) {
+            $keepAlive = (int) ($p['keep_alive'] ?? 1) === 0 ? 0 : 1;
+        }
 
         return [
             'scope'       => $scope,
@@ -457,6 +461,7 @@ class Rule extends AdminController
             'sort'        => (int) ($p['sort'] ?? 0),
             'status'      => (int) ($p['status'] ?? 1),
             'visibility'  => $visibility,
+            'keep_alive'  => $keepAlive,
             'description' => $showVisibility && isset($p['description']) && trim((string) $p['description']) !== ''
                 ? mb_substr(trim((string) $p['description']), 0, 500)
                 : null,
