@@ -3,6 +3,7 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\auth;
 
+use app\admin\model\auth\Role as RoleModel;
 use app\admin\model\auth\RoleRule;
 use app\admin\model\auth\Rule as RuleModel;
 use app\admin\model\auth\RuleApi;
@@ -358,6 +359,179 @@ class Rule extends AdminController
         AdminRbacService::forgetAllRoleRbacCaches();
 
         return null;
+    }
+
+    /**
+     * roles 某条前端规则已分配的角色 id，并附带角色树供勾选
+     *
+     * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+    public function roles(Request $request): Response
+    {
+        $id = (int) $request->get('id', 0);
+        if ($id <= 0) {
+            return $this->fail(400, 'id 无效');
+        }
+        $row = RuleModel::find($id);
+        if (!$row) {
+            return $this->fail(404, '不存在');
+        }
+        if ((string) $row->getAttr('scope') !== 'frontend') {
+            return $this->fail(400, '仅支持前端规则');
+        }
+        $roleIds = array_map('intval', RoleRule::where('rule_id', $id)->column('role_id'));
+        $rows    = RoleModel::order('sort', 'asc')
+            ->order('id', 'asc')
+            ->field(['id', 'pid', 'code', 'name', 'status', 'sort'])
+            ->select()
+            ->toArray();
+
+        return $this->ok([
+            'role_ids' => $roleIds,
+            'roles'    => $this->buildTree($rows, 0),
+        ]);
+    }
+
+    /**
+     * assignRoles 全量覆盖某条前端规则与角色的关联（无父子继承语义）
+     *
+     * @return Response
+     */
+    public function assignRoles(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
+        }
+        $id = (int) $request->get('id', 0);
+        if ($id <= 0) {
+            return $this->fail(400, 'id 无效');
+        }
+        $row = RuleModel::find($id);
+        if (!$row) {
+            return $this->fail(404, '不存在');
+        }
+        if ((string) $row->getAttr('scope') !== 'frontend') {
+            return $this->fail(400, '仅支持前端规则');
+        }
+        $roleIds = $request->put('role_ids/a', []);
+        $roleIds = is_array($roleIds) ? array_unique(array_map('intval', $roleIds)) : [];
+        $roleIds = array_values(array_filter($roleIds, static fn (int $rid): bool => $rid > 0));
+        if ($roleIds !== []) {
+            $roleIds = array_map('intval', RoleModel::where([['id', 'in', $roleIds]])->column('id'));
+        }
+        $oldRoleIds = array_map('intval', RoleRule::where('rule_id', $id)->column('role_id'));
+        $insert     = [];
+        foreach ($roleIds as $rid) {
+            $insert[] = ['role_id' => $rid, 'rule_id' => $id];
+        }
+        try {
+            Db::transaction(function () use ($id, $insert) {
+                RoleRule::where('rule_id', $id)->delete();
+                if ($insert !== []) {
+                    RoleRule::insertAll($insert);
+                }
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+
+        RuleModel::forgetMenuCaches();
+        foreach (array_values(array_unique(array_merge($oldRoleIds, $roleIds))) as $rid) {
+            AdminRbacService::forgetRoleRbacCache($rid);
+        }
+
+        return $this->ok();
+    }
+
+    /**
+     * frontends 某条后端 api 已绑定的前端规则 id，并附带前端规则树供勾选
+     *
+     * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+    public function frontends(Request $request): Response
+    {
+        $id = (int) $request->get('id', 0);
+        if ($id <= 0) {
+            return $this->fail(400, 'id 无效');
+        }
+        $row = RuleModel::find($id);
+        if (!$row) {
+            return $this->fail(404, '不存在');
+        }
+        if ((string) $row->getAttr('scope') !== 'backend' || (string) $row->getAttr('type') !== 'api') {
+            return $this->fail(400, '仅支持后端 api 规则');
+        }
+        $frontendIds = array_map('intval', RuleApi::where('backend_rule_id', $id)->column('frontend_rule_id'));
+        $rows        = RuleModel::where('scope', 'frontend')
+            ->order('sort', 'asc')
+            ->order('id', 'asc')
+            ->field(['id', 'pid', 'name', 'type', 'path', 'icon', 'status', 'sort'])
+            ->select()
+            ->toArray();
+
+        return $this->ok([
+            'frontend_rule_ids' => $frontendIds,
+            'rules'             => $this->buildTree($rows, 0),
+        ]);
+    }
+
+    /**
+     * assignFrontends 全量覆盖某条后端 api 与前端 view/route/btn 的绑定（不影响这些前端规则的其它 api）
+     *
+     * @return Response
+     */
+    public function assignFrontends(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
+        }
+        $id = (int) $request->get('id', 0);
+        if ($id <= 0) {
+            return $this->fail(400, 'id 无效');
+        }
+        $row = RuleModel::find($id);
+        if (!$row) {
+            return $this->fail(404, '不存在');
+        }
+        if ((string) $row->getAttr('scope') !== 'backend' || (string) $row->getAttr('type') !== 'api') {
+            return $this->fail(400, '仅支持后端 api 规则');
+        }
+        $frontIds = $request->put('frontend_rule_ids/a', []);
+        $frontIds = is_array($frontIds) ? array_unique(array_map('intval', $frontIds)) : [];
+        $frontIds = array_values(array_filter($frontIds, static fn (int $fid): bool => $fid > 0));
+        if ($frontIds !== []) {
+            $frontIds = array_map(
+                'intval',
+                RuleModel::where([
+                    ['id', 'in', $frontIds],
+                    ['scope', '=', 'frontend'],
+                    ['type', 'in', RuleModel::API_BINDABLE_TYPES],
+                ])->column('id'),
+            );
+        }
+        $insert = [];
+        foreach ($frontIds as $fid) {
+            $insert[] = ['frontend_rule_id' => $fid, 'backend_rule_id' => $id];
+        }
+        try {
+            Db::transaction(function () use ($id, $insert) {
+                RuleApi::where('backend_rule_id', $id)->delete();
+                if ($insert !== []) {
+                    RuleApi::insertAll($insert);
+                }
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+        AdminRbacService::forgetAllRoleRbacCaches();
+
+        return $this->ok();
     }
 
     /**

@@ -120,7 +120,7 @@ CREATE TABLE `auth_role_rule`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `auth_rule`;
 CREATE TABLE `auth_rule`  (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键；1–10000 系统内置，自增从 10001 起',
   `scope` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '{backend:后端,frontend:前端}',
   `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,route,btn,link,iframe}',
   `pid` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级 id，0 为根',
@@ -139,7 +139,7 @@ CREATE TABLE `auth_rule`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_scope_pid`(`scope` ASC, `pid` ASC) USING BTREE,
   INDEX `idx_scope_status`(`scope` ASC, `status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 79 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限规则（后端/前端双域树）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 10001 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限规则（后端/前端双域树）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for auth_rule_api

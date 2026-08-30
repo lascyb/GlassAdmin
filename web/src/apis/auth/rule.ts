@@ -1,3 +1,4 @@
+import type { RoleRow } from '@/apis/auth/role'
 import { delData, getData, postData, putData } from '@/apis/http'
 
 /** RuleRow 规则行（树节点） */
@@ -94,4 +95,44 @@ export const bindApis = async (frontend_rule_id: number, backend_rule_ids: numbe
         frontend_rule_id,
         backend_rule_ids,
     })
+}
+
+/** RuleRolesRes 前端规则已分配角色 + 角色树 */
+export type RuleRolesRes = {
+    role_ids: number[]
+    roles: RoleRow[]
+}
+
+/**
+ * fetchRoles 某条前端规则已分配的角色
+ */
+export const fetchRoles = async (id: number) => {
+    return getData<RuleRolesRes>('admin/auth.Rule/roles', { id })
+}
+
+/**
+ * assignRoles 全量覆盖某条前端规则与角色的关联（无父子继承）
+ */
+export const assignRoles = async (id: number, role_ids: number[]) => {
+    return putData<null>('admin/auth.Rule/assignRoles?id=' + id, { role_ids })
+}
+
+/** RuleFrontendsRes 后端 api 已绑定的前端规则 + 前端规则树 */
+export type RuleFrontendsRes = {
+    frontend_rule_ids: number[]
+    rules: RuleRow[]
+}
+
+/**
+ * fetchFrontends 某条后端 api 已绑定的前端规则
+ */
+export const fetchFrontends = async (id: number) => {
+    return getData<RuleFrontendsRes>('admin/auth.Rule/frontends', { id })
+}
+
+/**
+ * assignFrontends 全量覆盖某条后端 api 与前端 view/route/btn 的绑定
+ */
+export const assignFrontends = async (id: number, frontend_rule_ids: number[]) => {
+    return putData<null>('admin/auth.Rule/assignFrontends?id=' + id, { frontend_rule_ids })
 }

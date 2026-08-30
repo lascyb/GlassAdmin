@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { RuleRow } from '@/apis/auth/rule'
+import AssignFrontendsDialog from '@/views/auth/rule/AssignFrontendsDialog.vue'
 import RuleEdit from '@/views/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/auth/rule/useRuleTreePage'
-import { Close, Delete, Edit, Plus, Refresh } from '@element-plus/icons-vue'
+import { Close, Connection, Delete, Edit, Plus, Refresh } from '@element-plus/icons-vue'
 import { onMounted, useTemplateRef } from 'vue'
 
 const {
@@ -18,9 +19,11 @@ const {
     onNodeExpand,
 } = useRuleTreeBase('backend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
+const assignFrontendsRef = useTemplateRef<InstanceType<typeof AssignFrontendsDialog>>('assignFrontendsRef')
 
 const openAdd = (pid: number, parentType?: string) => ruleEditRef.value?.openAdd(pid, parentType)
 const openEdit = (row: RuleRow) => ruleEditRef.value?.openEdit(row)
+const openAssignFrontends = (row: RuleRow) => assignFrontendsRef.value?.open(row)
 
 onMounted(load)
 </script>
@@ -29,7 +32,7 @@ onMounted(load)
     <div v-loading="loading" class="min-h-90">
         <div class="mb-3 flex flex-wrap justify-end gap-2">
             <template v-if="!batchMode">
-                <el-button v-auth="'add'" plain :icon="Plus" @click="openAdd(0)">新增</el-button>
+                <el-button v-auth="'add'" :icon="Plus" plain @click="openAdd(0)">新增</el-button>
                 <el-button v-auth="'del'" plain type="danger" :icon="Delete" @click="startBatchDelete">
                     批量删除
                 </el-button>
@@ -56,17 +59,39 @@ onMounted(load)
                     <span v-if="data.type === 'api' && data.path" class="text-xs text-ga-text-secondary"
                         >{{ data.method }} {{ data.path }}</span
                     >
-                    <span v-if="!batchMode" class="ml-auto flex gap-1">
-                        <el-button v-auth="'add'" text type="primary" :icon="Plus" @click.stop="openAdd(data.id, data.type)"
-                            >新增子节点</el-button
+                    <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
+                        <el-button
+                            v-if="data.type === 'api'"
+                            v-auth="'assignFrontends'"
+                            text
+                            type="primary"
+                            :icon="Connection"
+                            @click.stop="openAssignFrontends(data)"
                         >
-                        <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">编辑</el-button>
-                        <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">删除</el-button>
-                    </span>
+                            分配前端
+                        </el-button>
+                        <el-button
+                            v-auth="'add'"
+                            text
+                            type="primary"
+                            :icon="Plus"
+                            @click.stop="openAdd(data.id, data.type)"
+                        >
+                            子节点
+                        </el-button>
+                        <el-button v-auth="'edit'" text type="primary" :icon="Edit" @click.stop="openEdit(data)">
+                            编辑
+                        </el-button>
+                    
+                        <el-button v-auth="'del'" text type="danger" :icon="Delete" @click.stop="remove(data)">
+                            删除
+                        </el-button>
+                    </el-button-group>
                 </span>
             </template>
         </el-tree>
 
         <rule-edit ref="ruleEditRef" scope="backend" @success="load" />
+        <assign-frontends-dialog ref="assignFrontendsRef" />
     </div>
 </template>

@@ -1,0 +1,29 @@
+---
+description: auth_rule 主键分段：1–10000 系统内置，自增从 10001 起
+alwaysApply: true
+---
+
+# auth_rule 主键分段
+
+- **1–10000**：系统内置规则。只允许写在 `database/install/data.sql` 和 `database/*.sql` 增量脚本里，且必须显式指定 `id`。
+- **≥10001**：运行时 / CRUD / 用户在后台新建的规则。走表自增，**不要**写进安装或增量 SQL。
+
+`schema.sql` 中 `AUTO_INCREMENT = 10001`。已有库执行 `database/auth_rule_auto_increment_10001.sql`。新增内置规则后**不要**把自增改成 `max(id)+1`。
+
+## 写增量 SQL 前必须查号
+
+在仓库里搜齐已占用的内置 id，取 **小于 10000 的最大 id + 1**，禁止凭印象从 80、83 这类「看起来空」的号起编。
+
+至少查：
+
+- `database/install/data.sql` 全部 `auth_rule` 插入
+- `database/*.sql` 里所有显式 `id`
+
+当前内置已用到 **92**（分配前端 90–92）。下一组从 **93** 起。
+
+```sql
+-- ❌ 未扫仓库就占用 83–86（CRUD 远程接口已占用）
+-- ✅ 扫完 data.sql + 增量脚本后再写 93、94、…
+
+INSERT IGNORE INTO `auth_rule` (`id`, …) VALUES (93, …);
+```

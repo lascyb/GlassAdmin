@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { RuleRow } from '@/apis/auth/rule'
+import AssignRolesDialog from '@/views/auth/rule/AssignRolesDialog.vue'
 import { ruleTypeLabel, ruleTypeTagType } from '@/views/auth/rule/constants'
 import RuleEdit from '@/views/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/auth/rule/useRuleTreePage'
 import GaIcon from '@components/ga-icon/index.vue'
-import { Close, Delete, Edit, Plus, Refresh } from '@element-plus/icons-vue'
+import { Close, Delete, Edit, Plus, Refresh, User } from '@element-plus/icons-vue'
 import { onMounted, useTemplateRef } from 'vue'
 
 const {
@@ -20,9 +21,11 @@ const {
     onNodeExpand,
 } = useRuleTreeBase('frontend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
+const assignRolesRef = useTemplateRef<InstanceType<typeof AssignRolesDialog>>('assignRolesRef')
 
 const openAdd = (pid: number, parentType?: string) => ruleEditRef.value?.openAdd(pid, parentType)
 const openEdit = (row: RuleRow) => ruleEditRef.value?.openEdit(row)
+const openAssignRoles = (row: RuleRow) => assignRolesRef.value?.open(row)
 
 onMounted(load)
 </script>
@@ -74,6 +77,15 @@ onMounted(load)
                     </template>
                     <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
                         <el-button
+                            v-auth="'assignRoles'"
+                            text
+                            type="primary"
+                            :icon="User"
+                            @click.stop="openAssignRoles(data)"
+                        >
+                            分配角色
+                        </el-button>
+                        <el-button
                             v-if="data.type !== 'link' && data.type !== 'iframe' && data.type !== 'btn'"
                             v-auth="'add'"
                             text
@@ -95,5 +107,6 @@ onMounted(load)
         </el-tree>
 
         <rule-edit ref="ruleEditRef" scope="frontend" @success="load" />
+        <assign-roles-dialog ref="assignRolesRef" />
     </div>
 </template>
