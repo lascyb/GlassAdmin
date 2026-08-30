@@ -92,21 +92,16 @@ const onSizeChange = () => emit('load')
     min-height: 0;
 }
 
+/* 中间层只负责 flex 分配高度；表体滚动由 el-table 的 height 属性驱动 */
 .ga-table__main {
     flex: 1 1 auto;
     min-width: 0;
 }
 
 .ga-table--fill .ga-table__main {
+    flex: 1 1 0;
     min-height: var(--ga-table-body-min-height);
-}
-
-.ga-table--fill .ga-table__main :deep(.el-table) {
-    height: 100%;
-}
-
-.ga-table--fill .ga-table__main :deep(.el-table__body-wrapper) {
-    min-height: var(--ga-table-body-min-height);
+    overflow: hidden;
 }
 
 .ga-table__pager {

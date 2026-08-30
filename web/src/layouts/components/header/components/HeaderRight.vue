@@ -129,18 +129,7 @@ const logout = async () => {
 <template>
     <div class="header-right">
         <div class="header-tools">
-            <el-tooltip content="个人偏好" placement="bottom">
-                <button
-                    type="button"
-                    class="header-tool-btn"
-                    aria-label="个人偏好"
-                    @click="setting.showSetting()"
-                >
-                    <el-icon :size="18">
-                        <Tools />
-                    </el-icon>
-                </button>
-            </el-tooltip>
+ 
             <el-tooltip content="刷新当前页" placement="bottom">
                 <button
                     type="button"
@@ -164,6 +153,18 @@ const logout = async () => {
                         <Sunny v-if="colorMode === 'light'" />
                         <Moon v-else-if="colorMode === 'dark'" />
                         <Monitor v-else />
+                    </el-icon>
+                </button>
+            </el-tooltip>
+            <el-tooltip content="个人偏好" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    aria-label="个人偏好"
+                    @click="setting.showSetting()"
+                >
+                    <el-icon :size="18">
+                        <Tools />
                     </el-icon>
                 </button>
             </el-tooltip>
