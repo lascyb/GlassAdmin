@@ -3,8 +3,10 @@ import { index } from '@/apis'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import {
     ASIDE_WIDTH_DEFAULT,
+    ASIDE_WIDTH_DOUBLE_MIN,
     ASIDE_WIDTH_MAX,
     ASIDE_WIDTH_MIN,
+    type LayoutContainer,
     useLayoutSetting,
 } from '@/pinia/layout/setting.ts'
 import { router } from '@/router'
@@ -43,6 +45,11 @@ const onAsideWidthChange = (val: number | number[]) => {
 const resetAsideWidth = () => {
     setting.setAsideWidth(ASIDE_WIDTH_DEFAULT)
 }
+
+/** onContainerChange 切换菜单样式 */
+const onContainerChange = (value: LayoutContainer) => {
+    setting.setContainer(value)
+}
 </script>
 
 <template>
@@ -66,7 +73,10 @@ const resetAsideWidth = () => {
 
             <section class="pref-block">
                 <div class="pref-label">菜单样式</div>
-                <LayoutPicker v-model="setting.layout.container" />
+                <LayoutPicker
+                    :model-value="setting.layout.container"
+                    @update:model-value="onContainerChange"
+                />
             </section>
 
             <section class="pref-block">
@@ -85,7 +95,8 @@ const resetAsideWidth = () => {
                     <el-button link type="primary" @click="resetAsideWidth">重置</el-button>
                 </div>
                 <p class="pref-hint">
-                    展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。
+                    展开态侧栏宽度（{{ ASIDE_WIDTH_MIN }}–{{ ASIDE_WIDTH_MAX }}px）；收起态不受影响。切换到左侧双层时会自动加宽至至少
+                    {{ ASIDE_WIDTH_DOUBLE_MIN }}px，以保证子菜单区宽度。
                 </p>
             </section>
 

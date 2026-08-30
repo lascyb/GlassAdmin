@@ -4,7 +4,7 @@ import { reactive } from 'vue'
 import { persistStorageKeyPrefix } from '@/config/persistStorage'
 import { useSystemConfig } from '@/pinia/system/config'
 
-type LayoutContainer = 'Default' | 'Double' | 'Module'
+export type LayoutContainer = 'Default' | 'Double' | 'Module'
 
 /** ColorMode 外观：浅色 / 深色 / 跟随系统 */
 export type ColorMode = 'light' | 'dark' | 'system'
@@ -30,6 +30,10 @@ const CONTAINERS: LayoutContainer[] = ['Default', 'Double', 'Module']
 export const ASIDE_WIDTH_MIN = 160
 export const ASIDE_WIDTH_MAX = 480
 export const ASIDE_WIDTH_DEFAULT = 200
+/** 左侧双层：模块栏固定宽度（px） */
+export const ASIDE_MODULE_RAIL_WIDTH = 75
+/** 左侧双层：展开态侧栏建议最小总宽，保证子菜单区约等于单层默认宽 */
+export const ASIDE_WIDTH_DOUBLE_MIN = ASIDE_WIDTH_DEFAULT + ASIDE_MODULE_RAIL_WIDTH
 
 const isContainer = (v: string): v is LayoutContainer =>
     (CONTAINERS as string[]).includes(v)
@@ -48,6 +52,11 @@ export const clampAsideWidth = (n: number): number => {
         return ASIDE_WIDTH_DEFAULT
     }
     return Math.min(ASIDE_WIDTH_MAX, Math.max(ASIDE_WIDTH_MIN, Math.round(n)))
+}
+
+/** ensureAsideWidthForDouble 双层布局下保证总宽不低于建议最小值 */
+export const ensureAsideWidthForDouble = (asideWidth: number): number => {
+    return clampAsideWidth(Math.max(asideWidth, ASIDE_WIDTH_DOUBLE_MIN))
 }
 
 /** persistKey 与 pinia-plugin-persistedstate 全局 key 规则一致 */
@@ -74,6 +83,15 @@ export const useLayoutSetting = defineStore(
             layout.asideWidth = clampAsideWidth(n)
         }
 
+        /** setContainer 切换菜单样式；切到双层时自动保证侧栏总宽 */
+        const setContainer = (container: LayoutContainer) => {
+            const prev = layout.container
+            layout.container = container
+            if (container === 'Double' && prev !== 'Double') {
+                layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
+            }
+        }
+
         /**
          * applySystemDefaults 用系统配置填充个人偏好初始值。
          * 仅在本地尚无 layout_setting 持久化时应用；已有个人偏好则只打标不覆盖。
@@ -92,6 +110,9 @@ export const useLayoutSetting = defineStore(
                 layout.seededFromSystem = true
                 // 旧本地偏好可能没有 asideWidth / menuAccordion / colorMode，补默认并钳制
                 layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
+                if (layout.container === 'Double') {
+                    layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
+                }
                 layout.menuAccordion = !!layout.menuAccordion
                 layout.colorMode = normalizeColorMode(layout.colorMode)
                 return
@@ -106,6 +127,9 @@ export const useLayoutSetting = defineStore(
             if (isContainer(container)) {
                 layout.container = container
             }
+            if (layout.container === 'Double') {
+                layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
+            }
             layout.colorMode = normalizeColorMode(layout.colorMode)
             layout.seededFromSystem = true
         }
@@ -114,6 +138,7 @@ export const useLayoutSetting = defineStore(
             layout,
             showSetting,
             setAsideWidth,
+            setContainer,
             applySystemDefaults,
         }
     },
@@ -121,7 +146,12 @@ export const useLayoutSetting = defineStore(
         persist: {
             pick: ['layout'],
             afterHydrate: (ctx) => {
-                ctx.store.layout.colorMode = normalizeColorMode(ctx.store.layout.colorMode)
+                const { layout } = ctx.store
+                layout.colorMode = normalizeColorMode(layout.colorMode)
+                layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
+                if (layout.container === 'Double') {
+                    layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
+                }
             },
         },
     },

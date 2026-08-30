@@ -4,7 +4,7 @@ import GaLogo from '../logo.vue'
 import GaMenus from '../menus/index.vue'
 import type { Menu } from '../menus/types.ts'
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
-import { useLayoutSetting } from '@/pinia/layout/setting.ts'
+import { useLayoutSetting, ASIDE_MODULE_RAIL_WIDTH } from '@/pinia/layout/setting.ts'
 import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import { useRoute, useRouter } from 'vue-router'
 import GaIcon from "@components/ga-icon/index.vue";
@@ -24,6 +24,7 @@ const asideStyle = computed(() => ({
         ? 'var(--ga-aside-collapse-width)'
         : `${layoutSetting.layout.asideWidth}px`,
     transition: 'width var(--ga-duration-slow) var(--ga-ease)',
+    '--ga-aside-module-rail-width': `${ASIDE_MODULE_RAIL_WIDTH}px`,
 }))
 
 watch(
@@ -71,7 +72,7 @@ onMounted(() => {
 <template>
     <el-aside :style="asideStyle">
         <ga-logo></ga-logo>
-        <div style="display: flex; align-items: flex-start; height: calc(100vh - 60px)">
+        <div class="ga-double-body">
             <div class="ga-double-modules" v-if="!layoutMenus.collapse">
                 <el-segmented
                     v-model="layoutMenus.module"
@@ -84,27 +85,68 @@ onMounted(() => {
                     @change="changeModule"
                 >
                     <template #default="scope">
-                        <div>
-                          <GaIcon :icon="scope.item?.icon" />
-                          <div >{{ scope.item.name }}</div>
+                        <div class="ga-double-segment">
+                            <GaIcon :icon="scope.item?.icon" />
+                            <div class="ga-double-segment__label">{{ scope.item.name }}</div>
                         </div>
                     </template>
                 </el-segmented>
             </div>
-            <ga-menus v-if="menus && menus.length > 0" :menus="menus" style="height: calc(100vh - 60px); flex: 1"></ga-menus>
+            <ga-menus
+                v-if="menus && menus.length > 0"
+                :menus="menus"
+                class="ga-double-menus"
+            />
         </div>
     </el-aside>
 </template>
 
 <style scoped>
+.ga-double-body {
+    display: flex;
+    align-items: flex-start;
+    height: calc(100vh - 60px);
+    min-width: 0;
+}
+
 .ga-double-modules {
+    flex: 0 0 var(--ga-aside-module-rail-width);
+    width: var(--ga-aside-module-rail-width);
+    min-width: 0;
     height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: color-mix(in srgb, var(--ga-color-fill-light) 42%, transparent);
     border-right: 1px solid var(--ga-glass-border);
 }
 
 .ga-double-segmented {
     --el-border-radius-base: 0;
+    width: 100%;
     background: transparent;
+}
+
+.ga-double-segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 8px 4px;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.ga-double-segment__label {
+    width: 100%;
+    overflow: hidden;
+    word-break: break-all;
+}
+
+.ga-double-menus {
+    flex: 1;
+    min-width: 0;
+    height: calc(100vh - 60px);
 }
 </style>
