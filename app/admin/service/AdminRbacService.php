@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\admin\service;
 
@@ -22,7 +23,7 @@ class AdminRbacService
     private const string CACHE_KEY_PREFIX = 'admin_rbac_api_ids:role:';
 
     /** 缓存 TTL（秒），0 表示不过期，依赖 forget* 清理 */
-    private const int CACHE_TTL = 0;
+    private const int CACHE_TTL = 300;
 
     /**
      * forgetRoleRbacCache 清除指定 role_id 的接口权限缓存（分配前端规则后调用）
@@ -49,7 +50,7 @@ class AdminRbacService
      */
     public static function isApiAllowed(Request $request, array $roleIds): bool
     {
-        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn (int $id): bool => $id > 0)));
+        $roleIds = array_values(array_unique(array_filter(array_map('intval', $roleIds), static fn(int $id): bool => $id > 0)));
         if ($roleIds === []) {
             return false;
         }
