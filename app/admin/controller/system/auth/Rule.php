@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+
+declare(strict_types=1);
 
 namespace app\admin\controller\system\auth;
 
@@ -178,6 +179,132 @@ class Rule extends AdminController
     }
 
     /**
+     * sort 批量更新规则排序；items 可带 pid 以改层级
+     *
+     * @return Response
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+    public function sort(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
+        }
+        $items = $request->put('items/a', []);
+        if (!is_array($items) || $items === []) {
+            return $this->fail(400, 'items 无效');
+        }
+        if (count($items) > 2000) {
+            return $this->fail(400, 'items 过多');
+        }
+        $pairs = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                return $this->fail(400, 'items 无效');
+            }
+            $id = (int) ($item['id'] ?? 0);
+            if ($id <= 0) {
+                return $this->fail(400, 'id 无效');
+            }
+            if (!array_key_exists('sort', $item)) {
+                return $this->fail(400, 'sort 无效');
+            }
+            if (isset($pairs[$id])) {
+                return $this->fail(400, 'id 重复');
+            }
+            $pid = null;
+            if (array_key_exists('pid', $item)) {
+                $pid = (int) $item['pid'];
+                if ($pid < 0) {
+                    return $this->fail(400, 'pid 无效');
+                }
+            }
+            $pairs[$id] = [
+                'sort' => (int) $item['sort'],
+                'pid'  => $pid,
+            ];
+        }
+        $ids  = array_keys($pairs);
+        $rows = RuleModel::whereIn('id', $ids)->select();
+        if (count($rows) !== count($ids)) {
+            return $this->fail(404, '部分规则不存在');
+        }
+        $forgetFrontend = false;
+        $forgetBackend  = false;
+        try {
+            Db::transaction(function () use ($rows, $pairs, &$forgetFrontend, &$forgetBackend) {
+                foreach ($rows as $row) {
+                    $id    = (int) $row->getAttr('id');
+                    $patch = ['sort' => $pairs[$id]['sort']];
+                    $newPid = $pairs[$id]['pid'];
+                    if ($newPid !== null) {
+                        $err = $this->validateMovePid($row, $newPid);
+                        if ($err !== null) {
+                            throw new Exception($err);
+                        }
+                        $patch['pid'] = $newPid;
+                    }
+                    $row->save($patch);
+                    $scope = (string) $row->getAttr('scope');
+                    if ($scope === 'frontend') {
+                        $forgetFrontend = true;
+                    }
+                    if ($scope === 'backend') {
+                        $forgetBackend = true;
+                    }
+                }
+            });
+        } catch (Exception $e) {
+            return $this->fail(400, $e->getMessage());
+        }
+        if ($forgetFrontend) {
+            RuleModel::forgetMenuCaches();
+        }
+        if ($forgetBackend) {
+            AdminRbacService::forgetAllRoleRbacCaches();
+            AdminOperationLogService::forgetApiNameCache();
+        }
+
+        return $this->ok(null, '排序已保存');
+    }
+
+    /**
+     * validateMovePid 校验改层级：父节点存在、同 scope、可收子项、无环
+     */
+    private function validateMovePid(RuleModel $row, int $newPid): ?string
+    {
+        $id = (int) $row->getAttr('id');
+        if ($newPid === $id) {
+            return '不能挂到自身下';
+        }
+        if ($newPid === 0) {
+            return null;
+        }
+        $parent = RuleModel::find($newPid);
+        if (!$parent) {
+            return '父节点不存在';
+        }
+        if ((string) $parent->getAttr('scope') !== (string) $row->getAttr('scope')) {
+            return '不能跨前后端移动';
+        }
+        $pType = (string) $parent->getAttr('type');
+        if ((string) $parent->getAttr('scope') === 'frontend' && in_array($pType, ['link', 'iframe', 'btn'], true)) {
+            return '该节点不能添加子项';
+        }
+        $cur   = $newPid;
+        $guard = 0;
+        while ($cur > 0 && $guard++ < 64) {
+            if ($cur === $id) {
+                return '不能挂到自己的子节点下';
+            }
+            $cur = (int) RuleModel::where('id', $cur)->value('pid');
+        }
+
+        return null;
+    }
+
+    /**
      * delete 删除（有子节点禁止）；兼容单 id 与 ids 批量
      *
      * @return Response
@@ -240,13 +367,13 @@ class Rule extends AdminController
     {
         $raw = $request->param('ids');
         if (is_array($raw)) {
-            $ids = array_values(array_unique(array_filter(array_map('intval', $raw), static fn (int $x): bool => $x > 0)));
+            $ids = array_values(array_unique(array_filter(array_map('intval', $raw), static fn(int $x): bool => $x > 0)));
             if ($ids !== []) {
                 return $ids;
             }
         }
         if (is_string($raw) && $raw !== '') {
-            $ids = array_values(array_unique(array_filter(array_map('intval', explode(',', $raw)), static fn (int $x): bool => $x > 0)));
+            $ids = array_values(array_unique(array_filter(array_map('intval', explode(',', $raw)), static fn(int $x): bool => $x > 0)));
             if ($ids !== []) {
                 return $ids;
             }
@@ -418,7 +545,7 @@ class Rule extends AdminController
         }
         $roleIds = $request->put('role_ids/a', []);
         $roleIds = is_array($roleIds) ? array_unique(array_map('intval', $roleIds)) : [];
-        $roleIds = array_values(array_filter($roleIds, static fn (int $rid): bool => $rid > 0));
+        $roleIds = array_values(array_filter($roleIds, static fn(int $rid): bool => $rid > 0));
         if ($roleIds !== []) {
             $roleIds = array_map('intval', RoleModel::where([['id', 'in', $roleIds]])->column('id'));
         }
@@ -504,7 +631,7 @@ class Rule extends AdminController
         }
         $frontIds = $request->put('frontend_rule_ids/a', []);
         $frontIds = is_array($frontIds) ? array_unique(array_map('intval', $frontIds)) : [];
-        $frontIds = array_values(array_filter($frontIds, static fn (int $fid): bool => $fid > 0));
+        $frontIds = array_values(array_filter($frontIds, static fn(int $fid): bool => $fid > 0));
         if ($frontIds !== []) {
             $frontIds = array_map(
                 'intval',
@@ -613,8 +740,10 @@ class Rule extends AdminController
         $visibility     = RuleModel::VISIBILITY_SIDEBAR;
         if ($showVisibility) {
             $vis = (int) ($p['visibility'] ?? RuleModel::VISIBILITY_SIDEBAR);
-            if (in_array($vis, RuleModel::VISIBILITIES, true)
-                && ($vis !== RuleModel::VISIBILITY_HIDDEN || in_array($type, RuleModel::HIDDEN_TYPES, true))) {
+            if (
+                in_array($vis, RuleModel::VISIBILITIES, true)
+                && ($vis !== RuleModel::VISIBILITY_HIDDEN || in_array($type, RuleModel::HIDDEN_TYPES, true))
+            ) {
                 $visibility = $vis;
             }
         }

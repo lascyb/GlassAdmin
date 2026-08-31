@@ -19,11 +19,11 @@ alwaysApply: true
 - `database/install/data.sql` 全部 `auth_rule` 插入
 - `database/*.sql` 里所有显式 `id`
 
-当前内置已用到 **92**（分配前端 90–92）。下一组从 **93** 起。
+当前内置已用到 **93**（规则排序 `Rule/sort`）。下一组从 **94** 起。
 
 ```sql
 -- ❌ 未扫仓库就占用 83–86（CRUD 远程接口已占用）
--- ✅ 扫完 data.sql + 增量脚本后再写 93、94、…
+-- ✅ 扫完 data.sql + 增量脚本后再写 94、95、…
 
-INSERT IGNORE INTO `auth_rule` (`id`, …) VALUES (93, …);
+INSERT IGNORE INTO `system_auth_rule` (`id`, …) VALUES (94, …);
 ```

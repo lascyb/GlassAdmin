@@ -1,5 +1,7 @@
 import type { RoleRow } from '@/apis/system/auth/role'
+import type { ApiEnvelope } from '@/apis/envelope'
 import { delData, getData, postData, putData } from '@/apis/http'
+import { put } from '@/apis/request'
 
 /** RuleRow 规则行（树节点） */
 export type RuleRow = {
@@ -71,6 +73,13 @@ export const saveRule = async (payload: RulePayload) => {
  */
 export const updateRule = async (id: number, payload: RulePayload) => {
     return putData<null>('admin/system.auth.Rule/update?id=' + id, payload)
+}
+
+/**
+ * sortRules 批量更新规则排序（可附带 pid 改层级）；返回完整 {code,msg,data} 供弹窗
+ */
+export const sortRules = async (items: { id: number; sort: number; pid?: number }[]) => {
+    return put<ApiEnvelope<null>>('admin/system.auth.Rule/sort', { items })
 }
 
 /**

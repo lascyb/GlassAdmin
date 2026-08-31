@@ -5,7 +5,7 @@ import { ruleTypeLabel, ruleTypeTagType } from '@/views/system/auth/rule/constan
 import RuleEdit from '@/views/system/auth/rule/edit.vue'
 import { useRuleTreeBase } from '@/views/system/auth/rule/useRuleTreePage'
 import GaIcon from '@components/ga-icon/index.vue'
-import { Close, Delete, Edit, Plus, Refresh, User } from '@element-plus/icons-vue'
+import { Close, Delete, Edit, Plus, Rank, Refresh, User } from '@element-plus/icons-vue'
 import { onMounted, useTemplateRef } from 'vue'
 
 const {
@@ -18,6 +18,11 @@ const {
     startBatchDelete,
     cancelBatchDelete,
     confirmBatchDelete,
+    sortMode,
+    startSort,
+    stopSort,
+    allowSortDrop,
+    onSortDrop,
     onNodeExpand,
 } = useRuleTreeBase('frontend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
@@ -32,17 +37,22 @@ onMounted(load)
 
 <template>
     <div v-loading="loading" class="min-h-90">
-        <div class="mb-3 flex flex-wrap justify-end gap-2">
-            <template v-if="!batchMode">
+        <div class="mb-3 flex flex-wrap items-center justify-end gap-2">
+            <span v-if="sortMode" class="mr-auto text-sm text-ga-text-secondary">拖动即保存，可调整顺序或挂到其他节点下</span>
+            <template v-if="!batchMode && !sortMode">
                 <el-button v-auth="'add'" :icon="Plus" plain @click="openAdd(0)">新增</el-button>
                 <el-button v-auth="'del'" plain type="danger" :icon="Delete" @click="startBatchDelete">
                     批量删除
                 </el-button>
+                <el-button v-auth="'edit'" plain :icon="Rank" @click="startSort">拖动排序</el-button>
                 <el-button plain :icon="Refresh" @click="load">刷新</el-button>
             </template>
-            <template v-else>
+            <template v-else-if="batchMode">
                 <el-button type="danger" :icon="Delete" @click="confirmBatchDelete">确认删除</el-button>
                 <el-button plain :icon="Close" @click="cancelBatchDelete">取消</el-button>
+            </template>
+            <template v-else>
+                <el-button plain :icon="Close" @click="stopSort">完成</el-button>
             </template>
         </div>
         <el-tree
@@ -52,10 +62,15 @@ onMounted(load)
             :default-expanded-keys="top_ids"
             :props="{ children: 'children', label: 'name' }"
             :show-checkbox="batchMode"
+            :draggable="sortMode"
+            :allow-drop="allowSortDrop"
+            :expand-on-click-node="!sortMode"
+            @node-drop="onSortDrop"
             @node-expand="onNodeExpand"
         >
             <template #default="{ data }">
-                <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2">
+                <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2" :class="{ 'cursor-move': sortMode }">
+                    <el-icon v-if="sortMode" class="text-ga-text-secondary"><Rank /></el-icon>
                     <el-tag :type="ruleTypeTagType(data.type)">{{ ruleTypeLabel(data.type) }}</el-tag>
                     <GaIcon v-if="data.icon" :icon="data.icon" class="shrink-0" />
                     <span>{{ data.name }}</span>
@@ -75,7 +90,7 @@ onMounted(load)
                         </el-tag>
                         <el-tag v-else type="info" effect="plain" size="small">授权可见</el-tag>
                     </template>
-                    <el-button-group v-if="!batchMode" class="ml-auto flex flex-wrap gap-1">
+                    <el-button-group v-if="!batchMode && !sortMode" class="ml-auto flex flex-wrap gap-1">
                         <el-button
                             v-auth="'assignRoles'"
                             text

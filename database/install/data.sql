@@ -18,6 +18,7 @@ INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (88,'backend','api',16,'规则分配角色','system.auth.Rule/assignRoles','PUT',NULL,NULL,7,1,0,NULL,NULL,NULL);
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (90,'backend','api',16,'规则已绑定前端','system.auth.Rule/frontends','GET',NULL,NULL,8,1,0,NULL,NULL,NULL);
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (91,'backend','api',16,'规则分配前端','system.auth.Rule/assignFrontends','PUT',NULL,NULL,9,1,0,NULL,NULL,NULL);
+INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (93,'backend','api',16,'规则排序','system.auth.Rule/sort','PUT',NULL,NULL,10,1,0,NULL,NULL,NULL);
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (9,'backend','api',17,'角色树','system.auth.Role/tree','GET',NULL,NULL,0,1,0,NULL,NULL,NULL);
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (10,'backend','api',17,'角色详情','system.auth.Role/read','GET',NULL,NULL,1,1,0,NULL,NULL,NULL);
 INSERT IGNORE INTO `system_auth_rule` (`id`,`scope`,`type`,`pid`,`name`,`path`,`method`,`component`,`icon`,`sort`,`status`,`visibility`,`description`,`create_time`,`update_time`) VALUES (11,'backend','api',17,'新增角色','system.auth.Role/save','POST',NULL,NULL,2,1,0,NULL,NULL,NULL);
@@ -102,6 +103,7 @@ INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`)
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (31,3);
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (36,4);
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (37,5);
+INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (37,93);
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (38,6);
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (36,7);
 INSERT IGNORE INTO `system_auth_rule_api` (`frontend_rule_id`,`backend_rule_id`) VALUES (37,7);
