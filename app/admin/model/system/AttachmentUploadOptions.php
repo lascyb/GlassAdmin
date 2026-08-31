@@ -31,8 +31,8 @@ final readonly class AttachmentUploadOptions
 
     /**
      * @param string            $disk        存储磁盘名（必填，如 public）
-     * @param string            $api         上传接口路径（必填，如 account.Profile/uploadAvatar）
-     * @param int|null          $adminId     上传人 auth_admin.id
+     * @param string            $api         上传接口路径（必填，如 system.account.Profile/uploadAvatar）
+     * @param int|null          $adminId     上传人 system_auth_admin.id
      * @param string|null       $dir         盘根下子目录
      * @param int               $maxBytes    最大字节
      * @param list<string>      $allowedExt  允许扩展名，[] 表示不校验扩展名

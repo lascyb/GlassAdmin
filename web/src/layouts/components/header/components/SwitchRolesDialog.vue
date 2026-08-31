@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { AdminRoleBrief } from '@/apis/account'
-import * as accountApi from '@/apis/account'
+import type { AdminRoleBrief } from '@/apis/system/account'
+import * as accountApi from '@/apis/system/account'
 import { useAdmin } from '@/pinia/admin'
 import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'

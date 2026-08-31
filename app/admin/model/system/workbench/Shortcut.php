@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace app\admin\model\system\workbench;
 
-use app\admin\model\auth\Rule as RuleModel;
+use app\admin\model\system\auth\Rule as RuleModel;
 use think\facade\Db;
 use think\Model;
 

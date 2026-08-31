@@ -3,7 +3,7 @@ declare (strict_types = 1);
 
 namespace app\admin\model\system;
 
-use app\admin\model\auth\Admin;
+use app\admin\model\system\auth\Admin;
 use InvalidArgumentException;
 use Random\RandomException;
 use RuntimeException;
@@ -23,9 +23,9 @@ use think\model\relation\BelongsTo;
  * @property string|null $mime        MIME 类型
  * @property string|null $ext         扩展名
  * @property int         $size        字节大小
- * @property string      $scene       上传接口路径（如 account.Profile/uploadAvatar）
+ * @property string      $scene       上传接口路径（如 system.account.Profile/uploadAvatar）
  * @property string|null $sha1        文件哈希
- * @property int|null    $admin_id     上传人 auth_admin.id
+ * @property int|null    $admin_id     上传人 system_auth_admin.id
  * @property int         $file_deleted {0:文件在盘,1:物理文件已删除}
  * @property int|null    $create_time
  * @property int|null    $update_time

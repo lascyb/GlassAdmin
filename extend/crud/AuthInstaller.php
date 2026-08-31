@@ -5,8 +5,8 @@ namespace crud;
 
 use crud\field\FieldMeta;
 use crud\field\Naming;
-use app\admin\model\auth\Rule;
-use app\admin\model\auth\RuleApi;
+use app\admin\model\system\auth\Rule;
+use app\admin\model\system\auth\RuleApi;
 use crud\Context;
 use think\db\exception\DbException;
 
@@ -16,7 +16,7 @@ use think\db\exception\DbException;
  * 对齐 example 金样：
  * - backend menu 链（与 menus 同级，view 对应接口权限组）+ api：list/read/create/update/delete（+upload）
  * - frontend menu 链（menus 按 enabled 过滤，pid 逐级挂接）+ view + btn(add/edit/del)
- * - auth_rule_api 绑定
+ * - system_auth_rule_api 绑定
  *
  * 若 frontend view 已存在：更新 view/btn 字段，并覆盖重建该 view 子树的 frontend_api 绑定。
  * 远程关联 list API：已存在则只绑定不改 pid；不存在则挂到远程模块自身的接口组下。

@@ -469,7 +469,7 @@ const onConfirm = () => {
                     class="w-full!"
                     filterable
                     clearable
-                    placeholder="选择 admin 控制器，如 auth/Admin"
+                    placeholder="选择 admin 控制器，如 system/auth/Admin"
                     @update:model-value="onControllerChange"
                 >
                     <el-option

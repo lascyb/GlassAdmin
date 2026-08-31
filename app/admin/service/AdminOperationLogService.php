@@ -3,8 +3,8 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
-use app\admin\model\auth\AdminOperationLog;
-use app\admin\model\auth\Rule;
+use app\admin\model\system\auth\AdminOperationLog;
+use app\admin\model\system\auth\Rule;
 use app\admin\service\auth\AdminAuthPayload;
 use think\facade\Cache;
 use think\Request;
@@ -20,7 +20,7 @@ class AdminOperationLogService
 
     /** skipPaths 不记录日志的 API 路径 */
     private const array SKIP_PATHS = [
-        'account.Profile/operationLogs',
+        'system.account.Profile/operationLogs',
     ];
 
     /** 后端 API 中文名缓存键 */
@@ -33,7 +33,7 @@ class AdminOperationLogService
     private const int CACHE_TTL = 0;
 
     /**
-     * normalizeApiPath 与 auth_rule.path、AdminRbacService 对齐（pathinfo 点号格式，如 auth.Rule/tree）
+     * normalizeApiPath 与 system_auth_rule.path、AdminRbacService 对齐（pathinfo 点号格式，如 system.auth.Rule/tree）
      */
     public static function normalizeApiPath(string $pathinfo): string
     {
@@ -49,7 +49,7 @@ class AdminOperationLogService
     }
 
     /**
-     * resolveApiName 按 method+path 查 auth_rule 接口中文名（带缓存）
+     * resolveApiName 按 method+path 查 system_auth_rule 接口中文名（带缓存）
      */
     public static function resolveApiName(string $method, string $path): string
     {

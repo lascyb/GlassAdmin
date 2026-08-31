@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace app\admin\service;
 
-use app\admin\model\auth\Admin;
-use app\admin\model\auth\AdminRole;
+use app\admin\model\system\auth\Admin;
+use app\admin\model\system\auth\AdminRole;
 use app\admin\service\auth\AdminAuthPayload;
 use Random\RandomException;
 use think\facade\Cache;

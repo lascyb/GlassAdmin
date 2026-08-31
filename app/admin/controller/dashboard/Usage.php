@@ -3,11 +3,11 @@ declare (strict_types = 1);
 
 namespace app\admin\controller\dashboard;
 
-use app\admin\model\auth\Admin;
-use app\admin\model\auth\AdminOperationLog;
-use app\admin\model\auth\AdminRole;
-use app\admin\model\auth\Role;
-use app\admin\model\auth\Rule;
+use app\admin\model\system\auth\Admin;
+use app\admin\model\system\auth\AdminOperationLog;
+use app\admin\model\system\auth\AdminRole;
+use app\admin\model\system\auth\Role;
+use app\admin\model\system\auth\Rule;
 use app\common\controller\AdminController;
 use think\Request;
 use think\Response;
@@ -91,7 +91,7 @@ class Usage extends AdminController
         }
 
         $topAdminRows = AdminOperationLog::alias('l')
-            ->leftJoin('auth_admin a', 'a.id = l.admin_id')
+            ->leftJoin('system_auth_admin a', 'a.id = l.admin_id')
             ->where('l.create_time', '>=', $trendStart)
             ->field([
                 'l.admin_id',
@@ -130,7 +130,7 @@ class Usage extends AdminController
         ], $topActionRows);
 
         $roleDistRows = AdminRole::alias('ar')
-            ->leftJoin('auth_role r', 'r.id = ar.role_id')
+            ->leftJoin('system_auth_role r', 'r.id = ar.role_id')
             ->field(['ar.role_id', 'MAX(IFNULL(r.name, \'未分配\')) AS role_name', 'COUNT(*) AS count'])
             ->group('ar.role_id')
             ->order('count', 'desc')
@@ -164,7 +164,7 @@ class Usage extends AdminController
         }
 
         $recentRows = AdminOperationLog::alias('l')
-            ->leftJoin('auth_admin a', 'a.id = l.admin_id')
+            ->leftJoin('system_auth_admin a', 'a.id = l.admin_id')
             ->field('l.id,l.admin_id,l.action,l.summary,l.ip,l.create_time,a.username,a.nickname')
             ->order('l.id', 'desc')
             ->limit(self::RECENT_LOGS_LIMIT)
@@ -215,7 +215,7 @@ class Usage extends AdminController
     }
 
     /**
-     * actionModule 从 action 解析模块名（如 POST.auth.Admin/save → auth.Admin）
+     * actionModule 从 action 解析模块名（如 POST.system.auth.Admin/save → system.auth.Admin）
      */
     private static function actionModule(string $action): string
     {

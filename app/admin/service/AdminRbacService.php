@@ -3,14 +3,14 @@ declare (strict_types = 1);
 
 namespace app\admin\service;
 
-use app\admin\model\auth\RoleRule;
-use app\admin\model\auth\Rule;
-use app\admin\model\auth\RuleApi;
+use app\admin\model\system\auth\RoleRule;
+use app\admin\model\system\auth\Rule;
+use app\admin\model\system\auth\RuleApi;
 use think\facade\Cache;
 use think\Request;
 
 /**
- * AdminRbacService 管理端接口授权：角色经前端规则绑定后端 api 规则（与 auth_role_rule、auth_rule_api 一致）
+ * AdminRbacService 管理端接口授权：角色经前端规则绑定后端 api 规则（与 system_auth_role_rule、system_auth_rule_api 一致）
  * 超级管理员应在中间件层跳过本服务，不在此处理
  */
 class AdminRbacService

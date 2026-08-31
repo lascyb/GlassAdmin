@@ -276,7 +276,7 @@ final class Installer
 
     private function ensureAdmin(PDO $pdo, string $prefix, string $username, string $password, string $nickname): void
     {
-        $table = $this->table($prefix, 'auth_admin');
+        $table = $this->table($prefix, 'system_auth_admin');
         $st = $pdo->prepare('SELECT `id` FROM ' . $table . ' WHERE `username` = ? LIMIT 1');
         $st->execute([$username]);
         $id = $st->fetchColumn();
@@ -293,7 +293,7 @@ final class Installer
             $ins->execute([$username, $hash, $nickname, $now, $now]);
             $adminId = (int) $pdo->lastInsertId();
         }
-        $pivot = $this->table($prefix, 'auth_admin_role');
+        $pivot = $this->table($prefix, 'system_auth_admin_role');
         $pdo->prepare('DELETE FROM ' . $pivot . ' WHERE `admin_id` = ?')->execute([$adminId]);
         $pdo->prepare('INSERT INTO ' . $pivot . ' (`admin_id`,`role_id`,`enabled`) VALUES (?,1,1)')->execute([$adminId]);
     }

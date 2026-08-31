@@ -105,7 +105,7 @@ const clickDel = (row: AttachmentRow) => {
                         <el-input
                             v-model.trim="advanced.scene"
                             clearable
-                            placeholder="如 account.Profile/uploadAvatar"
+                            placeholder="如 system.account.Profile/uploadAvatar"
                             class="!w-64"
                         />
                     </el-form-item>

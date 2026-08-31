@@ -3,11 +3,11 @@ import { ApiError, postData } from '@/apis/http'
 import * as systemConfigApi from '@/apis/system/config'
 import GaIcon from '@/components/ga-icon/index.vue'
 import { type Admin, useAdmin } from '@/pinia/admin'
+import { applyDocumentTitle } from '@/router/documentTitle'
 import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { applyDocumentTitle } from '@/router/documentTitle'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,6 +17,7 @@ const logining = ref<boolean>(false)
 const feishuLogining = ref(false)
 const siteTitle = ref('')
 const siteDescription = ref('')
+const faviconOk = ref(true)
 
 // 密码登录表单
 const passwordForm = reactive({
@@ -66,7 +67,7 @@ const handlePasswordLogin = async () => {
   logining.value = true
   try {
     const data = await postData<LoginResult>(
-      'admin/account.login.Password/login',
+      'admin/system.account.login.Password/login',
       {
         username: passwordForm.username,
         password: passwordForm.password,
@@ -88,7 +89,7 @@ const handleFeishuLogin = () => {
   admin.setLoginMethod('feishu')
   const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   feishuLogining.value = true
-  location.href = `${base}/admin/account.login.oauth2.Feishu/authorize`
+  location.href = `${base}/admin/system.account.login.oauth2.Feishu/authorize`
 }
 
 /** handleFeishuCallback 处理飞书授权回调（login_from=feishu-web&code=） */
@@ -115,7 +116,7 @@ const handleFeishuCallback = async () => {
 
   feishuLogining.value = true
   try {
-    const data = await postData<LoginResult>('admin/account.login.oauth2.Feishu/login', {
+    const data = await postData<LoginResult>('admin/system.account.login.oauth2.Feishu/login', {
       code,
       remember: false,
     })
@@ -153,8 +154,15 @@ onMounted(() => {
   <div class="login-container" v-loading="feishuLogining" element-loading-text="正在进行飞书授权登录...">
     <div class="login-box">
       <div class="logo-section">
-        <div class="logo-icon">
-          <el-icon :size="48" color="var(--ga-color-on-primary)">
+        <div class="logo-icon" :class="{ 'logo-icon--favicon': faviconOk }">
+          <img
+            v-if="faviconOk"
+            class="logo-favicon"
+            src="/favicon.ico"
+            :alt="siteTitle"
+            @error="faviconOk = false"
+          />
+          <el-icon v-else :size="48" color="var(--ga-color-on-primary)">
             <User />
           </el-icon>
         </div>
@@ -293,6 +301,17 @@ onMounted(() => {
   border-radius: var(--ga-radius-lg);
   margin-bottom: var(--ga-space-4);
   color: var(--ga-color-on-primary);
+  overflow: hidden;
+}
+
+.logo-favicon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.logo-icon--favicon {
+  background: var(--el-bg-color);
 }
 
 .logo-title {

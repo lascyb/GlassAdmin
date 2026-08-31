@@ -322,7 +322,7 @@ class Remote extends AdminController
     private function resolveModelAndTable(array $parts): array
     {
         $candidates = [];
-        // 同相对路径：auth/Admin → app\admin\model\auth\Admin
+        // 同相对路径：system/auth/Admin → app\admin\model\system\auth\Admin
         $candidates[] = 'app\\admin\\model\\' . implode('\\', $parts);
         // 仅类名：Admin → app\admin\model\Admin
         $className = $parts[array_key_last($parts)] ?? '';
@@ -405,8 +405,8 @@ class Remote extends AdminController
     {
         $exact = [
             'migrations', 'migration', 'phinxlog', 'system_db_version', 'think_migrations',
-            'auth_admin', 'auth_admin_role', 'auth_admin_operation_log', 'auth_oauth2_feishu',
-            'auth_role', 'auth_role_rule', 'auth_rule', 'auth_rule_api',
+            'system_auth_admin', 'system_auth_admin_role', 'system_auth_admin_operation_log', 'system_auth_oauth2_feishu',
+            'system_auth_role', 'system_auth_role_rule', 'system_auth_rule', 'system_auth_rule_api',
             'system_config', 'system_rsa_key', 'system_attachment', 'dev_crud_history',
         ];
         if (in_array($name, $exact, true)) {

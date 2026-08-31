@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { OperationLogRow } from '@/apis/account.ts'
-import * as accountApi from '@/apis/account.ts'
+import type { OperationLogRow } from '@/apis/system/account.ts'
+import * as accountApi from '@/apis/system/account.ts'
 import { usePaginatedList } from '@/composables/usePaginatedList.ts'
 import { useAdmin } from '@/pinia/admin'
 import { resolveStorageUrl } from '@/utils/storageUrl'

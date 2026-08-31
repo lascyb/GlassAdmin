@@ -18,10 +18,10 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
--- Table structure for auth_admin
+-- Table structure for system_auth_admin
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_admin`;
-CREATE TABLE `auth_admin`  (
+DROP TABLE IF EXISTS `system_auth_admin`;
+CREATE TABLE `system_auth_admin`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '登录名',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'password_hash bcrypt',
@@ -36,10 +36,10 @@ CREATE TABLE `auth_admin`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '后台管理员账号' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_admin_operation_log
+-- Table structure for system_auth_admin_operation_log
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_admin_operation_log`;
-CREATE TABLE `auth_admin_operation_log`  (
+DROP TABLE IF EXISTS `system_auth_admin_operation_log`;
+CREATE TABLE `system_auth_admin_operation_log`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员 id',
   `action` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '动作标识，如 profile.update',
@@ -51,10 +51,10 @@ CREATE TABLE `auth_admin_operation_log`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '管理员操作日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_admin_role
+-- Table structure for system_auth_admin_role
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_admin_role`;
-CREATE TABLE `auth_admin_role`  (
+DROP TABLE IF EXISTS `system_auth_admin_role`;
+CREATE TABLE `system_auth_admin_role`  (
   `admin_id` bigint UNSIGNED NOT NULL,
   `role_id` bigint UNSIGNED NOT NULL,
   `enabled` tinyint NOT NULL DEFAULT 1 COMMENT '{1:启用,0:停用}',
@@ -63,10 +63,10 @@ CREATE TABLE `auth_admin_role`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_oauth2_feishu
+-- Table structure for system_auth_oauth2_feishu
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_oauth2_feishu`;
-CREATE TABLE `auth_oauth2_feishu`  (
+DROP TABLE IF EXISTS `system_auth_oauth2_feishu`;
+CREATE TABLE `system_auth_oauth2_feishu`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员 id',
   `user_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '飞书 user_id',
@@ -87,10 +87,10 @@ CREATE TABLE `auth_oauth2_feishu`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '管理员飞书 OAuth 绑定' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_role
+-- Table structure for system_auth_role
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_role`;
-CREATE TABLE `auth_role`  (
+DROP TABLE IF EXISTS `system_auth_role`;
+CREATE TABLE `system_auth_role`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `pid` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级 id，0 为根（仅展示，无权限继承）',
   `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '角色识别编码',
@@ -105,21 +105,21 @@ CREATE TABLE `auth_role`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限角色' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_role_rule
+-- Table structure for system_auth_role_rule
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_role_rule`;
-CREATE TABLE `auth_role_rule`  (
+DROP TABLE IF EXISTS `system_auth_role_rule`;
+CREATE TABLE `system_auth_role_rule`  (
   `role_id` bigint UNSIGNED NOT NULL COMMENT '角色 id',
-  `rule_id` bigint UNSIGNED NOT NULL COMMENT 'auth_rule.id，且 scope=frontend',
+  `rule_id` bigint UNSIGNED NOT NULL COMMENT 'system_auth_rule.id，且 scope=frontend',
   PRIMARY KEY (`role_id`, `rule_id`) USING BTREE,
   INDEX `idx_rule`(`rule_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色-前端规则' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_rule
+-- Table structure for system_auth_rule
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_rule`;
-CREATE TABLE `auth_rule`  (
+DROP TABLE IF EXISTS `system_auth_rule`;
+CREATE TABLE `system_auth_rule`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键；1–10000 系统内置，自增从 10001 起',
   `scope` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '{backend:后端,frontend:前端}',
   `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'backend:{menu,api} frontend:{menu,view,route,btn,link,iframe}',
@@ -142,16 +142,16 @@ CREATE TABLE `auth_rule`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 10001 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限规则（后端/前端双域树）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for auth_rule_api
+-- Table structure for system_auth_rule_api
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_rule_api`;
-CREATE TABLE `auth_rule_api`  (
-  `frontend_rule_id` bigint UNSIGNED NOT NULL COMMENT 'auth_rule id，scope=frontend 且 type 为 view 或 btn',
-  `backend_rule_id` bigint UNSIGNED NOT NULL COMMENT 'auth_rule id，scope=backend 且 type=api',
+DROP TABLE IF EXISTS `system_auth_rule_api`;
+CREATE TABLE `system_auth_rule_api`  (
+  `frontend_rule_id` bigint UNSIGNED NOT NULL COMMENT 'system_auth_rule id，scope=frontend 且 type 为 view 或 btn',
+  `backend_rule_id` bigint UNSIGNED NOT NULL COMMENT 'system_auth_rule id，scope=backend 且 type=api',
   PRIMARY KEY (`frontend_rule_id`, `backend_rule_id`) USING BTREE,
   INDEX `idx_backend`(`backend_rule_id` ASC) USING BTREE,
-  CONSTRAINT `backend_rule_id` FOREIGN KEY (`backend_rule_id`) REFERENCES `auth_rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `frontend_rule_id` FOREIGN KEY (`frontend_rule_id`) REFERENCES `auth_rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `backend_rule_id` FOREIGN KEY (`backend_rule_id`) REFERENCES `system_auth_rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `frontend_rule_id` FOREIGN KEY (`frontend_rule_id`) REFERENCES `system_auth_rule` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '前端规则-后端接口' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -193,7 +193,7 @@ CREATE TABLE `system_attachment`  (
   `size` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '字节大小',
   `scene` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '上传接口路径',
   `sha1` char(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '文件哈希',
-  `admin_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '上传人 auth_admin.id',
+  `admin_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '上传人 system_auth_admin.id',
   `file_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '{0:文件在盘,1:物理文件已删除}',
   `create_time` bigint NULL DEFAULT NULL COMMENT '创建时间（Unix 秒）',
   `update_time` bigint NULL DEFAULT NULL COMMENT '更新时间（Unix 秒）',
@@ -251,8 +251,8 @@ CREATE TABLE `system_rsa_key`  (
 DROP TABLE IF EXISTS `system_workbench_shortcut`;
 CREATE TABLE `system_workbench_shortcut`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员 auth_admin.id',
-  `rule_id` bigint UNSIGNED NOT NULL COMMENT '前端规则 auth_rule.id',
+  `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员 system_auth_admin.id',
+  `rule_id` bigint UNSIGNED NOT NULL COMMENT '前端规则 system_auth_rule.id',
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序（越小越靠前）',
   `create_time` bigint NULL DEFAULT NULL COMMENT '创建时间（Unix 秒）',
   `update_time` bigint NULL DEFAULT NULL COMMENT '更新时间（Unix 秒）',

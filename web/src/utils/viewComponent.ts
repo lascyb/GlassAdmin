@@ -1,6 +1,6 @@
 /**
  * normalizeViewComponent 将菜单 component / glob key / 文件路径归一为相对 views/ 的稳定 key
- * 例：auth/admin/index（无前导 /、无 .vue）
+ * 例：system/auth/admin/index（无前导 /、无 .vue）
  */
 export function normalizeViewComponent(input: string | null | undefined): string | undefined {
     if (!input) return undefined

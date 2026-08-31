@@ -293,7 +293,7 @@ final class {$className} extends Migration
     public function up(): void
     {
         // 逻辑表名不要手写前缀，使用 \$this->q() / prefixDdl() / archiveColumn()
-        // \$this->execute('ALTER TABLE ' . \$this->q('auth_admin') . ' ADD COLUMN `foo` varchar(64) NULL');
+        // \$this->execute('ALTER TABLE ' . \$this->q('system_auth_admin') . ' ADD COLUMN `foo` varchar(64) NULL');
     }
 
     public function down(): void
