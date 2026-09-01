@@ -42,6 +42,8 @@ export type IframeAuthProvider = {
     interpretMessage?: (event: MessageEvent) => IframeMessageKind | undefined
     /** 壳页就绪（登录态已建立） */
     onReady?: (ctx: IframeResolveCtx) => void
+    /** iframe load 且已进入可复用壳页（早于业务页 ready） */
+    onShellLoad?: (ctx: IframeResolveCtx, iframe: HTMLIFrameElement) => void
     /** 壳页要求重授权 */
     onReauth?: (ctx: IframeResolveCtx) => void
     /** keep-alive 缓存前改写 src（如一次性 ticket → 可重入地址） */
@@ -103,6 +105,24 @@ export const getIframeAuthProvider = (method: string): IframeAuthProvider | unde
 /** resolveKeepAliveKeyFromProvider 路由构建时写入 meta.keepAliveKey */
 export const resolveKeepAliveKeyFromProvider = (method: string): string | undefined => {
     const key = getIframeAuthProvider(method)?.keepAliveKey
+    if (typeof key !== 'string') {
+        return undefined
+    }
+    const trimmed = key.trim()
+    return trimmed === '' ? undefined : trimmed
+}
+
+/** resolveKeepAliveKeyFromMenu 路由构建：method 优先，否则 matchTarget 认领 */
+export const resolveKeepAliveKeyFromMenu = (
+    method: string,
+    target: string,
+): string | undefined => {
+    const byMethod = resolveKeepAliveKeyFromProvider(method)
+    if (byMethod) {
+        return byMethod
+    }
+    const provider = lookupIframeAuthProvider(method, target)
+    const key = provider?.keepAliveKey
     if (typeof key !== 'string') {
         return undefined
     }

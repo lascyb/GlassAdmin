@@ -51,7 +51,19 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         const raw = targetOrUrl.value
         const provider = currentProvider.value
         if (!raw || !provider?.persistSrc) return
-        iframeSrc.value = provider.persistSrc(raw, iframeSrc.value)
+        const next = provider.persistSrc(raw, iframeSrc.value)
+        if (!next || next === iframeSrc.value) return
+        const el = iframeEl.value
+        if (
+            el &&
+            provider.canNavigateInShell?.({
+                iframe: el,
+                target: raw,
+            })
+        ) {
+            return
+        }
+        iframeSrc.value = next
     }
 
     const resolveSrc = async (opts?: { force?: boolean }): Promise<void> => {
@@ -135,6 +147,7 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
                 target: raw,
             })
             if (navigated) {
+                loading.value = false
                 return
             }
         }
@@ -156,6 +169,7 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         if (kind === 'ready') {
             loading.value = false
             provider.onReady?.(buildResolveCtx())
+            persistCurrentSrc()
             return
         }
 
@@ -167,11 +181,19 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         void resolveSrc({ force: true })
     }
 
+    const onIframeLoad = (): void => {
+        const el = iframeEl.value
+        const provider = currentProvider.value
+        if (!el || !provider?.onShellLoad) return
+        provider.onShellLoad(buildResolveCtx(), el)
+    }
+
     watch(targetOrUrl, (next) => {
         void applyTarget(next)
     })
 
     onMounted(() => {
+        window.addEventListener('message', onEmbedMessage)
         void applyTarget(targetOrUrl.value)
     })
 
@@ -205,5 +227,6 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         error,
         iframeSrc,
         resolveSrc,
+        onIframeLoad,
     }
 }

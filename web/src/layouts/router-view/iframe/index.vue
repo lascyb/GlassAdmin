@@ -4,7 +4,7 @@ import { Loading } from '@element-plus/icons-vue'
 import { useTemplateRef } from 'vue'
 
 const iframeEl = useTemplateRef<HTMLIFrameElement>('iframeEl')
-const { loading, error, iframeSrc, resolveSrc } = useIframeEmbed(iframeEl)
+const { loading, error, iframeSrc, resolveSrc, onIframeLoad } = useIframeEmbed(iframeEl)
 </script>
 
 <template>
@@ -16,6 +16,7 @@ const { loading, error, iframeSrc, resolveSrc } = useIframeEmbed(iframeEl)
             class="iframe-frame"
             frameborder="0"
             allow="fullscreen"
+            @load="onIframeLoad"
         />
         <div v-if="loading" class="iframe-state iframe-overlay">
             <el-icon class="is-loading" :size="28"><Loading /></el-icon>

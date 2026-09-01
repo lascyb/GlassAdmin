@@ -1,5 +1,5 @@
 import type { Menu } from '@/layouts/components/menus/types.ts'
-import { resolveKeepAliveKeyFromProvider } from '@/layouts/router-view/iframe/iframeAuth'
+import { resolveKeepAliveKeyFromMenu } from '@/layouts/router-view/iframe/iframeAuth'
 import { views } from '@/router/views.ts'
 import { normalizeViewComponent, toViewsGlobKey } from '@/utils/viewComponent'
 import type { RouteRecordRaw } from 'vue-router'
@@ -90,7 +90,8 @@ export const menusToRoutes = (
 
         if (menu.type === 'iframe' || menu.type === 'link') {
             const method = String(menu.method ?? '').trim()
-            const keepAliveKey = method ? resolveKeepAliveKeyFromProvider(method) : undefined
+            const target = String(menu.component ?? '').trim()
+            const keepAliveKey = resolveKeepAliveKeyFromMenu(method, target)
             items.push({
                 name: String(menu.id),
                 path: toRoutePath(fullPath),
