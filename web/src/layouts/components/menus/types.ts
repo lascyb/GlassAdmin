@@ -5,7 +5,7 @@ export type Menu = {
     path_full: string; //根据层级前端自动补全
     /** {menu:目录,view:页面,route:路由(不入侧栏),btn:按钮,iframe:内嵌,link:外链} */
     type: 'menu' | 'view' | 'route' | 'btn' | 'iframe' | 'link'
-    /** iframe 鉴权策略 ID（空 = 直链）；对应 embed/auth 提供方 */
+    /** iframe 鉴权策略 ID（空 = 直链）；对应 iframe/auth 提供方 */
     method?: string | null
     /** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（目录）} */
     visibility?: number

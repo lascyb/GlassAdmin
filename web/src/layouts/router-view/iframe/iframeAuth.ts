@@ -1,6 +1,6 @@
 /**
  * iframe 鉴权策略注册表
- * 业务方在 embed/auth/*.ts 导出 IframeAuthProvider（default 或 provider）
+ * 业务方在 layouts/router-view/iframe/auth/*.ts 导出 IframeAuthProvider（default 或 provider）
  */
 
 /** IframeNavigateCtx 壳内跳转上下文 */
@@ -26,7 +26,7 @@ export type IframeResolveCtx = {
 /** IframeMessageKind 策略对 postMessage 的判定 */
 export type IframeMessageKind = 'ready' | 'reauth'
 
-/** IframeAuthProvider iframe 鉴权提供方（业务逻辑放策略内，勿写入 iframe.vue） */
+/** IframeAuthProvider iframe 鉴权提供方（业务逻辑放 auth/*.ts，勿写入壳组件） */
 export type IframeAuthProvider = {
     /** 策略 ID，写入 system_auth_rule.method */
     id: string

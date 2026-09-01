@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RulePayload, RuleRow } from '@/apis/system/auth/rule'
 import * as ruleApi from '@/apis/system/auth/rule'
-import { getIframeAuthProvider, listIframeAuthProviders } from '@/embed/iframeAuth'
+import { getIframeAuthProvider, listIframeAuthProviders } from '@/layouts/router-view/iframe/iframeAuth'
 import { views } from '@/router/views'
 import { normalizeViewComponent } from '@/utils/viewComponent'
 import BindBackendApiPanel from '@/views/system/auth/rule/BindBackendApiPanel.vue'

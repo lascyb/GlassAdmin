@@ -1,10 +1,10 @@
 import type { Menu } from '@/layouts/components/menus/types.ts'
-import { resolveKeepAliveKeyFromProvider } from '@/embed/iframeAuth'
+import { resolveKeepAliveKeyFromProvider } from '@/layouts/router-view/iframe/iframeAuth'
 import { views } from '@/router/views.ts'
 import { normalizeViewComponent, toViewsGlobKey } from '@/utils/viewComponent'
 import type { RouteRecordRaw } from 'vue-router'
 
-const iframeView = () => import('@/layouts/router-view/iframe.vue')
+const iframeView = () => import('@/layouts/router-view/iframe/index.vue')
 const linkView = () => import('@/layouts/router-view/link.vue')
 const noPermissionView = () => import('@/layouts/components/error/no-permission.vue')
 
