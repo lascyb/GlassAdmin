@@ -29,4 +29,18 @@ export default defineConfig({
             '@components': path.resolve(__dirname, 'src/components')
         }
     },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return
+                    if (id.includes('monaco-editor')) return 'monaco'
+                    if (id.includes('echarts')) return 'echarts'
+                    if (id.includes('@element-plus/icons-vue')) return 'element-plus-icons'
+                    if (id.includes('element-plus')) return 'element-plus'
+                    if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vue-vendor'
+                },
+            },
+        },
+    },
 })

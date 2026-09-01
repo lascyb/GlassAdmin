@@ -1,27 +1,19 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { bindAdminRefreshSink } from '@/pinia/admin/syncRefreshUser'
+import type { Admin, AdminLoginMethod, AdminLoginMethodPreference } from '@/pinia/admin/types'
 import { useToken } from '@/pinia/admin/token'
 import { useSystemConfig } from '@/pinia/system/config'
 
-/** AdminUser 登录后的后台管理员信息 */
-export type Admin = {
-    id: number
-    username: string
-    nickname: string
-    /** 头像相对路径（public/storage） */
-    avatar?: string | null
-    /** 绑定的角色 system_auth_role.id 列表（当前生效） */
-    role_ids?: number[]
-    /** 绑定的角色 system_auth_role.id 列表（当前生效） */
-    role_codes?: string[]
-    /** 已分配角色（含 enabled） */
-    roles?: { id: number; code: string; name: string; enabled: number }[]
-}
+export type { Admin, AdminLoginMethod, AdminLoginMethodPreference } from '@/pinia/admin/types'
 
-export type AdminLoginMethod = 'password' | 'feishu'
-/** 空字符串表示尚未选择登录方式偏好 */
-export type AdminLoginMethodPreference = AdminLoginMethod | ''
+/** applyAdminUser 写入 user 并同步 enabled 角色 id/code */
+const applyAdminUser = (admin: Admin) => {
+    admin.role_codes = admin.roles?.filter((item) => item.enabled == 1)?.map((item) => item.code)
+    admin.role_ids = admin.roles?.filter((item) => item.enabled == 1)?.map((item) => item.id)
+    return admin
+}
 
 /**
  * useAdmin 登录用户态。令牌见 useToken。
@@ -48,9 +40,7 @@ export const useAdmin = defineStore('admin', () => {
         rememberLogin: boolean,
     ) => {
         tokenStore.setTokens(accessToken, refreshToken, expireAt, refreshExpireAt)
-        data.value = admin
-        data.value.role_codes = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.code)
-        data.value.role_ids = admin.roles?.filter(item => item.enabled == 1)?.map(item => item.id)
+        data.value = applyAdminUser(admin)
         remember.value = rememberLogin
     }
 
@@ -119,4 +109,8 @@ export const useAdmin = defineStore('admin', () => {
     persist: {
         pick: ['data', 'remember', 'loginMethod'],
     },
+})
+
+bindAdminRefreshSink((user) => {
+    useAdmin().data = applyAdminUser(user)
 })

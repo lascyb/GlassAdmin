@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 
 import type { ApiEnvelope } from '@/apis/envelope'
 import { unwrap } from '@/apis/envelope'
-import type { Admin } from '@/pinia/admin'
+import type { Admin } from '@/pinia/admin/types'
+import { syncAdminRefreshUser } from '@/pinia/admin/syncRefreshUser'
 
 /** 进行中的刷新 Promise：并发调用共用一次 rotate，避免旧 refresh 被二次使用后清登录态 */
 let refreshInFlight: Promise<boolean> | null = null
@@ -95,8 +96,7 @@ export const useToken = defineStore(
                     payload.refresh_expire_at,
                 )
                 if (payload.user) {
-                    const { useAdmin } = await import('@/pinia/admin')
-                    useAdmin().data = payload.user
+                    syncAdminRefreshUser(payload.user)
                 }
                 return true
             } catch {
