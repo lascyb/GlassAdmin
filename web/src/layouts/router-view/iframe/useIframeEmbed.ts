@@ -135,7 +135,6 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         const provider = lookupIframeAuthProvider(method, raw)
 
         if (
-            iframeSrc.value &&
             iframeEl.value &&
             provider?.canNavigateInShell?.({
                 iframe: iframeEl.value,
@@ -198,7 +197,6 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
     })
 
     onActivated(() => {
-        window.addEventListener('message', onEmbedMessage)
         const isRestore = activatedOnce
         activatedOnce = true
         if (!isRestore) return
@@ -213,7 +211,6 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
     })
 
     onDeactivated(() => {
-        window.removeEventListener('message', onEmbedMessage)
         persistCurrentSrc()
     })
 
