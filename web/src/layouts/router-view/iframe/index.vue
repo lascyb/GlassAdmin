@@ -15,7 +15,7 @@ const { loading, error, iframeSrc, resolveSrc, onIframeLoad } = useIframeEmbed(i
             :src="iframeSrc"
             class="iframe-frame"
             frameborder="0"
-            allow="fullscreen"
+            allow="fullscreen; unload *"
             @load="onIframeLoad"
         />
         <div v-if="loading" class="iframe-state iframe-overlay">

@@ -50,6 +50,10 @@ export type IframeAuthProvider = {
     persistSrc?: (target: string, currentSrc: string) => string
     /** keep-alive 恢复时是否必须重新 resolveSrc */
     shouldReload?: (ctx: IframeResolveCtx) => boolean
+    /** SSO/跳转进行中时暂缓 resolveSrc，避免同 Tab 切菜单重复鉴权 */
+    shouldDeferResolve?: (ctx: IframeResolveCtx, target: string) => boolean
+    /** 已在壳内展示目标页，无需 resolveSrc */
+    shouldSkipResolve?: (ctx: IframeResolveCtx, target: string, iframe: HTMLIFrameElement) => boolean
     /** 支持 iframe 实例复用时，keep-alive 共享 key；未设则每菜单独立 fullPath 缓存 */
     keepAliveKey?: string
     /** 是否可在已有 iframe 壳内跳转（不改 src） */

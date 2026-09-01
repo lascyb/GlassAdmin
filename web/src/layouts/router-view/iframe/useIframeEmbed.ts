@@ -19,6 +19,9 @@ const inflight = new Map<string, Promise<void>>()
 
 const REAUTH_COOLDOWN_MS = 15000
 
+const isSsoTicketBinding = (src: string): boolean =>
+    src.includes('/admin/embed/sso') && src.includes('ticket=')
+
 /** useIframeEmbed 内嵌页壳层：解析 src、壳内 navigate、postMessage 分发（平台逻辑在 auth/*.ts） */
 export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
     const route = useRoute()
@@ -54,8 +57,10 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         const next = provider.persistSrc(raw, iframeSrc.value)
         if (!next || next === iframeSrc.value) return
         const el = iframeEl.value
+        const stillSsoTicket = isSsoTicketBinding(iframeSrc.value)
         if (
             el &&
+            !stillSsoTicket &&
             provider.canNavigateInShell?.({
                 iframe: el,
                 target: raw,
@@ -133,26 +138,40 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         const seq = ++loadSeq
         const method = embedMethod.value
         const provider = lookupIframeAuthProvider(method, raw)
+        const el = iframeEl.value
 
+        // 可选 postMessage 壳内切页；不可早退——跨域无法确认 hash 已变，须 resolveSrc 同步 binding
         if (
-            iframeEl.value &&
+            el &&
             provider?.canNavigateInShell?.({
-                iframe: iframeEl.value,
+                iframe: el,
                 target: raw,
             })
         ) {
-            const navigated = provider.navigateInShell?.({
-                iframe: iframeEl.value,
+            provider.navigateInShell?.({
+                iframe: el,
                 target: raw,
             })
-            if (navigated) {
-                loading.value = false
-                return
-            }
         }
 
         if (seq !== loadSeq) {
             return
+        }
+
+        if (el && provider?.shouldSkipResolve?.(buildResolveCtx(), raw, el)) {
+            loading.value = false
+            return
+        }
+
+        if (provider?.shouldDeferResolve?.(buildResolveCtx(), raw)) {
+            return
+        }
+
+        if (isSsoTicketBinding(iframeSrc.value)) {
+            persistCurrentSrc()
+            if (!isSsoTicketBinding(iframeSrc.value)) {
+                return
+            }
         }
 
         await resolveSrc()
@@ -169,6 +188,7 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
             loading.value = false
             provider.onReady?.(buildResolveCtx())
             persistCurrentSrc()
+            void applyTarget(targetOrUrl.value)
             return
         }
 
@@ -184,7 +204,14 @@ export const useIframeEmbed = (iframeEl: Ref<HTMLIFrameElement | null>) => {
         const el = iframeEl.value
         const provider = currentProvider.value
         if (!el || !provider?.onShellLoad) return
+        const srcBefore = iframeSrc.value
         provider.onShellLoad(buildResolveCtx(), el)
+        persistCurrentSrc()
+        if (iframeSrc.value !== srcBefore) {
+            loading.value = false
+            return
+        }
+        void applyTarget(targetOrUrl.value)
     }
 
     watch(targetOrUrl, (next) => {
