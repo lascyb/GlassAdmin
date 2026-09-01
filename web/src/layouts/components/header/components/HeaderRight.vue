@@ -2,6 +2,7 @@
 import SwitchRolesDialog from '@/layouts/components/header/components/SwitchRolesDialog.vue'
 import { useAdmin } from '@/pinia/admin'
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
+import { resolveKeepAliveBaseKey } from '@/utils/pageKey'
 import {
     normalizeColorMode,
     useLayoutSetting,
@@ -69,7 +70,7 @@ const themeTooltip = computed(() => `当前：${colorModeLabel.value}，点击�
 
 const refreshPage = () => {
     refreshSpinning.value = true
-    mainRefresh.bumpForPath(route.fullPath)
+    mainRefresh.bumpForPath(resolveKeepAliveBaseKey(route))
     window.setTimeout(() => {
         refreshSpinning.value = false
     }, 1000)

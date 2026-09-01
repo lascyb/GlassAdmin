@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh';
+import { resolveKeepAliveBaseKey, resolvePageKey } from '@/utils/pageKey'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const mainRefresh = useMainViewRefresh()
 const route = useRoute()
 
-/** pageKey 按 fullPath + 刷新 nonce，缓存页与非缓存页共用 */
-const pageKey = computed(
-    () => `${route.fullPath}:${mainRefresh.nonceFor(route.fullPath)}`,
+/** pageKey 按 keepAliveBaseKey + 刷新 nonce，缓存页与非缓存页共用 */
+const pageKey = computed(() =>
+    resolvePageKey(route, mainRefresh.nonceFor(resolveKeepAliveBaseKey(route))),
 )
 
 /** keepAlive 缺省 true，与规则默认 keep_alive=1 对齐 */

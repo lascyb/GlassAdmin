@@ -30,6 +30,8 @@ declare module 'vue-router' {
         unauthorized?: boolean
         /** 是否 keep-alive；缺省 true */
         keepAlive?: boolean
+        /** keep-alive 实例共享 scope；缺省则用 fullPath */
+        keepAliveKey?: string
     }
 }
 

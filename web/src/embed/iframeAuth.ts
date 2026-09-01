@@ -3,21 +3,57 @@
  * 业务方在 embed/auth/*.ts 导出 IframeAuthProvider（default 或 provider）
  */
 
-/** IframeAuthProvider iframe 鉴权提供方 */
+/** IframeNavigateCtx 壳内跳转上下文 */
+export type IframeNavigateCtx = {
+    iframe: HTMLIFrameElement
+    target: string
+}
+
+/** IframeResolveCtx 壳层传给策略的解析上下文 */
+export type IframeResolveCtx = {
+    /** 强制重新解析（重试 / reauth / 顶栏刷新） */
+    force?: boolean
+    /** 当前路由 fullPath */
+    routePath: string
+    /** keep-alive / refresh 共享 scope（缺省同 routePath） */
+    cacheKey: string
+    /** 顶栏刷新 nonce */
+    refreshNonce: number
+    /** 当前已绑定的 iframe src */
+    currentSrc: string
+}
+
+/** IframeMessageKind 策略对 postMessage 的判定 */
+export type IframeMessageKind = 'ready' | 'reauth'
+
+/** IframeAuthProvider iframe 鉴权提供方（业务逻辑放策略内，勿写入 iframe.vue） */
 export type IframeAuthProvider = {
-    /** 策略 ID，写入 auth_rule.method */
+    /** 策略 ID，写入 system_auth_rule.method */
     id: string
     /** 菜单编辑展示名 */
     label: string
     /** 内嵌地址输入框占位 */
     targetPlaceholder: string
-    /** 将菜单 component（target）解析为最终 iframe src */
-    resolveSrc: (target: string) => Promise<string>
-    /**
-     * acceptMessage 是否由当前策略处理该 message（如壳页请求重签票）
-     * 返回 true 表示已消费
-     */
-    acceptMessage?: (event: MessageEvent) => boolean
+    /** 无 method 时是否认领该 target（如站内相对路径） */
+    matchTarget?: (target: string) => boolean
+    /** 将菜单 component 解析为 iframe src */
+    resolveSrc: (target: string, ctx: IframeResolveCtx) => Promise<string>
+    /** 解析壳页 postMessage；未识别则忽略 */
+    interpretMessage?: (event: MessageEvent) => IframeMessageKind | undefined
+    /** 壳页就绪（登录态已建立） */
+    onReady?: (ctx: IframeResolveCtx) => void
+    /** 壳页要求重授权 */
+    onReauth?: (ctx: IframeResolveCtx) => void
+    /** keep-alive 缓存前改写 src（如一次性 ticket → 可重入地址） */
+    persistSrc?: (target: string, currentSrc: string) => string
+    /** keep-alive 恢复时是否必须重新 resolveSrc */
+    shouldReload?: (ctx: IframeResolveCtx) => boolean
+    /** 支持 iframe 实例复用时，keep-alive 共享 key；未设则每菜单独立 fullPath 缓存 */
+    keepAliveKey?: string
+    /** 是否可在已有 iframe 壳内跳转（不改 src） */
+    canNavigateInShell?: (ctx: IframeNavigateCtx) => boolean
+    /** 壳内跳转；成功返回 true，失败则 fallback 到 resolveSrc */
+    navigateInShell?: (ctx: IframeNavigateCtx) => boolean
 }
 
 type AuthModule = {
@@ -39,6 +75,11 @@ for (const mod of Object.values(modules)) {
         console.warn(`[iframeAuth] duplicate provider id: ${id}`)
         continue
     }
+    if (p.keepAliveKey && !p.canNavigateInShell && !p.navigateInShell) {
+        console.warn(
+            `[iframeAuth] provider "${id}" has keepAliveKey but no shell navigation; iframe reuse disabled`,
+        )
+    }
     providersById.set(id, { ...p, id })
 }
 
@@ -49,7 +90,7 @@ export const listIframeAuthProviders = (): IframeAuthProvider[] =>
     [...providersById.values()].sort((a, b) => a.id.localeCompare(b.id))
 
 /**
- * getIframeAuthProvider 按策略 ID 取提供方；空 ID 表示直链
+ * getIframeAuthProvider 按策略 ID 取提供方；空 ID 表示未指定
  */
 export const getIframeAuthProvider = (method: string): IframeAuthProvider | undefined => {
     const id = method.trim()
@@ -57,4 +98,36 @@ export const getIframeAuthProvider = (method: string): IframeAuthProvider | unde
         return undefined
     }
     return providersById.get(id)
+}
+
+/** resolveKeepAliveKeyFromProvider 路由构建时写入 meta.keepAliveKey */
+export const resolveKeepAliveKeyFromProvider = (method: string): string | undefined => {
+    const key = getIframeAuthProvider(method)?.keepAliveKey
+    if (typeof key !== 'string') {
+        return undefined
+    }
+    const trimmed = key.trim()
+    return trimmed === '' ? undefined : trimmed
+}
+
+/**
+ * lookupIframeAuthProvider 解析实际策略：有 method 按 ID；否则 matchTarget
+ */
+export const lookupIframeAuthProvider = (
+    method: string,
+    target: string,
+): IframeAuthProvider | undefined => {
+    const byId = getIframeAuthProvider(method)
+    if (byId) {
+        return byId
+    }
+    if (method.trim() !== '') {
+        return undefined
+    }
+    for (const p of providersById.values()) {
+        if (p.matchTarget?.(target)) {
+            return p
+        }
+    }
+    return undefined
 }

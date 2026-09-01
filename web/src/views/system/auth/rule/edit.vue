@@ -13,7 +13,7 @@ const props = defineProps<{ scope: 'backend' | 'frontend' }>()
 
 const emit = defineEmits<{ success: [] }>()
 
-/** {0:侧栏可见,1:展示全部时可发现,2:不入侧栏（仅目录）} */
+/** {0:授权可见,1:展示全部时可发现,2:不入侧栏（仅目录）} */
 const VISIBILITY_SIDEBAR = 0
 const VISIBILITY_CATALOG = 1
 const VISIBILITY_HIDDEN = 2
@@ -498,12 +498,12 @@ defineExpose({openAdd, openEdit})
             <el-form-item v-if="showVisibilityFields" label="可见性">
                 <div class="flex w-full flex-col items-start">
                     <el-radio-group v-model="form.visibility">
-                        <el-radio :value="VISIBILITY_SIDEBAR">侧栏可见</el-radio>
+                        <el-radio :value="VISIBILITY_SIDEBAR">授权可见</el-radio>
                         <el-radio :value="VISIBILITY_CATALOG">可发现</el-radio>
                         <el-radio v-if="allowHidden" :value="VISIBILITY_HIDDEN">不入侧栏</el-radio>
                     </el-radio-group>
                     <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
-                        侧栏可见：授权后显示；可发现：未授权时也能在「展示全部」中出现<template v-if="allowHidden">；不入侧栏：隐藏本目录，子节点提升到同级</template>
+                        授权可见：授权后在侧栏显示；可发现：未授权时也能在「展示全部」中出现<template v-if="allowHidden">；不入侧栏：隐藏本目录，子节点提升到同级</template>
                     </div>
                 </div>
             </el-form-item>
