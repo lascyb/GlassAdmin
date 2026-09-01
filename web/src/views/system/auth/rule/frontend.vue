@@ -24,6 +24,8 @@ const {
     allowSortDrop,
     onSortDrop,
     onNodeExpand,
+    expandAll,
+    collapseAll,
 } = useRuleTreeBase('frontend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
 const assignRolesRef = useTemplateRef<InstanceType<typeof AssignRolesDialog>>('assignRolesRef')
@@ -45,6 +47,8 @@ onMounted(load)
                     批量删除
                 </el-button>
                 <el-button v-auth="'edit'" plain :icon="Rank" @click="startSort">拖动排序</el-button>
+                <el-button plain @click="expandAll">全部展开</el-button>
+                <el-button plain @click="collapseAll">全部收起</el-button>
                 <el-button plain :icon="Refresh" @click="load">刷新</el-button>
             </template>
             <template v-else-if="batchMode">
@@ -73,7 +77,8 @@ onMounted(load)
                     <el-icon v-if="sortMode" class="text-ga-text-secondary"><Rank /></el-icon>
                     <el-tag :type="ruleTypeTagType(data.type)">{{ ruleTypeLabel(data.type) }}</el-tag>
                     <GaIcon v-if="data.icon" :icon="data.icon" class="shrink-0" />
-                    <span>{{ data.name }}</span>
+                    <span :class="{ 'text-ga-text-secondary': data.status === 0 }">{{ data.name }}</span>
+                    <el-tag v-if="data.status === 0" size="small" type="info" effect="plain">禁用</el-tag>
                     <span v-if="data.path" class="text-xs text-ga-text-secondary">{{ data.path }}</span>
                     <el-tag v-if="data.component" type="info" size="small">{{ data.component }}</el-tag>
                     <template

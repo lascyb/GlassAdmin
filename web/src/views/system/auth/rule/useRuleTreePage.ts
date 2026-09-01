@@ -130,6 +130,40 @@ export function useRuleTreeBase(scope: 'backend' | 'frontend') {
         })
     }
 
+    /** walkTree 遍历规则树 */
+    const walkTree = (nodes: RuleRow[], fn: (row: RuleRow) => void) => {
+        for (const n of nodes) {
+            fn(n)
+            if (n.children?.length) walkTree(n.children, fn)
+        }
+    }
+
+    /** expandAll 展开全部节点 */
+    const expandAll = () => {
+        nextTick(() => {
+            const tree = treeRef.value
+            if (!tree) return
+            walkTree(treeData.value, (row) => {
+                if (row.children?.length) {
+                    tree.getNode(row.id)?.expand()
+                }
+            })
+        })
+    }
+
+    /** collapseAll 收起全部节点 */
+    const collapseAll = () => {
+        nextTick(() => {
+            const tree = treeRef.value
+            if (!tree) return
+            walkTree(treeData.value, (row) => {
+                if (row.children?.length) {
+                    tree.getNode(row.id)?.collapse()
+                }
+            })
+        })
+    }
+
     /** startBatchDelete 进入批量删除模式 */
     const startBatchDelete = () => {
         if (sortMode.value) return
@@ -226,5 +260,7 @@ export function useRuleTreeBase(scope: 'backend' | 'frontend') {
         allowSortDrop,
         onSortDrop,
         onNodeExpand,
+        expandAll,
+        collapseAll,
     }
 }

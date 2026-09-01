@@ -22,6 +22,8 @@ const {
     allowSortDrop,
     onSortDrop,
     onNodeExpand,
+    expandAll,
+    collapseAll,
 } = useRuleTreeBase('backend')
 const ruleEditRef = useTemplateRef<InstanceType<typeof RuleEdit>>('ruleEditRef')
 const assignFrontendsRef = useTemplateRef<InstanceType<typeof AssignFrontendsDialog>>('assignFrontendsRef')
@@ -43,6 +45,8 @@ onMounted(load)
                     批量删除
                 </el-button>
                 <el-button v-auth="'edit'" plain :icon="Rank" @click="startSort">拖动排序</el-button>
+                <el-button plain @click="expandAll">全部展开</el-button>
+                <el-button plain @click="collapseAll">全部收起</el-button>
                 <el-button plain :icon="Refresh" @click="load">刷新</el-button>
             </template>
             <template v-else-if="batchMode">
@@ -70,7 +74,8 @@ onMounted(load)
                 <span class="flex flex-1 flex-wrap items-center gap-2 py-1 pr-2" :class="{ 'cursor-move': sortMode }">
                     <el-icon v-if="sortMode" class="text-ga-text-secondary"><Rank /></el-icon>
                     <el-tag :type="data.type === 'api' ? 'warning' : 'info'">{{ data.type }}</el-tag>
-                    <span>{{ data.name }}</span>
+                    <span :class="{ 'text-ga-text-secondary': data.status === 0 }">{{ data.name }}</span>
+                    <el-tag v-if="data.status === 0" size="small" type="info" effect="plain">禁用</el-tag>
                     <span v-if="data.type === 'api' && data.path" class="text-xs text-ga-text-secondary"
                         >{{ data.method }} {{ data.path }}</span
                     >
