@@ -100,9 +100,8 @@ class ApisFile
         foreach ($ctx->imageFields as $f) {
             $prop = (string) $f['prop'];
             $uploadExports .= Template::render('apis/upload_export.ts.tpl', [
-                'const' => 'UPLOAD_' . strtoupper($prop) . '_ACTION',
+                'fn' => Naming::uploadActionName($prop),
                 'label' => (string) $f['label'],
-                'action' => Naming::uploadActionName($prop),
             ]);
         }
 

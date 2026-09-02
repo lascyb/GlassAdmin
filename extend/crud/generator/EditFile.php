@@ -38,7 +38,6 @@ class EditFile
             $imports[] = "import GaSelectRemote from '@/components/ga-select-remote/index.vue'";
         }
         if ($needUpload) {
-            $imports[] = "import { postFormDataData } from '@/apis/http'";
             $imports[] = "import { Plus } from '@element-plus/icons-vue'";
             $imports[] = "import type { UploadRequestOptions } from 'element-plus'";
         }
@@ -119,7 +118,7 @@ class EditFile
             $prop = (string) $f['prop'];
             $uploadFns .= Template::render('edit/upload_fn.ts.tpl', [
                 'fn' => 'onUpload' . str_replace(' ', '', ucwords(str_replace('_', ' ', $prop))),
-                'constName' => 'UPLOAD_' . strtoupper($prop) . '_ACTION',
+                'uploadApi' => Naming::uploadActionName($prop),
                 'prop' => $prop,
             ]);
         }

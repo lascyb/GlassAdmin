@@ -57,8 +57,8 @@ const submit = async () => {
         ElMessage.success('已保存')
         emit('saved')
         show.value = false
-    } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+    } catch {
+        // 请求层已提示
     } finally {
         saving.value = false
     }

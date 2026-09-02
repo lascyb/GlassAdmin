@@ -1,3 +1,4 @@
 
-/** <%const%> <%label%>上传接口 */
-export const <%const%> = `${API_BASE}/<%action%>`
+/** <%fn%> <%label%>上传 */
+export const <%fn%> = (formData: FormData) =>
+    post<{ path: string }>(`${API_BASE}/<%fn%>`, formData)
