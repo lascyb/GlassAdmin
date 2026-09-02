@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { showError } from '@/apis/request'
 import { resolveStorageUrl } from '@/utils/storageUrl'
-import { Loading, Plus } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, h, ref, useSlots } from 'vue'
@@ -20,8 +20,8 @@ const props = withDefaults(
         disabled?: boolean
         /** maxSizeHintUrl 超限时推荐的压缩工具链接 */
         maxSizeHintUrl?: string
-        /** httpRequest 上传并返回存储路径（相对 path） */
-        httpRequest: (file: File) => Promise<string>
+        /** httpRequest 上传并返回存储路径（相对 path）；onProgress 为 0–100 */
+        httpRequest: (file: File, onProgress?: (percent: number) => void) => Promise<string>
     }>(),
     {
         accept: 'image/jpeg,image/png,image/gif,image/webp',
@@ -36,6 +36,7 @@ const emit = defineEmits<{ success: [path: string] }>()
 
 const slots = useSlots()
 const uploading = ref(false)
+const percent = ref(0)
 
 const displayUrl = computed(() => resolveStorageUrl(path.value))
 
@@ -91,8 +92,11 @@ const beforeUpload = (rawFile: File) => {
 /** onRequest 适配 el-upload http-request */
 const onRequest = async (opt: UploadRequestOptions) => {
     uploading.value = true
+    percent.value = 0
     try {
-        const next = await props.httpRequest(opt.file as File)
+        const next = await props.httpRequest(opt.file as File, (p) => {
+            percent.value = p
+        })
         path.value = next
         emit('success', next)
         ElMessage.success('上传成功')
@@ -103,6 +107,7 @@ const onRequest = async (opt: UploadRequestOptions) => {
         opt.onError?.(err as Parameters<NonNullable<UploadRequestOptions['onError']>>[0])
     } finally {
         uploading.value = false
+        percent.value = 0
     }
 }
 </script>
@@ -121,12 +126,13 @@ const onRequest = async (opt: UploadRequestOptions) => {
             name="trigger"
             :url="displayUrl"
             :uploading="uploading"
+            :percent="percent"
             :disabled="disabled || uploading"
         >
             <div class="ga-upload__default">
                 <img v-if="displayUrl" :src="displayUrl" class="ga-upload__preview" alt="" />
                 <el-icon v-else-if="!uploading" class="ga-upload__plus"><Plus /></el-icon>
-                <el-icon v-if="uploading" class="is-loading ga-upload__plus"><Loading /></el-icon>
+                <div v-if="uploading" class="ga-upload__mask">{{ percent }}%</div>
             </div>
         </slot>
         <template v-if="tip || slots.tip" #tip>
@@ -148,6 +154,7 @@ const onRequest = async (opt: UploadRequestOptions) => {
 }
 
 .ga-upload__default {
+    position: relative;
     width: 96px;
     height: 96px;
     border: 1px dashed var(--el-border-color);
@@ -172,6 +179,18 @@ const onRequest = async (opt: UploadRequestOptions) => {
 .ga-upload__plus {
     font-size: 24px;
     color: var(--el-text-color-secondary);
+}
+
+.ga-upload__mask {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
 }
 
 .ga-upload__tip {

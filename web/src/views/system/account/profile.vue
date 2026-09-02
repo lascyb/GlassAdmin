@@ -9,7 +9,7 @@ import GaPasswordInput from '@components/ga-password-input/index.vue'
 import GaPage from '@components/ga-page/index.vue'
 import GaTable from '@components/ga-table/index.vue'
 import GaUploadImage from '@components/ga-upload/image.vue'
-import { Loading, Plus } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -70,10 +70,17 @@ const onAvatarSuccess = (avatar: string) => {
 }
 
 /** uploadAvatar 上传头像并返回存储路径 */
-const uploadAvatar = async (file: File) => {
+const uploadAvatar = async (file: File, onProgress?: (percent: number) => void) => {
     const fd = new FormData()
     fd.append('file', file)
-    const res = await accountApi.uploadProfileAvatar(fd)
+    const res = await accountApi.uploadProfileAvatar(fd, {
+        onUploadProgress: (e) => {
+            if (!e.total) {
+                return
+            }
+            onProgress?.(Math.min(100, Math.round((e.loaded / e.total) * 100)))
+        },
+    })
     return res.avatar
 }
 
@@ -144,7 +151,7 @@ const submitPassword = async () => {
                                 :http-request="uploadAvatar"
                                 @success="onAvatarSuccess"
                             >
-                                <template #trigger="{ uploading }">
+                                <template #trigger="{ uploading, percent }">
                                     <div class="avatar-uploader__trigger">
                                         <el-avatar
                                             :size="96"
@@ -159,12 +166,7 @@ const submitPassword = async () => {
                                             class="avatar-uploader__overlay"
                                             :class="{ 'is-busy': uploading }"
                                         >
-                                            <el-icon
-                                                v-if="uploading"
-                                                class="is-loading avatar-uploader__icon-lg"
-                                            >
-                                                <Loading />
-                                            </el-icon>
+                                            <span v-if="uploading" class="avatar-uploader__percent">{{ percent }}%</span>
                                             <template v-else>
                                                 <el-icon class="avatar-uploader__icon-lg">
                                                     <Plus />
@@ -276,6 +278,12 @@ const submitPassword = async () => {
 
 .avatar-uploader__overlay.is-busy {
     opacity: 1;
+}
+
+.avatar-uploader__percent {
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 
 .avatar-uploader__icon-lg {

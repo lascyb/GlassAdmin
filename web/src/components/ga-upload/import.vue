@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { post } from '@/apis/request'
+import { post, type AxiosProgressEvent } from '@/apis/request'
 import { UploadFilled } from '@element-plus/icons-vue'
 import type { UploadFile, UploadInstance, UploadRawFile } from 'element-plus'
 import { ElMessage, genFileId } from 'element-plus'
@@ -21,8 +21,8 @@ const props = withDefaults(
         tip?: string
         /** url 业务导入接口路径，如 ass.batch.Range/import */
         url?: string
-        /** httpRequest 自定义提交；提供时优先于 url */
-        httpRequest?: (file: File) => Promise<unknown>
+        /** httpRequest 自定义提交；提供时优先于 url；onProgress 为 0–100 */
+        httpRequest?: (file: File, onProgress?: (percent: number) => void) => Promise<unknown>
         /** data 一并写入 FormData 的额外字段（仅 url 模式） */
         data?: Record<string, string | number>
         /** closeOnSuccess 成功后关闭对话框 */
@@ -48,6 +48,7 @@ const emit = defineEmits<{
 const uploadRef = ref<UploadInstance>()
 const rawFile = ref<File | null>(null)
 const submitting = ref(false)
+const percent = ref(0)
 const done = ref(false)
 
 const tipText = computed(() => {
@@ -94,6 +95,7 @@ const reset = () => {
     rawFile.value = null
     done.value = false
     submitting.value = false
+    percent.value = 0
     uploadRef.value?.clearFiles()
 }
 
@@ -167,6 +169,14 @@ const onExceed = (files: File[]) => {
     uploadRef.value?.handleStart(raw)
 }
 
+/** onUploadProgress axios 上传进度 0–100 */
+const onUploadProgress = (e: AxiosProgressEvent) => {
+    if (!e.total) {
+        return
+    }
+    percent.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
+}
+
 /** submit 提交导入；已成功过则用同一文件再导一次 */
 const submit = async () => {
     if (!rawFile.value) {
@@ -174,17 +184,20 @@ const submit = async () => {
         return
     }
     submitting.value = true
+    percent.value = 0
     try {
         let result: unknown
         if (props.httpRequest) {
-            result = await props.httpRequest(rawFile.value)
+            result = await props.httpRequest(rawFile.value, (p) => {
+                percent.value = p
+            })
         } else if (props.url) {
             const fd = new FormData()
             fd.append('file', rawFile.value)
             for (const [k, v] of Object.entries(props.data ?? {})) {
                 fd.append(k, String(v))
             }
-            result = await post(props.url, fd, { silent: true })
+            result = await post(props.url, fd, { silent: true, onUploadProgress })
         } else {
             showError('未配置 url 或 httpRequest')
             return
@@ -199,6 +212,7 @@ const submit = async () => {
         showError(e instanceof Error ? e.message : '导入失败')
     } finally {
         submitting.value = false
+        percent.value = 0
     }
 }
 </script>
@@ -214,7 +228,7 @@ const submit = async () => {
         append-to-body
         :close-on-click-modal="false"
     >
-        <div v-loading="submitting" class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3">
             <el-upload
                 ref="uploadRef"
                 drag
@@ -232,6 +246,7 @@ const submit = async () => {
                     <div class="el-upload__tip">{{ tipText }}</div>
                 </template>
             </el-upload>
+            <el-progress v-if="submitting" :percentage="percent" :stroke-width="6" />
             <el-link
                 v-if="templateUrl"
                 type="primary"
@@ -242,8 +257,8 @@ const submit = async () => {
             >
                 下载导入模板
             </el-link>
-            <el-button class="w-full" type="primary" :disabled="submitting || !rawFile" @click="submit">
-                {{ done ? '重新导入' : '确定导入' }}
+            <el-button class="w-full" type="primary" :disabled="submitting || !rawFile" :loading="submitting" @click="submit">
+                {{ submitting ? `${percent}%` : done ? '重新导入' : '确定导入' }}
             </el-button>
         </div>
     </el-dialog>

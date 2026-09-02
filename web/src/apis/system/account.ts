@@ -88,8 +88,8 @@ export const changePassword = async (
 /**
  * uploadProfileAvatar 上传当前用户头像（字段名 file）
  */
-export const uploadProfileAvatar = async (formData: FormData) => {
-    return post<{ avatar: string }>('admin/system.account.Profile/uploadAvatar', formData)
+export const uploadProfileAvatar = async (formData: FormData, config?: AxiosRequestConfig) => {
+    return post<{ avatar: string }>('admin/system.account.Profile/uploadAvatar', formData, config)
 }
 
 /**
