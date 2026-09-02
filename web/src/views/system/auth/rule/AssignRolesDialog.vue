@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { RoleRow } from '@/apis/system/auth/role'
 import type { RuleRow } from '@/apis/system/auth/rule'
 import * as ruleApi from '@/apis/system/auth/rule'
@@ -27,7 +28,7 @@ const open = async (row: RuleRow) => {
         await nextTick()
         treeRef.value?.setCheckedKeys(data.role_ids)
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载失败')
+        showError(e, '加载失败')
         visible.value = false
     } finally {
         loading.value = false
@@ -42,7 +43,7 @@ const submit = async () => {
         ElMessage.success('已分配')
         visible.value = false
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '分配失败')
+        showError(e, '分配失败')
     } finally {
         saving.value = false
     }

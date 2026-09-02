@@ -214,16 +214,10 @@ export function useRuleTreeBase(scope: 'backend' | 'frontend') {
         const items = collectDropItems(siblings, newPid, movedId, oldPid)
         if (items.length === 0) return
         try {
-            const res = await ruleApi.sortRules(items)
-            if (res.code === 0) {
-                applyLocalSorts(treeData.value, items)
-                ElMessage.success(res.msg || '排序已保存')
-            } else {
-                ElMessage.error(res.msg || '排序保存失败')
-                await load()
-            }
-        } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '排序保存失败')
+            await ruleApi.sortRules(items)
+            applyLocalSorts(treeData.value, items)
+            ElMessage.success('排序已保存')
+        } catch {
             await load()
         }
     }

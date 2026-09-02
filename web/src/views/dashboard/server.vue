@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { ServerOverview } from '@/apis/dashboard'
 import * as dashboardApi from '@/apis/dashboard'
 import GaPage from '@/components/ga-page/index.vue'
@@ -6,7 +7,6 @@ import { chartChromeColors, readThemeColor, useResolvedDark } from '@/composable
 import { useLayoutSetting } from '@/pinia/layout/setting.ts'
 import { useWindowSize } from '@vueuse/core'
 import * as echarts from 'echarts'
-import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const REFRESH_MS = 5000
@@ -178,12 +178,12 @@ const resizeCharts = () => {
 const load = async (silent = false) => {
     if (!silent) loading.value = true
     try {
-        const snap = await dashboardApi.fetchServerOverview(includeHgfs.value)
+        const snap = await dashboardApi.fetchServerOverview(includeHgfs.value, { silent })
         data.value = snap
         pushHistory(snap)
         await nextTick(renderCharts)
     } catch (e: unknown) {
-        if (!silent) ElMessage.error(e instanceof Error ? e.message : '加载失败')
+        if (!silent) showError(e, '加载失败')
     } finally {
         if (!silent) loading.value = false
     }

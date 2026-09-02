@@ -1,4 +1,5 @@
-import { getData, postFormDataData, putData, type HttpRequestOptions } from '@/apis/http'
+import { get, post, put, type AxiosRequestConfig } from '@/apis/request'
+import type { Menu } from '@/layouts/components/menus/types'
 
 /** AdminRoleBrief 用户绑定的角色 */
 export type AdminRoleBrief = {
@@ -48,27 +49,27 @@ export type OperationLogsListRes = {
  * fetchProfile 当前用户资料
  */
 export const fetchProfile = async () => {
-    return getData<ProfileRow>('admin/system.account.Profile/read')
+    return get<ProfileRow>('admin/system.account.Profile/read')
 }
 
 /**
  * fetchProfile 当前用户资料
  */
 export const fetchRoles = async () => {
-    return getData<ProfileRow>('admin/system.account.Profile/roles')
+    return get<ProfileRow>('admin/system.account.Profile/roles')
 }
 /**
  * switchRoles 切换当前用户启用的角色
  */
 export const switchRoles = async (role_ids: number[]) => {
-    return putData<SwitchRolesRes>('admin/system.account.Profile/switchRoles', { role_ids })
+    return put<SwitchRolesRes>('admin/system.account.Profile/switchRoles', { role_ids })
 }
 
 /**
  * updateProfile 更新昵称
  */
 export const updateProfile = async (payload: { nickname?: string }) => {
-    return putData<null>('admin/system.account.Profile/update', payload)
+    return put<null>('admin/system.account.Profile/update', payload)
 }
 
 /**
@@ -76,9 +77,9 @@ export const updateProfile = async (payload: { nickname?: string }) => {
  */
 export const changePassword = async (
     payload: { password: string },
-    options?: HttpRequestOptions,
+    options?: AxiosRequestConfig,
 ) => {
-    return putData<null>('admin/system.account.Profile/changePassword', payload, {
+    return put<null>('admin/system.account.Profile/changePassword', payload, {
         ...options,
         encryptFields: options?.encryptFields ?? ['password'],
     })
@@ -88,12 +89,40 @@ export const changePassword = async (
  * uploadProfileAvatar 上传当前用户头像（字段名 file）
  */
 export const uploadProfileAvatar = async (formData: FormData) => {
-    return postFormDataData<{ avatar: string }>('admin/system.account.Profile/uploadAvatar', formData)
+    return post<{ avatar: string }>('admin/system.account.Profile/uploadAvatar', formData)
 }
 
 /**
  * fetchMyOperationLogs 当前用户操作日志分页
  */
 export const fetchMyOperationLogs = async (params: { page?: number; limit?: number }) => {
-    return getData<OperationLogsListRes>('admin/system.account.Profile/operationLogs', params)
+    return get<OperationLogsListRes>('admin/system.account.Profile/operationLogs', { params })
+}
+
+/** MenuDescribe 无权限页描述 */
+export type MenuDescribe = {
+    id: number
+    name: string
+    type: string
+    path: string
+    icon?: string | null
+    description?: string | null
+}
+
+/**
+ * fetchMenus 拉取当前用户动态菜单（需登录 token）
+ *
+ * @param catalog 是否包含可发现未授权菜单
+ */
+export const fetchMenus = async (catalog = false): Promise<{ menus: Menu[] }> => {
+    return get<{ menus: Menu[] }>('admin/system.account.Menu/menus', {
+        params: { catalog: catalog ? 1 : 0 },
+    })
+}
+
+/**
+ * fetchMenuDescribe 按规则 id 拉取描述（授权或可发现）
+ */
+export const fetchMenuDescribe = async (id: number) => {
+    return get<MenuDescribe>('admin/system.account.Menu/describe', { params: { id } })
 }

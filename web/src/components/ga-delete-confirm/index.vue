@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import { Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
@@ -32,7 +33,7 @@ const onConfirm = async () => {
         ElMessage.success(props.successMsg)
         if (props.afterSuccess) await props.afterSuccess()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? `删除失败：${e.message}` : '删除失败')
+        showError(e, '删除失败')
     } finally {
         loading.value = false
     }

@@ -9,12 +9,15 @@ export type ApiEnvelope<T> = {
 export class ApiError extends Error {
     code: number
     data: unknown
+    /** shown 请求层已 ElMessage 过，页面 catch 勿再弹 */
+    shown: boolean
 
     constructor(code: number, msg: string, data: unknown = null) {
         super(msg)
         this.name = 'ApiError'
         this.code = code
         this.data = data
+        this.shown = false
     }
 }
 

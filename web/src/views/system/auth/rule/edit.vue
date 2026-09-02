@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { RulePayload, RuleRow } from '@/apis/system/auth/rule'
 import * as ruleApi from '@/apis/system/auth/rule'
 import { hasIframeMethod, listIframeMethods } from '@/layouts/router-view/iframe/iframeMethods'
@@ -171,7 +172,7 @@ async function loadTree() {
         treeData.value = await ruleApi.fetchTree(props.scope)
         treeData.value.unshift({pid: 0, scope: "", type: "", sort: 0, status: 1, id: 0, name: "作为顶级节点"})
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载规则树失败')
+        showError(e, '加载规则树失败')
     }
 }
 
@@ -218,7 +219,7 @@ async function openEdit(row: RuleRow) {
             const detail = await ruleApi.fetchRead(row.id)
             backendRuleIds.value = detail.backend_rule_ids ?? []
         } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '加载规则详情失败')
+            showError(e, '加载规则详情失败')
             return
         }
     }
@@ -305,7 +306,7 @@ async function ruleEditSubmit() {
         visible.value = false
         emit('success')
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }

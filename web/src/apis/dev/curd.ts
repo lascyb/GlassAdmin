@@ -1,4 +1,4 @@
-import { getData, postData } from '@/apis/http'
+import { get, post } from '@/apis/request'
 import type { CrudGenerateConfig } from '@/views/dev/curd/types'
 
 /** GenerateOptions 生成开关 */
@@ -145,42 +145,46 @@ const HISTORY_BASE = 'admin/dev.curd.History'
 const REMOTE_BASE = 'admin/dev.curd.Remote'
 
 /** listConnections 列出可选数据库连接 */
-export const listConnections = () => getData<DbConnectionsRes>(`${API_BASE}/connections`)
+export const listConnections = () => get<DbConnectionsRes>(`${API_BASE}/connections`)
 
 /** listTables 列出指定连接的业务表名（connection 省略为默认连接） */
 export const listTables = (connection = '') =>
-    getData<string[]>(`${API_BASE}/tables`, { connection })
+    get<string[]>(`${API_BASE}/tables`, { params: { connection } })
 
 /** loadTableSchema 反推表结构为配置草稿 */
 export const loadTableSchema = (table: string, connection = '') =>
-    getData<CrudGenerateConfig>(`${API_BASE}/tableSchema`, { table, connection })
+    get<CrudGenerateConfig>(`${API_BASE}/tableSchema`, { params: { table, connection } })
 
 /** generate 执行生成或 dry-run */
 export const generate = (config: CrudGenerateConfig, options: GenerateOptions = {}) =>
-    postData<GenerateResult>(`${API_BASE}/generate`, {
-        config: config as unknown as Record<string, unknown>,
-        dryRun: options.dryRun ?? false,
-        force: options.force ?? false,
-        noAuth: options.noAuth ?? false,
-        saveHistory: options.saveHistory ?? true,
-    })
+    post<GenerateResult>(
+        `${API_BASE}/generate`,
+        {
+            config: config as unknown as Record<string, unknown>,
+            dryRun: options.dryRun ?? false,
+            force: options.force ?? false,
+            noAuth: options.noAuth ?? false,
+            saveHistory: options.saveHistory ?? true,
+        },
+        { silent: true, timeout: 0 },
+    )
 
 /** listHistory 历史列表 */
 export const listHistory = (params?: { page?: number; limit?: number }) =>
-    getData<HistoryListRes>(`${HISTORY_BASE}/index`, params)
+    get<HistoryListRes>(`${HISTORY_BASE}/index`, { params })
 
 /** readHistory 历史详情 */
 export const readHistory = (id: number) =>
-    getData<HistoryDetail>(`${HISTORY_BASE}/read`, { id })
+    get<HistoryDetail>(`${HISTORY_BASE}/read`, { params: { id } })
 
 /** listRemoteControllers 远程下拉可选控制器列表 */
 export const listRemoteControllers = () =>
-    getData<RemoteControllerItem[]>(`${REMOTE_BASE}/controllers`)
+    get<RemoteControllerItem[]>(`${REMOTE_BASE}/controllers`)
 
 /** getRemoteTableColumns 按表名取字段列表 */
 export const getRemoteTableColumns = (table: string) =>
-    getData<RemoteTableColumnsRes>(`${REMOTE_BASE}/tableColumns`, { table })
+    get<RemoteTableColumnsRes>(`${REMOTE_BASE}/tableColumns`, { params: { table } })
 
 /** listPivotTables 按主表 + 关联表匹配中间表 */
 export const listPivotTables = (mainTable: string, relatedTable: string) =>
-    getData<PivotTablesRes>(`${REMOTE_BASE}/pivotTables`, { mainTable, relatedTable })
+    get<PivotTablesRes>(`${REMOTE_BASE}/pivotTables`, { params: { mainTable, relatedTable } })

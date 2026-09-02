@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import * as workbenchApi from '@/apis/system/workbench'
 import { useAdmin } from '@/pinia/admin'
 import { useWorkbenchRecent } from '@/pinia/system/workbenchRecent'
@@ -55,7 +56,7 @@ const loadShortcuts = async () => {
         const res = await workbenchApi.fetchShortcuts()
         shortcuts.value = mapList(res.list ?? [])
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '快捷入口加载失败')
+        showError(e, '快捷入口加载失败')
     } finally {
         loadingShortcuts.value = false
     }
@@ -78,7 +79,7 @@ const onSaveShortcuts = async (ruleIds: number[]) => {
         ElMessage.success('快捷入口已保存')
         await loadShortcuts()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }
@@ -92,7 +93,7 @@ const onRestoreDefault = async () => {
         ElMessage.success('已恢复默认快捷入口')
         await loadShortcuts()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '操作失败')
+        showError(e, '操作失败')
     } finally {
         saving.value = false
     }

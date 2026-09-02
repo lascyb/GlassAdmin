@@ -1,4 +1,4 @@
-import { delData, getData } from '@/apis/http'
+import { del, get } from '@/apis/request'
 
 /** AttachmentAdminBrief 上传人摘要 */
 export type AttachmentAdminBrief = {
@@ -46,19 +46,19 @@ export const fetchList = async (params: {
     mime?: string
     admin_id?: number
 }) => {
-    return getData<AttachmentListRes>('admin/system.Attachment/list', params)
+    return get<AttachmentListRes>('admin/system.Attachment/list', { params })
 }
 
 /**
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<AttachmentRow>('admin/system.Attachment/read', { id })
+    return get<AttachmentRow>('admin/system.Attachment/read', { params: { id } })
 }
 
 /**
  * deleteAttachment 删除附件
  */
 export const deleteAttachment = async (id: number) => {
-    return delData<null>('admin/system.Attachment/delete', { id })
+    return del<null>('admin/system.Attachment/delete', { params: { id } })
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { index } from '@/apis'
+import { showError } from '@/apis/request'
+import { fetchMenus } from '@/apis/system/account'
 import { useLayoutMenus } from '@/pinia/layout/menus'
 import {
     ASIDE_WIDTH_DEFAULT,
@@ -24,13 +25,13 @@ const onShowAllMenusChange = async (val: string | number | boolean) => {
     setting.layout.showAllMenus = !!val
     reloading.value = true
     try {
-        const res = await index(setting.layout.showAllMenus)
+        const res = await fetchMenus(setting.layout.showAllMenus)
         const menus = res.menus ?? []
         layoutMenus.init(menus)
         void router.replace(router.currentRoute.value.fullPath)
         ElMessage.success(setting.layout.showAllMenus ? '已展示全部可发现菜单' : '已仅展示已授权菜单')
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '菜单刷新失败')
+        showError(e, '菜单刷新失败')
     } finally {
         reloading.value = false
     }

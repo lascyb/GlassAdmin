@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { RuleRow } from '@/apis/system/auth/rule'
 import * as ruleApi from '@/apis/system/auth/rule'
-import { ElMessage } from 'element-plus'
 import { nextTick, onMounted, ref } from 'vue'
 
 /** TreeNode 后端规则树节点（menu 禁用勾选，仅 api 可参与绑定） */
@@ -78,7 +78,7 @@ const load = async () => {
         treeData.value = toTreeNodes(tree)
         await syncCheckedFromModel()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载后端规则树失败')
+        showError(e, '加载后端规则树失败')
     } finally {
         loading.value = false
     }

@@ -105,7 +105,7 @@ export const useToken = defineStore(
         }
 
         /**
-         * tryRefreshAccessToken 用 refresh_token 换发新令牌（裸 fetch，避免与 useFetch 循环依赖）。
+         * tryRefreshAccessToken 用 refresh_token 换发新令牌（裸 fetch，避免与 axios 拦截器循环依赖）。
          * 并发调用复用同一次请求，避免 rotate 后旧 refresh 再请求导致误清登录态。
          */
         const tryRefreshAccessToken = (): Promise<boolean> => {

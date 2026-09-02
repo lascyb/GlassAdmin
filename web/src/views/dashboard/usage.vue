@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { DashboardOverview } from '@/apis/dashboard'
 import * as dashboardApi from '@/apis/dashboard'
 import GaPage from '@/components/ga-page/index.vue'
@@ -6,7 +7,6 @@ import { chartChromeColors, useResolvedDark } from '@/composables/useColorMode'
 import { useLayoutSetting } from '@/pinia/layout/setting.ts'
 import { useWindowSize } from '@vueuse/core'
 import * as echarts from 'echarts'
-import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const loading = ref(false)
@@ -116,7 +116,7 @@ const load = async () => {
     try {
         data.value = await dashboardApi.fetchUsageOverview(trendDays.value)
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载失败')
+        showError(e, '加载失败')
     } finally {
         loading.value = false
     }

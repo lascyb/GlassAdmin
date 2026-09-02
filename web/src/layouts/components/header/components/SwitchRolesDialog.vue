@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { AdminRoleBrief } from '@/apis/system/account'
 import * as accountApi from '@/apis/system/account'
 import { useAdmin } from '@/pinia/admin'
@@ -23,7 +24,7 @@ const loadRoles = async () => {
         roleOptions.value = profile.roles ?? []
         selectedRoleIds.value = profile.roles?.filter((r) => r.enabled === 1).map((r) => r.id) ?? profile.role_ids ?? []
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载角色失败')
+        showError(e, '加载角色失败')
     } finally {
         rolesLoading.value = false
     }
@@ -47,7 +48,7 @@ const applyRoles = async () => {
         ElMessage.success('角色已切换，正在刷新…')
         window.location.assign('/')
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '切换失败')
+        showError(e, '切换失败')
     } finally {
         rolesSaving.value = false
     }

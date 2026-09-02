@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import * as adminApi from '@/apis/system/auth/admin'
 import type { RoleRow } from '@/apis/system/auth/role'
 import * as roleApi from '@/apis/system/auth/role'
@@ -118,7 +119,7 @@ const submit = async () => {
         emit('saved')
         show.value = false
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }

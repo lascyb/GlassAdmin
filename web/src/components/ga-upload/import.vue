@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { postFormDataData } from '@/apis/http'
+import { post } from '@/apis/request'
 import { UploadFilled } from '@element-plus/icons-vue'
 import type { UploadFile, UploadInstance, UploadRawFile } from 'element-plus'
 import { ElMessage, genFileId } from 'element-plus'
@@ -184,7 +184,7 @@ const submit = async () => {
             for (const [k, v] of Object.entries(props.data ?? {})) {
                 fd.append(k, String(v))
             }
-            result = await postFormDataData(props.url, fd)
+            result = await post(props.url, fd, { silent: true })
         } else {
             showError('未配置 url 或 httpRequest')
             return

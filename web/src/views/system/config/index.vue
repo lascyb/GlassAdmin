@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { SystemConfigRow } from '@/apis/system/config'
 import * as systemApi from '@/apis/system/config'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
@@ -71,7 +72,7 @@ const load = async () => {
             activeGroup.value = groups.value[0]!
         }
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载失败')
+        showError(e, '加载失败')
     } finally {
         loading.value = false
     }
@@ -98,7 +99,7 @@ const clickDel = async (row: SystemConfigRow) => {
         ElMessage.success('已删除')
         await load()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '删除失败')
+        showError(e, '删除失败')
     }
 }
 

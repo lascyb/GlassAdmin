@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getData, postData } from '@/apis/http'
+import { get, post, showError } from '@/apis/request'
 import type { PaginatedResult } from '@/composables/types'
 import type { SelectOptionProps } from 'element-plus/es/components/select/src/select'
 import { computed, onMounted, ref, shallowRef, useSlots } from 'vue'
@@ -22,7 +22,7 @@ const props = withDefaults(
         limit?: number
         /** filters 额外筛选条件，展开合并到请求参数（GET 不可嵌套 object） */
         filters?: Record<string, unknown>
-        /** requestFn 自定义请求函数，提供时替代默认 getData/postData */
+        /** requestFn 自定义请求函数，提供时替代默认 get/post */
         requestFn?: (url: string, params: Record<string, unknown>) => Promise<unknown>
         /** initOptions 编辑回显初始选项，提供时跳过首次请求 */
         initOptions?: Record<string, unknown> | Record<string, unknown>[]
@@ -87,8 +87,8 @@ const executeRequest = async (params: Record<string, unknown>): Promise<unknown>
         return props.requestFn(props.remoteUrl, params)
     }
     return props.method === 'GET'
-        ? getData(props.remoteUrl, params)
-        : postData(props.remoteUrl, params)
+        ? get(props.remoteUrl, { params })
+        : post(props.remoteUrl, params)
 }
 
 /**
@@ -124,7 +124,7 @@ const refreshOptions = async (query?: string, page = 1, useModelValue = false) =
         options.value = transformed.list
         total.value = transformed.total
     } catch (error) {
-        console.error('远程搜索请求失败:', error)
+        showError(error, '远程搜索失败')
         if (!useModelValue) {
             options.value = []
         }

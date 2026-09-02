@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { index } from "@/apis";
+import { showError } from '@/apis/request'
+import { fetchMenus } from '@/apis/system/account'
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
 import { useLayoutSetting } from "@/pinia/layout/setting";
 import { useSystemConfig } from "@/pinia/system/config";
 import { router } from "@/router";
 import { applyDocumentTitle } from "@/router/documentTitle";
-import { ElMessage } from "element-plus";
 import { defineAsyncComponent, onMounted, ref, } from "vue";
 import GaLoading from "./components/loading.vue";
 
@@ -25,7 +25,7 @@ onMounted(() => {
     await systemConfig.load()
     setting.applySystemDefaults()
     try {
-      const res = await index(setting.layout.showAllMenus)
+      const res = await fetchMenus(setting.layout.showAllMenus)
       const menus = res.menus ?? []
       layoutMenus.init(menus)
       // 登录后默认落在工作台首页；无侧栏菜单时也不再跳个人中心
@@ -41,7 +41,7 @@ onMounted(() => {
       }
       applyDocumentTitle(router.currentRoute.value)
     } catch (e: unknown) {
-      ElMessage.error(e instanceof Error ? e.message : '菜单加载失败')
+      showError(e, '菜单加载失败')
       applyDocumentTitle(router.currentRoute.value)
     } finally {
       loading.value = false

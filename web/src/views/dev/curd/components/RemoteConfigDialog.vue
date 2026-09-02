@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import {
     getRemoteTableColumns,
     listPivotTables,
@@ -215,7 +216,7 @@ const loadPivotTables = async () => {
         pickDefaultPivot()
     } catch (e: unknown) {
         pivotTables.value = []
-        ElMessage.warning(e instanceof Error ? e.message : '查询中间表失败')
+        showError(e, '查询中间表失败')
     } finally {
         pivotLoading.value = false
     }
@@ -270,7 +271,7 @@ const loadControllers = async () => {
     try {
         controllers.value = await listRemoteControllers()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '加载控制器失败')
+        showError(e, '加载控制器失败')
         controllers.value = []
     } finally {
         loading.value = false
@@ -304,7 +305,7 @@ const loadColumns = async (table: string) => {
     } catch (e: unknown) {
         columns.value = []
         tablePk.value = null
-        ElMessage.warning(e instanceof Error ? e.message : '读取表字段失败')
+        showError(e, '读取表字段失败')
     } finally {
         columnsLoading.value = false
     }

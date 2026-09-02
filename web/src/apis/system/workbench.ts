@@ -1,4 +1,4 @@
-import { getData, postData } from '@/apis/http'
+import { get, post } from '@/apis/request'
 
 /** WorkbenchShortcutItem 快捷入口列表项 */
 export type WorkbenchShortcutItem = {
@@ -20,12 +20,12 @@ export type WorkbenchShortcutListRes = {
  * fetchShortcuts 当前管理员快捷入口（未设置时后端返回默认前 8）
  */
 export const fetchShortcuts = async () => {
-    return getData<WorkbenchShortcutListRes>('admin/system.workbench.Shortcut/list')
+    return get<WorkbenchShortcutListRes>('admin/system.workbench.Shortcut/list')
 }
 
 /**
  * saveShortcuts 全量保存；空数组恢复默认
  */
 export const saveShortcuts = async (ruleIds: number[]) => {
-    return postData<true>('admin/system.workbench.Shortcut/save', { rule_ids: ruleIds })
+    return post<true>('admin/system.workbench.Shortcut/save', { rule_ids: ruleIds })
 }

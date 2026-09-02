@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import * as curdApi from '@/apis/dev/curd'
 import type { HistoryRow } from '@/apis/dev/curd'
-import { ElMessage } from 'element-plus'
 import { ref, watch } from 'vue'
 
 const visible = defineModel<boolean>('modelValue', { required: true })
@@ -21,7 +21,7 @@ const load = async () => {
         total.value = res.total
     } catch (e: unknown) {
         list.value = []
-        ElMessage.error(e instanceof Error ? e.message : '加载历史失败')
+        showError(e, '加载历史失败')
     } finally {
         loading.value = false
     }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import * as curdApi from '@/apis/dev/curd'
 import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'
@@ -38,7 +39,7 @@ const loadConnections = async () => {
     } catch (e: unknown) {
         connections.value = []
         connection.value = ''
-        ElMessage.error(e instanceof Error ? e.message : '加载数据库连接失败')
+        showError(e, '加载数据库连接失败')
     }
 }
 
@@ -49,7 +50,7 @@ const load = async () => {
         tables.value = await curdApi.listTables(connection.value)
     } catch (e: unknown) {
         tables.value = []
-        ElMessage.error(e instanceof Error ? e.message : '加载表列表失败')
+        showError(e, '加载表列表失败')
     } finally {
         loading.value = false
     }

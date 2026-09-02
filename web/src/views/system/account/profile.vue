@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { OperationLogRow } from '@/apis/system/account.ts'
 import * as accountApi from '@/apis/system/account.ts'
 import { usePaginatedList } from '@/composables/usePaginatedList.ts'
@@ -42,7 +43,7 @@ const {
     load: loadLogs,
 } = usePaginatedList<OperationLogRow>(
     (params) => accountApi.fetchMyOperationLogs(params),
-    { defaultLimit: 10, showError: false },
+    { defaultLimit: 10 },
 )
 
 const load = async () => {
@@ -99,7 +100,7 @@ const submit = async () => {
         await load()
         void loadLogs()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }
@@ -119,7 +120,7 @@ const submitPassword = async () => {
         pwdForm.password = ''
         void loadLogs()
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '修改失败')
+        showError(e, '修改失败')
     } finally {
         pwdSaving.value = false
     }

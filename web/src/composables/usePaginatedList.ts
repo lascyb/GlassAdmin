@@ -1,5 +1,4 @@
 import type { PaginatedParams, PaginatedResult } from '@/composables/types.ts'
-import { ElMessage } from 'element-plus'
 import { onMounted, ref, unref, type MaybeRefOrGetter, type Ref } from 'vue'
 
 export type PaginatedFetcher<T, P extends Record<string, unknown> = Record<string, unknown>> = (
@@ -13,8 +12,6 @@ export type UsePaginatedListOptions<P extends Record<string, unknown>> = {
     defaultLimit?: number
     /** params 额外查询参数（ref / computed / 普通对象） */
     params?: MaybeRefOrGetter<P> | P
-    /** showError 加载失败时 ElMessage */
-    showError?: boolean
 }
 
 /**
@@ -24,7 +21,7 @@ export function usePaginatedList<T, P extends Record<string, unknown> = Record<s
     fetcher: PaginatedFetcher<T, P>,
     options: UsePaginatedListOptions<P> = {},
 ) {
-    const { immediate = true, defaultLimit = 20, params, showError = true } = options
+    const { immediate = true, defaultLimit = 20, params } = options
 
     const list = ref<T[]>([]) as Ref<T[]>
     const total = ref(0)
@@ -50,11 +47,8 @@ export function usePaginatedList<T, P extends Record<string, unknown> = Record<s
             total.value = res.total
             if (res.page !== undefined) page.value = res.page
             if (res.limit !== undefined) limit.value = res.limit
-        } catch (e: unknown) {
-            if (showError) {
-                ElMessage.error(e instanceof Error ? e.message : '加载失败')
-            }
-            throw e
+        } catch {
+            // 请求层已提示
         } finally {
             loading.value = false
         }

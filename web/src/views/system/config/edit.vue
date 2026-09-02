@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import type { SystemConfigRow, SystemConfigValue } from '@/apis/system/config'
 import * as systemApi from '@/apis/system/config'
 import { ElMessage } from 'element-plus'
@@ -125,7 +126,7 @@ const submit = async () => {
             emit('saved')
             show.value = false
         } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '保存失败')
+            showError(e, '保存失败')
         } finally {
             saving.value = false
         }
@@ -166,7 +167,7 @@ const submit = async () => {
         emit('saved')
         show.value = false
     } catch (e: unknown) {
-        ElMessage.error(e instanceof Error ? e.message : '保存失败')
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }

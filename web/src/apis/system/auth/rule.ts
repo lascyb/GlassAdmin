@@ -1,7 +1,5 @@
 import type { RoleRow } from '@/apis/system/auth/role'
-import type { ApiEnvelope } from '@/apis/envelope'
-import { delData, getData, postData, putData } from '@/apis/http'
-import { put } from '@/apis/request'
+import { del, get, post, put } from '@/apis/request'
 
 /** RuleRow 规则行（树节点） */
 export type RuleRow = {
@@ -29,7 +27,7 @@ export type RuleRow = {
  * fetchTree 按 scope 取规则树
  */
 export const fetchTree = async (scope: 'backend' | 'frontend') => {
-    const data = await getData<{ list: RuleRow[] }>('admin/system.auth.Rule/tree', { scope })
+    const data = await get<{ list: RuleRow[] }>('admin/system.auth.Rule/tree', { params: { scope } })
     return data.list
 }
 
@@ -37,7 +35,7 @@ export const fetchTree = async (scope: 'backend' | 'frontend') => {
  * fetchRead 规则详情（view/btn 含 backend_rule_ids）
  */
 export const fetchRead = async (id: number) => {
-    return getData<RuleRow & { backend_rule_ids?: number[] }>('admin/system.auth.Rule/read', { id })
+    return get<RuleRow & { backend_rule_ids?: number[] }>('admin/system.auth.Rule/read', { params: { id } })
 }
 
 /** RulePayload 规则写入载荷 */
@@ -65,42 +63,42 @@ export type RulePayload = {
  * saveRule 新建规则（view/btn 可附带 backend_rule_ids）
  */
 export const saveRule = async (payload: RulePayload) => {
-    return postData<{ id: number }>('admin/system.auth.Rule/save', payload)
+    return post<{ id: number }>('admin/system.auth.Rule/save', payload)
 }
 
 /**
  * updateRule 更新规则（view/btn 可附带 backend_rule_ids）
  */
 export const updateRule = async (id: number, payload: RulePayload) => {
-    return putData<null>('admin/system.auth.Rule/update?id=' + id, payload)
+    return put<null>('admin/system.auth.Rule/update?id=' + id, payload)
 }
 
 /**
- * sortRules 批量更新规则排序（可附带 pid 改层级）；返回完整 {code,msg,data} 供弹窗
+ * sortRules 批量更新规则排序（可附带 pid 改层级）
  */
 export const sortRules = async (items: { id: number; sort: number; pid?: number }[]) => {
-    return put<ApiEnvelope<null>>('admin/system.auth.Rule/sort', { items })
+    return put<null>('admin/system.auth.Rule/sort', { items })
 }
 
 /**
  * deleteRule 删除规则（单条）
  */
 export const deleteRule = async (id: number) => {
-    return delData<{ deleted?: number }>('admin/system.auth.Rule/delete', { id })
+    return del<{ deleted?: number }>('admin/system.auth.Rule/delete', { params: { id } })
 }
 
 /**
  * deleteRules 批量删除规则
  */
 export const deleteRules = async (ids: number[]) => {
-    return delData<{ deleted: number }>('admin/system.auth.Rule/delete', { ids: ids.join(',') })
+    return del<{ deleted: number }>('admin/system.auth.Rule/delete', { params: { ids: ids.join(',') } })
 }
 
 /**
  * bindApis 前端 view/btn 绑定后端 api
  */
 export const bindApis = async (frontend_rule_id: number, backend_rule_ids: number[]) => {
-    return postData<null>('admin/system.auth.Rule/bindApis', {
+    return post<null>('admin/system.auth.Rule/bindApis', {
         frontend_rule_id,
         backend_rule_ids,
     })
@@ -116,14 +114,14 @@ export type RuleRolesRes = {
  * fetchRoles 某条前端规则已分配的角色
  */
 export const fetchRoles = async (id: number) => {
-    return getData<RuleRolesRes>('admin/system.auth.Rule/roles', { id })
+    return get<RuleRolesRes>('admin/system.auth.Rule/roles', { params: { id } })
 }
 
 /**
  * assignRoles 全量覆盖某条前端规则与角色的关联（无父子继承）
  */
 export const assignRoles = async (id: number, role_ids: number[]) => {
-    return putData<null>('admin/system.auth.Rule/assignRoles?id=' + id, { role_ids })
+    return put<null>('admin/system.auth.Rule/assignRoles?id=' + id, { role_ids })
 }
 
 /** RuleFrontendsRes 后端 api 已绑定的前端规则 + 前端规则树 */
@@ -136,12 +134,12 @@ export type RuleFrontendsRes = {
  * fetchFrontends 某条后端 api 已绑定的前端规则
  */
 export const fetchFrontends = async (id: number) => {
-    return getData<RuleFrontendsRes>('admin/system.auth.Rule/frontends', { id })
+    return get<RuleFrontendsRes>('admin/system.auth.Rule/frontends', { params: { id } })
 }
 
 /**
  * assignFrontends 全量覆盖某条后端 api 与前端 view/route/btn 的绑定
  */
 export const assignFrontends = async (id: number, frontend_rule_ids: number[]) => {
-    return putData<null>('admin/system.auth.Rule/assignFrontends?id=' + id, { frontend_rule_ids })
+    return put<null>('admin/system.auth.Rule/assignFrontends?id=' + id, { frontend_rule_ids })
 }

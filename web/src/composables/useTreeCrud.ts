@@ -1,6 +1,6 @@
+import { showError } from '@/apis/request'
 import type { TreeEditController } from '@/composables/types.ts'
 import { useConfirmAction } from '@/composables/useConfirmAction.ts'
-import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, shallowRef, type Ref } from 'vue'
 
 export type UseTreeCrudOptions<T> = {
@@ -41,7 +41,7 @@ export function useTreeCrud<T extends { id: number; children?: T[] }>(
         try {
             treeData.value = await fetchTree()
         } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '加载失败')
+            showError(e, '加载失败')
         } finally {
             loading.value = false
         }

@@ -1,3 +1,4 @@
+import { showError } from '@/apis/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 export type ConfirmActionOptions = {
@@ -35,8 +36,7 @@ export function useConfirmAction(defaults: ConfirmActionOptions = {}) {
             if (opts.onSuccess) await opts.onSuccess()
             return true
         } catch (e: unknown) {
-            const prefix = opts.errorMsg ?? '操作失败'
-            ElMessage.error(e instanceof Error ? `${prefix}：${e.message}` : prefix)
+            showError(e, opts.errorMsg ?? '操作失败')
             return false
         }
     }

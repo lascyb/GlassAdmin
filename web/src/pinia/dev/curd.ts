@@ -1,3 +1,4 @@
+import { showError } from '@/apis/request'
 import type { GenerateResult } from '@/apis/dev/curd'
 import * as curdApi from '@/apis/dev/curd'
 import type { CrudGenerateConfig } from '@/views/dev/curd/types'
@@ -81,7 +82,7 @@ export const useDevCurd = defineStore('dev_curd', () => {
             goBuild(detail.configParsed)
             ElMessage.success(`已加载历史 #${id}`)
         } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '加载历史失败')
+            showError(e, '加载历史失败')
         } finally {
             loading.value = false
         }
@@ -95,7 +96,7 @@ export const useDevCurd = defineStore('dev_curd', () => {
             goBuild(cfg)
             ElMessage.success(`已加载表 ${table}`)
         } catch (e: unknown) {
-            ElMessage.error(e instanceof Error ? e.message : '加载表结构失败')
+            showError(e, '加载表结构失败')
         } finally {
             loading.value = false
         }
@@ -199,7 +200,7 @@ export const useDevCurd = defineStore('dev_curd', () => {
             resultError.value = e instanceof Error ? e.message : '生成失败'
             result.value = null
             resultVisible.value = true
-            ElMessage.error(resultError.value)
+            showError(e, '生成失败')
         } finally {
             loading.value = false
         }

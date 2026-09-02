@@ -1,4 +1,4 @@
-import { delData, getData, postData, putData, type HttpRequestOptions } from '@/apis/http'
+import { del, get, post, put, type AxiosRequestConfig } from '@/apis/request'
 
 /** AdminRoleBrief 管理员绑定的角色摘要 */
 export type AdminRoleBrief = {
@@ -46,14 +46,14 @@ export const fetchList = async (params: {
     /** 按角色 id 筛选（system_auth_admin_role join） */
     role_id?: number
 }) => {
-    return getData<AdminListRes>('admin/system.auth.Admin/list', params)
+    return get<AdminListRes>('admin/system.auth.Admin/list', { params })
 }
 
 /**
  * fetchRead 详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<AdminRow>('admin/system.auth.Admin/read', { id })
+    return get<AdminRow>('admin/system.auth.Admin/read', { params: { id } })
 }
 
 /**
@@ -61,9 +61,9 @@ export const fetchRead = async (id: number) => {
  */
 export const saveAdmin = async (
     payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
-    options?: HttpRequestOptions,
+    options?: AxiosRequestConfig,
 ) => {
-    return postData<{ id: number }>('admin/system.auth.Admin/save', payload, {
+    return post<{ id: number }>('admin/system.auth.Admin/save', payload, {
         ...options,
         encryptFields: options?.encryptFields ?? ['password'],
     })
@@ -75,12 +75,12 @@ export const saveAdmin = async (
 export const updateAdmin = async (
     id: number,
     payload: { nickname?: string; role_ids: number[]; status: number; password?: string },
-    options?: HttpRequestOptions,
+    options?: AxiosRequestConfig,
 ) => {
     const encryptFields =
         options?.encryptFields ??
         (payload.password ? ['password'] : undefined)
-    return putData<null>('admin/system.auth.Admin/update?id=' + id, payload, {
+    return put<null>('admin/system.auth.Admin/update?id=' + id, payload, {
         ...options,
         encryptFields,
     })
@@ -90,5 +90,5 @@ export const updateAdmin = async (
  * deleteAdmin 删除
  */
 export const deleteAdmin = async (id: number) => {
-    return delData<null>('admin/system.auth.Admin/delete', { id })
+    return del<null>('admin/system.auth.Admin/delete', { params: { id } })
 }

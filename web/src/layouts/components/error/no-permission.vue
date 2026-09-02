@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { fetchMenuDescribe, type MenuDescribe } from '@/apis'
+import { showError } from '@/apis/request'
+import { fetchMenuDescribe, type MenuDescribe } from '@/apis/system/account'
 import GaIcon from '@/components/ga-icon/index.vue'
 import { Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -24,7 +25,7 @@ const load = async () => {
         detail.value = await fetchMenuDescribe(id)
     } catch (e: unknown) {
         detail.value = null
-        ElMessage.error(e instanceof Error ? e.message : '加载说明失败')
+        showError(e, '加载说明失败')
     } finally {
         loading.value = false
     }

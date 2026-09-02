@@ -1,4 +1,4 @@
-import { getData } from '@/apis/http'
+import { get, type AxiosRequestConfig } from '@/apis/request'
 
 /** DashboardKpi 系统使用情况 KPI */
 export type DashboardKpi = {
@@ -75,7 +75,7 @@ export type DashboardOverview = {
  * fetchUsageOverview 系统使用情况仪表盘数据
  */
 export const fetchUsageOverview = async (days = 7) => {
-    return getData<DashboardOverview>('admin/dashboard.Usage/index', { days })
+    return get<DashboardOverview>('admin/dashboard.Usage/index', { params: { days } })
 }
 
 /** ServerCpu CPU 指标 */
@@ -133,8 +133,9 @@ export type ServerOverview = {
  *
  * @param includeHgfs 是否采集 HGFS 共享挂载
  */
-export const fetchServerOverview = async (includeHgfs = false) => {
-    return getData<ServerOverview>('admin/dashboard.Server/index', {
-        include_hgfs: includeHgfs ? 1 : 0,
+export const fetchServerOverview = async (includeHgfs = false, config?: AxiosRequestConfig) => {
+    return get<ServerOverview>('admin/dashboard.Server/index', {
+        params: { include_hgfs: includeHgfs ? 1 : 0 },
+        ...config,
     })
 }

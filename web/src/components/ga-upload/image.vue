@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showError } from '@/apis/request'
 import { resolveStorageUrl } from '@/utils/storageUrl'
 import { Loading, Plus } from '@element-plus/icons-vue'
 import type { UploadRequestOptions } from 'element-plus'
@@ -97,8 +98,8 @@ const onRequest = async (opt: UploadRequestOptions) => {
         ElMessage.success('上传成功')
         opt.onSuccess?.(next)
     } catch (e) {
+        showError(e, '上传失败')
         const err = e instanceof Error ? e : new Error(String(e))
-        ElMessage.error(err.message || '上传失败')
         opt.onError?.(err as Parameters<NonNullable<UploadRequestOptions['onError']>>[0])
     } finally {
         uploading.value = false

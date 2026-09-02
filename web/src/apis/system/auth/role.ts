@@ -1,4 +1,4 @@
-import { delData, getData, postData, putData } from '@/apis/http'
+import { del, get, post, put } from '@/apis/request'
 
 /** RoleRow 角色树节点 */
 export type RoleRow = {
@@ -23,7 +23,7 @@ export type RoleDetail = RoleRow & {
  * fetchTree 角色树
  */
 export const fetchTree = async () => {
-    const data = await getData<{ list: RoleRow[] }>('admin/system.auth.Role/tree')
+    const data = await get<{ list: RoleRow[] }>('admin/system.auth.Role/tree')
     return data.list
 }
 
@@ -31,14 +31,14 @@ export const fetchTree = async () => {
  * fetchRead 角色详情
  */
 export const fetchRead = async (id: number) => {
-    return getData<RoleDetail>('admin/system.auth.Role/read', { id })
+    return get<RoleDetail>('admin/system.auth.Role/read', { params: { id } })
 }
 
 /**
  * saveRole 新建角色
  */
 export const saveRole = async (payload: { pid?: number; code: string; name: string; desc?: string; sort?: number; status?: number }) => {
-    return postData<{ id: number }>('admin/system.auth.Role/save', payload)
+    return post<{ id: number }>('admin/system.auth.Role/save', payload)
 }
 
 /**
@@ -48,19 +48,19 @@ export const updateRole = async (
     id: number,
     payload: { pid?: number; code: string; name: string; desc?: string; sort?: number; status?: number },
 ) => {
-    return putData<null>('admin/system.auth.Role/update?id=' + id, payload)
+    return put<null>('admin/system.auth.Role/update?id=' + id, payload)
 }
 
 /**
  * deleteRole 删除角色
  */
 export const deleteRole = async (id: number) => {
-    return delData<null>('admin/system.auth.Role/delete', { id })
+    return del<null>('admin/system.auth.Role/delete', { params: { id } })
 }
 
 /**
  * assignRules 扁平分配前端规则（无父子继承）
  */
 export const assignRules = async (id: number, rule_ids: number[]) => {
-    return putData<null>('admin/system.auth.Role/assignRules?id=' + id, { rule_ids })
+    return put<null>('admin/system.auth.Role/assignRules?id=' + id, { rule_ids })
 }

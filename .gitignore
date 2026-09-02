@@ -19,3 +19,4 @@ Thumbs.db
 !/.cursor/rules/**
 /.codex/
 public/install.lock
+/.cursor/rules/dev-environment.mdc

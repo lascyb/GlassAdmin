@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ApiError, postData } from '@/apis/http'
+import { post, showError } from '@/apis/request'
 import * as systemConfigApi from '@/apis/system/config'
 import GaIcon from '@/components/ga-icon/index.vue'
 import { type Admin, useAdmin } from '@/pinia/admin'
@@ -66,7 +66,7 @@ const handlePasswordLogin = async () => {
   }
   logining.value = true
   try {
-    const data = await postData<LoginResult>(
+    const data = await post<LoginResult>(
       'admin/system.account.login.Password/login',
       {
         username: passwordForm.username,
@@ -78,7 +78,7 @@ const handlePasswordLogin = async () => {
     admin.setLoginMethod('password')
     await applyLoginResult(data, passwordForm.remember)
   } catch (e) {
-    ElMessage.error(e instanceof ApiError ? e.message : '登录请求失败' + e)
+    showError(e, '登录请求失败')
   } finally {
     logining.value = false
   }
@@ -116,13 +116,13 @@ const handleFeishuCallback = async () => {
 
   feishuLogining.value = true
   try {
-    const data = await postData<LoginResult>('admin/system.account.login.oauth2.Feishu/login', {
+    const data = await post<LoginResult>('admin/system.account.login.oauth2.Feishu/login', {
       code,
       remember: false,
     })
     await applyLoginResult(data, false)
   } catch (e) {
-    ElMessage.error(e instanceof ApiError ? e.message : '飞书登录失败')
+    showError(e, '飞书登录失败')
     await router.replace({ path: '/login' })
   } finally {
     feishuLogining.value = false
