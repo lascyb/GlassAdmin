@@ -1,10 +1,15 @@
+import {
+    isModuleLeafPage,
+    menusForModules,
+    UNGROUPED_MODULE_ID,
+} from '@/layouts/components/menus/menusForDisplay'
 import type { Menu } from '@/layouts/components/menus/types.ts'
 import { findMenuByPath } from '@/pinia/layout/findMenuByPath.ts'
 import { menusToRoutes } from '@/pinia/layout/menusToRoutes.ts'
 import { router } from '@/router'
 import { normalizeViewComponent } from '@/utils/viewComponent'
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 type FindResult = {
     menus: Menu[]
@@ -142,12 +147,15 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
         return mounts.some((m) => pageHasBtn(m, btn))
     }
 
+    /** moduleMenus 双栏 Module 列（含末尾虚拟「未分组」） */
+    const moduleMenus = computed(() => menusForModules(menus.value))
+
     /**
-     * setActiveModule 切换顶栏一级模块并更新 subMenus
+     * setActiveModule 切换一级模块并更新 subMenus
      */
     const setActiveModule = (moduleId: number, options?: { navigate?: boolean }) => {
         module.value = moduleId
-        const root = menus.value.find((item) => item.id === moduleId)
+        const root = moduleMenus.value.find((item) => item.id === moduleId)
         if (!root) {
             subMenus.value = []
             return
@@ -157,7 +165,7 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
             return
         }
         subMenus.value = []
-        if (options?.navigate) {
+        if (options?.navigate && root.path_full) {
             void router.push(root.path_full)
         }
     }
@@ -167,14 +175,19 @@ export const useLayoutMenus = defineStore('layout_menus', () => {
      */
     const syncModuleFromPath = (path: string) => {
         const result = find(path)
-        if (result?.menus[0]) {
-            setActiveModule(result.menus[0].id)
+        const top = result?.menus[0]
+        if (!top) {
+            return
         }
+        const isRootLeaf =
+            isModuleLeafPage(top) && menus.value.some((m) => m.id === top.id)
+        setActiveModule(isRootLeaf ? UNGROUPED_MODULE_ID : top.id)
     }
 
     return {
         menus,
         module,
+        moduleMenus,
         subMenus,
         collapse,
         init,

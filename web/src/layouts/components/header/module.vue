@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { useLayoutMenus } from '@/pinia/layout/menus.ts'
-import { menusForDisplay } from '@/layouts/components/menus/menusForDisplay'
 import GaIcon from '@components/ga-icon/index.vue'
-import { computed, watch } from 'vue'
+import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 import HeaderRight from './components/HeaderRight.vue'
 
 const layoutMenus = useLayoutMenus()
 const route = useRoute()
-const moduleOptions = computed(() => menusForDisplay(layoutMenus.menus))
 
 const onModuleChange = (moduleId: number) => {
     layoutMenus.setActiveModule(moduleId, { navigate: true })
@@ -29,7 +27,7 @@ watch(
             <el-segmented
                 v-model="layoutMenus.module"
                 class="module-segmented"
-                :options="moduleOptions"
+                :options="layoutMenus.moduleMenus"
                 size="default"
                 :props="{ value: 'id', label: 'name' }"
                 @change="onModuleChange"
