@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RulePayload, RuleRow } from '@/apis/system/auth/rule'
 import * as ruleApi from '@/apis/system/auth/rule'
-import { getIframeAuthProvider, listIframeAuthProviders } from '@/layouts/router-view/iframe/iframeAuth'
+import { hasIframeMethod, listIframeMethods } from '@/layouts/router-view/iframe/iframeMethods'
 import { views } from '@/router/views'
 import { normalizeViewComponent } from '@/utils/viewComponent'
 import BindBackendApiPanel from '@/views/system/auth/rule/BindBackendApiPanel.vue'
@@ -70,14 +70,8 @@ const showBackendApiPanel = computed(
 /** dialogWidth 弹窗宽度：含接口勾选时加宽 */
 const dialogWidth = computed(() => (showBackendApiPanel.value ? '700px' : '700px'))
 
-/** iframeAuthProviders 已注册 iframe 鉴权策略 */
-const iframeAuthProviders = listIframeAuthProviders()
-
-/** iframeTargetPlaceholder 内嵌地址占位 */
-const iframeTargetPlaceholder = computed(() => {
-    const p = getIframeAuthProvider(form.method)
-    return p?.targetPlaceholder ?? '完整 URL，如 https://example.com'
-})
+/** iframeMethods 已落地的 iframe 鉴权目录 */
+const iframeMethods = listIframeMethods()
 
 /** viewComponentOptions 可选页面组件（来自 import.meta.glob） */
 const viewComponentOptions = computed(() => {
@@ -241,6 +235,12 @@ function ruleEditValidate(): string | void {
     if (props.scope === 'frontend' && (form.type === 'link' || form.type === 'iframe')) {
         if (!form.path.trim()) return '请填写路由 path'
         if (!form.component.trim()) return form.type === 'link' ? '请填写外链地址' : '请填写内嵌地址'
+        if (form.type === 'iframe') {
+            const method = form.method.trim()
+            if (method !== '' && !hasIframeMethod(method)) {
+                return '未注册的 iframe 鉴权方式'
+            }
+        }
     }
 }
 
@@ -318,7 +318,7 @@ watch(
         if (type === 'menu' || type === 'link' || type === 'iframe') {
             backendRuleIds.value = []
         }
-        if (type === 'iframe' && form.method && !getIframeAuthProvider(form.method)) {
+        if (type === 'iframe' && form.method && !hasIframeMethod(form.method)) {
             form.method = ''
         }
         if (type !== 'iframe') {
@@ -447,7 +447,7 @@ defineExpose({openAdd, openEdit})
                 <el-form-item v-if="form.type === 'iframe'" label="内嵌地址" required>
                     <el-input
                         v-model.trim="form.component"
-                        :placeholder="iframeTargetPlaceholder"
+                        placeholder="业务路径或完整 URL"
                     />
                 </el-form-item>
                 <el-form-item v-if="form.type === 'iframe'" label="鉴权方式">
@@ -455,13 +455,13 @@ defineExpose({openAdd, openEdit})
                         <el-radio-group v-model="form.method">
                             <el-radio value="">直链</el-radio>
                             <el-radio
-                                v-for="p in iframeAuthProviders"
-                                :key="p.id"
-                                :value="p.id"
-                            >{{ p.label }}</el-radio>
+                                v-for="id in iframeMethods"
+                                :key="id"
+                                :value="id"
+                            >{{ id }}</el-radio>
                         </el-radio-group>
                         <div class="mt-1 text-xs text-[var(--el-text-color-secondary)]">
-                            直链：component 填完整 URL；有策略时填该系统约定的目标路径
+                            直链：component 填完整 URL；选择鉴权方式时填该系统约定的目标路径
                         </div>
                     </div>
                 </el-form-item>

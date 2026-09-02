@@ -1,10 +1,12 @@
 import type { Menu } from '@/layouts/components/menus/types.ts'
-import { resolveKeepAliveKeyFromMenu } from '@/layouts/router-view/iframe/iframeAuth'
+import {
+    resolveIframeKeepAliveKey,
+    resolveIframeView,
+} from '@/layouts/router-view/iframe/iframeMethods'
 import { views } from '@/router/views.ts'
 import { normalizeViewComponent, toViewsGlobKey } from '@/utils/viewComponent'
 import type { RouteRecordRaw } from 'vue-router'
 
-const iframeView = () => import('@/layouts/router-view/iframe/index.vue')
 const linkView = () => import('@/layouts/router-view/link.vue')
 const noPermissionView = () => import('@/layouts/components/error/no-permission.vue')
 
@@ -90,12 +92,11 @@ export const menusToRoutes = (
 
         if (menu.type === 'iframe' || menu.type === 'link') {
             const method = String(menu.method ?? '').trim()
-            const target = String(menu.component ?? '').trim()
-            const keepAliveKey = resolveKeepAliveKeyFromMenu(method, target)
+            const keepAliveKey = resolveIframeKeepAliveKey(method)
             items.push({
                 name: String(menu.id),
                 path: toRoutePath(fullPath),
-                component: menu.type === 'iframe' ? iframeView : linkView,
+                component: menu.type === 'iframe' ? resolveIframeView(method) : linkView,
                 meta: {
                     title: menu.name,
                     url: menu.component ?? '',

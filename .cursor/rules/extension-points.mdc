@@ -1,0 +1,50 @@
+---
+description: 框架只提供通用扩展点；业务实现不得写入壳层
+alwaysApply: true
+---
+
+# 业务扩展不得污染框架
+
+GlassAdmin 是框架。业务系统通过约定目录 / 注册表扩展，禁止把产品名、业务 URL、协议细节写进壳层。
+
+## 允许改框架
+
+仅当能力对**所有业务通用**时才改 GlassAdmin：
+
+- 通用壳：布局、登录、RBAC、loading / error / keep-alive
+- 稳定、与业务无关的接口与注册表
+- 按 type / method / id **分发**，不实现具体业务
+
+新增壳层分支前先问：能否用现有回调或约定目录表达；不能则业务自带模块，而不是继续膨胀框架文件。
+
+## 必须放在业务侧
+
+用约定路径落地，框架 `import.meta.glob` 或注册表自动发现，壳层 **不得 import 业务文件路径**。
+
+| 能力 | 业务落点（示例） |
+|------|------------------|
+| 页面 | `web/src/views/<业务>/**` |
+| iframe 鉴权 | `layouts/router-view/iframe/method/<method>/` |
+| 接口 / Store | `apis/`、`pinia/` 业务命名空间 |
+| 配置项控件等 | 对应 `types-components` / registry 目录 |
+
+生命周期与通用壳差异大时：业务自带 Vue，经 glob / 注册表分发。
+
+## 禁止
+
+```ts
+// ❌ 壳层硬编码产品或业务分支
+if (method === 'data-platform') { ... }
+src.includes('/admin/embed/sso')
+if (route.path.startsWith('/bi/')) { ... }
+
+// ✅ 壳层只按约定分发
+resolveIframeView(method)
+registry.get(type)?.component
+```
+
+## 分发原则
+
+- 无扩展 / 默认：框架通用组件
+- 有注册：按 id 渲染业务模块
+- 未知 id：报错或回退通用壳，不要为了「先跑通」把逻辑写进框架

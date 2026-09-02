@@ -782,8 +782,8 @@ class Rule extends AdminController
             return $m !== '' ? $m : null;
         }
         if ($scope === 'frontend' && $type === 'iframe') {
-            $m = strtolower(trim((string) ($raw ?? '')));
-            if ($m !== '' && preg_match('/^[a-z][a-z0-9-]{0,63}$/', $m) === 1) {
+            $m = trim((string) ($raw ?? ''));
+            if ($m !== '' && preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $m) === 1) {
                 return $m;
             }
         }
