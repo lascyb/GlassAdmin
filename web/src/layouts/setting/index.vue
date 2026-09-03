@@ -10,6 +10,7 @@ import {
     type LayoutContainer,
     useLayoutSetting,
 } from '@/pinia/layout/setting.ts'
+import { startOnboardingTour } from '@/composables/useOnboardingTour'
 import { router } from '@/router'
 import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
@@ -52,6 +53,12 @@ const resetAsideWidth = () => {
 const onContainerChange = (value: LayoutContainer) => {
     setting.setContainer(value)
 }
+
+/** replayTour 关闭抽屉后重播漫游引导 */
+const replayTour = () => {
+    setting.layout.showSetting = false
+    startOnboardingTour()
+}
 </script>
 
 <template>
@@ -79,7 +86,7 @@ const onContainerChange = (value: LayoutContainer) => {
                 <p class="pref-hint">按钮、侧栏高亮与品牌色会即时跟随；与浅色 / 深色互不影响。</p>
             </section>
 
-            <section class="pref-block">
+            <section id="ga-tour-pref-layout" class="pref-block">
                 <div class="pref-label">菜单样式</div>
                 <LayoutPicker
                     :model-value="setting.layout.container"
@@ -108,7 +115,7 @@ const onContainerChange = (value: LayoutContainer) => {
                 </p>
             </section>
 
-            <section class="pref-block">
+            <section id="ga-tour-pref-accordion" class="pref-block">
                 <div class="pref-switch-row">
                     <div class="pref-switch-copy">
                         <div class="pref-label">左侧菜单手风琴</div>
@@ -118,7 +125,7 @@ const onContainerChange = (value: LayoutContainer) => {
                 </div>
             </section>
 
-            <section class="pref-block">
+            <section id="ga-tour-pref-catalog" class="pref-block">
                 <div class="pref-switch-row">
                     <div class="pref-switch-copy">
                         <div class="pref-label">展示全部可发现菜单</div>
@@ -131,6 +138,11 @@ const onContainerChange = (value: LayoutContainer) => {
                         @change="onShowAllMenusChange"
                     />
                 </div>
+            </section>
+
+            <section class="pref-block">
+                <el-button class="w-full" @click="replayTour">查看引导</el-button>
+                <p class="pref-hint">分步介绍工作台、个人偏好入口、菜单设置、头像菜单与角色切换。</p>
             </section>
         </div>
     </el-drawer>

@@ -47,6 +47,9 @@ abstract class BaseLogin extends BaseController
         }),"id");
         $pair = AdminTokenService::issuePair($adminId, $roleIds, $remember);
 
+        $lastLogin = $user->getAttr('last_login_time');
+        $showTour = $lastLogin === null || $lastLogin === '' || (int) $lastLogin === 0;
+
         $user->save(['last_login_time' => time()]);
         AdminOperationLogService::record($adminId, $action, $summary, $this->request->ip());
 
@@ -55,6 +58,7 @@ abstract class BaseLogin extends BaseController
             'expire_at' => $pair['expire_at'],
             'refresh_token' => $pair['refresh_token'] ?? '',
             'refresh_expire_at' => $pair['refresh_expire_at'],
+            'show_tour' => $showTour,
             'user' => [
                 'id' => $adminId,
                 'username' => (string)$user->getAttr('username'),

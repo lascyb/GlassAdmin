@@ -3,6 +3,7 @@ import { post, showError } from '@/apis/request'
 import * as systemConfigApi from '@/apis/system/config'
 import GaIcon from '@/components/ga-icon/index.vue'
 import { type Admin, useAdmin } from '@/pinia/admin'
+import { markTourPending } from '@/composables/useOnboardingTour'
 import { applyDocumentTitle } from '@/router/documentTitle'
 import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -31,6 +32,7 @@ type LoginResult = {
   refresh_token: string
   expire_at: number
   refresh_expire_at: number
+  show_tour?: boolean
   user: Admin
 }
 
@@ -49,6 +51,9 @@ const applyLoginResult = async (data: LoginResult, remember: boolean) => {
     data.refresh_expire_at,
     remember,
   )
+  if (data.show_tour) {
+    markTourPending(data.user.id)
+  }
   ElMessage.success('登录成功')
   const target = admin.getReferer('/')
   if (target === '/' || target === '') {

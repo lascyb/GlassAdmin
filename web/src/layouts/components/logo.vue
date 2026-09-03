@@ -27,8 +27,11 @@ const btnStyle = computed(() => ({
 </script>
 
 <template>
-    <div style="height: 60px; box-sizing: border-box"
-         class="ga-logo-bar flex items-center justify-between">
+    <div
+        id="ga-tour-logo"
+        style="height: 60px; box-sizing: border-box"
+        class="ga-logo-bar flex items-center justify-between"
+    >
         <div v-if="!layoutMenus.collapse"
              class="flex flex-1 cursor-pointer items-center justify-center transition-opacity duration-200"
              @click="toHome">

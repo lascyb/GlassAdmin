@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { showError } from '@/apis/request'
 import { fetchMenus } from '@/apis/system/account'
+import { tryAutoStartTour, tourActive } from '@/composables/useOnboardingTour'
+import { useAdmin } from '@/pinia/admin'
 import { useLayoutMenus } from "@/pinia/layout/menus.ts";
 import { useLayoutSetting } from "@/pinia/layout/setting";
 import { useSystemConfig } from "@/pinia/system/config";
 import { router } from "@/router";
 import { applyDocumentTitle } from "@/router/documentTitle";
-import { defineAsyncComponent, onMounted, ref, } from "vue";
+import { defineAsyncComponent, nextTick, onMounted, ref, } from "vue";
 import GaLoading from "./components/loading.vue";
+
+const OnboardingTour = defineAsyncComponent(() => import("./components/OnboardingTour.vue"))
 
 defineOptions({
   components: {
@@ -18,6 +22,7 @@ defineOptions({
 })
 const setting = useLayoutSetting()
 const layoutMenus = useLayoutMenus()
+const admin = useAdmin()
 const loading = ref<boolean>(true);
 onMounted(() => {
   void (async () => {
@@ -45,6 +50,8 @@ onMounted(() => {
       applyDocumentTitle(router.currentRoute.value)
     } finally {
       loading.value = false
+      await nextTick()
+      tryAutoStartTour(admin.data?.id)
     }
   })()
 })
@@ -56,4 +63,5 @@ onMounted(() => {
     <ga-loading v-if="loading" key="loading"></ga-loading>
     <component v-else key="container" :is="setting.layout.container"></component>
   </Transition>
+  <OnboardingTour v-if="!loading && tourActive" />
 </template>

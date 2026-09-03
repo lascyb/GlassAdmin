@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SwitchRolesDialog from '@/layouts/components/header/components/SwitchRolesDialog.vue'
+import { accountMenuForced } from '@/composables/useOnboardingTour'
 import { useAdmin } from '@/pinia/admin'
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
 import { resolveKeepAliveBaseKey } from '@/utils/pageKey'
@@ -21,7 +22,7 @@ import {
     User,
 } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const setting = useLayoutSetting()
@@ -88,8 +89,16 @@ const cycleColorMode = () => {
 }
 
 const onAccountMenuVisibleChange = (visible: boolean) => {
+    if (accountMenuForced.value) {
+        accountMenuOpen.value = true
+        return
+    }
     accountMenuOpen.value = visible
 }
+
+watch(accountMenuForced, (forced) => {
+    accountMenuOpen.value = forced
+})
 
 type AccountCommand = 'workbench' | 'profile' | 'roles' | 'logout'
 
@@ -103,6 +112,9 @@ const onAccountCommand = (command: string | number | object) => {
             void router.push({ name: 'account-profile' })
             break
         case 'roles':
+            if (!hasRoles.value) {
+                break
+            }
             rolesDialogVisible.value = true
             break
         case 'logout':
@@ -159,6 +171,7 @@ const logout = async () => {
             </el-tooltip>
             <el-tooltip content="个人偏好" placement="bottom">
                 <button
+                    id="ga-tour-pref-entry"
                     type="button"
                     class="header-tool-btn"
                     aria-label="个人偏好"
@@ -174,13 +187,18 @@ const logout = async () => {
         <div class="header-divider" role="separator" aria-hidden="true" />
 
         <el-dropdown
+            :visible="accountMenuOpen"
             trigger="click"
             placement="bottom-end"
             popper-class="ga-account-dropdown"
+            :persistent="false"
+            :show-timeout="0"
+            :hide-timeout="0"
+            :hide-on-click="!accountMenuForced"
             @command="onAccountCommand"
             @visible-change="onAccountMenuVisibleChange"
         >
-            <button type="button" class="account-trigger" aria-label="账号菜单">
+            <button id="ga-tour-account-trigger" type="button" class="account-trigger" aria-label="账号菜单">
                 <el-avatar :size="32" :src="headerAvatarSrc || undefined">
                     {{ accountInitial }}
                 </el-avatar>
@@ -212,8 +230,15 @@ const logout = async () => {
                         工作台
                     </el-dropdown-item>
                     <el-dropdown-item :icon="User" command="profile">个人中心</el-dropdown-item>
-                    <el-dropdown-item v-if="hasRoles" :icon="Switch" command="roles">
+                    <el-dropdown-item
+                        id="ga-tour-account-roles"
+                        class="account-roles-item"
+                        :disabled="!hasRoles"
+                        :icon="Switch"
+                        command="roles"
+                    >
                         切换角色
+                        <span v-if="!hasRoles" class="account-role-hint">分配角色后可用</span>
                     </el-dropdown-item>
                     <el-dropdown-item
                         :icon="SwitchButton"
@@ -447,6 +472,16 @@ const logout = async () => {
     color: var(--ga-color-text-secondary);
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.ga-account-dropdown .account-role-hint {
+    margin-left: 6px;
+    font-size: 12px;
+    color: var(--ga-color-text-secondary);
+}
+
+.ga-account-dropdown .account-roles-item {
+    width: 100%;
 }
 
 .ga-account-dropdown .el-dropdown-menu__item.is-danger {

@@ -1,4 +1,5 @@
 export * from '@/composables/types.ts'
+export * from '@/composables/useOnboardingTour.ts'
 export * from '@/composables/useColorMode.ts'
 export * from '@/composables/useConfirmAction.ts'
 export * from '@/composables/usePaginatedList.ts'
