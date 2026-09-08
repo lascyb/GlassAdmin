@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-import { persistStorageKeyPrefix } from '@/config/persistStorage'
 import { useSystemConfig } from '@/pinia/system/config'
 import {
     THEME_COLOR_DEFAULT,
@@ -69,9 +68,6 @@ export const ensureAsideWidthForDouble = (asideWidth: number): number => {
     return clampAsideWidth(Math.max(asideWidth, ASIDE_WIDTH_DOUBLE_MIN))
 }
 
-/** persistKey 与 pinia-plugin-persistedstate 全局 key 规则一致 */
-const persistKey = () => `${persistStorageKeyPrefix}layout_setting`
-
 export const useLayoutSetting = defineStore(
     'layout_setting',
     () => {
@@ -88,17 +84,6 @@ export const useLayoutSetting = defineStore(
         })
         const showSetting = () => {
             layout.showSetting = true
-        }
-
-        /** hydrateTheme 规范化主题色；版本不匹配则回落默认 */
-        const hydrateTheme = () => {
-            if (!isCurrentThemeVersion(layout.themeVersion)) {
-                layout.themeColor = THEME_COLOR_DEFAULT
-                layout.themeVersion = THEME_SETTINGS_VERSION
-                return
-            }
-            layout.themeColor = normalizeThemeColor(layout.themeColor)
-            layout.themeVersion = THEME_SETTINGS_VERSION
         }
 
         /** setThemeColor 设置品牌色并规范化 */
@@ -123,28 +108,10 @@ export const useLayoutSetting = defineStore(
 
         /**
          * applySystemDefaults 用系统配置填充个人偏好初始值。
-         * 仅在本地尚无 layout_setting 持久化时应用；已有个人偏好则只打标不覆盖。
+         * 只看 seededFromSystem：persist 的 afterHydrate 会提前写出 localStorage，不能用有没有 key 判断。
          */
         const applySystemDefaults = () => {
             if (layout.seededFromSystem) {
-                return
-            }
-            let hasPersisted = false
-            try {
-                hasPersisted = !!localStorage.getItem(persistKey())
-            } catch {
-                hasPersisted = false
-            }
-            if (hasPersisted) {
-                layout.seededFromSystem = true
-                // 旧本地偏好可能没有 asideWidth / menuAccordion / colorMode，补默认并钳制
-                layout.asideWidth = clampAsideWidth(layout.asideWidth ?? ASIDE_WIDTH_DEFAULT)
-                if (layout.container === 'Double') {
-                    layout.asideWidth = ensureAsideWidthForDouble(layout.asideWidth)
-                }
-                layout.menuAccordion = !!layout.menuAccordion
-                layout.colorMode = normalizeColorMode(layout.colorMode)
-                hydrateTheme()
                 return
             }
             const cfg = useSystemConfig()
