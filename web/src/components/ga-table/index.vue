@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** 文档：docs/frontend/components/ga-table.md */
 const page = defineModel<number>('page', { default: 1 })
 const limit = defineModel<number>('limit', { default: 20 })
 

@@ -1,6 +1,7 @@
 /**
  * request axios 实例：Token、401 刷新重放、RSA 字段加密、查询参数过滤
  * 方法签名与 axios 一致，config 原样透传。
+ * 文档：docs/frontend/request.md
  */
 
 import axios, {
