@@ -1,6 +1,12 @@
 # GlassAdmin
 
-Vue 3 + ThinkPHP 8 + Element Plus + TypeScript 后台框架。
+Vue 3 + ThinkPHP 8 + Element Plus + TypeScript 后台框架。封装为可选约定，不另设一套语法。
+
+## 理念
+
+- 薄封装：`ga-*` 与控制器只组合约定，行为以 Vue / ThinkPHP / Element Plus 官方文档为准。[约定](docs/principles.md)
+- 可绕过：页面可用 `el-*` / `fetch`；接口可不继承 `AdminController`。[可选封装](docs/escape-hatches.md)
+- 可核对：文档链到本仓库源码；组件文档清单见 [源码目录](docs/structure.md#模块)
 
 ## 快速入门
 
