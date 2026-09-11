@@ -2,9 +2,9 @@
 
 源码：[`web/src/components/ga-table/index.vue`](../../../web/src/components/ga-table/index.vue)
 
-列表页壳：工具栏槽 + `el-table` + `el-pagination`。**不发请求、不定义列**。数据由父组件传入，列用默认插槽里的 `el-table-column`。表格行为以 [Element Plus Table](https://element-plus.org/zh-CN/component/table.html) / [Pagination](https://element-plus.org/zh-CN/component/pagination.html) 为准。
+列表布局：工具栏插槽 + `el-table` + `el-pagination`。不发请求、不定义列。数据由父组件传入。列放在默认插槽的 `el-table-column` 中。表格与分页行为见 [Element Plus Table](https://element-plus.org/zh-CN/component/table.html)、[Pagination](https://element-plus.org/zh-CN/component/pagination.html)。
 
-本地组件不会自动注册（`web/vite.config.ts` 中 `Components({ dirs: [] })`），页面必须：
+本地组件不自动注册（`web/vite.config.ts` 中 `Components({ dirs: [] })`）：
 
 ```ts
 import GaTable from '@/components/ga-table/index.vue'
@@ -12,7 +12,7 @@ import GaTable from '@/components/ga-table/index.vue'
 
 ---
 
-## 它实际包了什么
+## 结构
 
 ```vue
 <div class="ga-table">
@@ -25,7 +25,7 @@ import GaTable from '@/components/ga-table/index.vue'
 </div>
 ```
 
-`fill` 为 true 时用 flex 把表体撑满可用高度，滚动交给 `el-table` 的 `height="100%"`。弹窗嵌入应关 `fill`（管理员列表嵌入角色页时就是这样做的）。
+`fill` 为 true 时用 flex 撑满可用高度，滚动由 `el-table` 的 `height="100%"` 处理。弹窗嵌入时设 `:fill="false"`（管理员列表嵌入角色页）。
 
 ---
 
@@ -42,9 +42,9 @@ import GaTable from '@/components/ga-table/index.vue'
 
 | 属性 | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `loading` | `boolean` | `false` | 传给 `el-table` 的 `v-loading` |
-| `list` | `unknown[]` | `[]` | 传给 `el-table` 的 `data` |
-| `total` | `number` | `0` | 传给 `el-pagination` 的 `total` |
+| `loading` | `boolean` | `false` | `el-table` 的 `v-loading` |
+| `list` | `unknown[]` | `[]` | `el-table` 的 `data` |
+| `total` | `number` | `0` | `el-pagination` 的 `total` |
 | `emptyText` | `string` | `'暂无数据'` | `el-table` 的 `empty-text` |
 | `pageSizes` | `number[]` | `[10, 20, 50]` | 每页条数选项 |
 | `showPagination` | `boolean` | `true` | 是否渲染分页 |
@@ -53,31 +53,31 @@ import GaTable from '@/components/ga-table/index.vue'
 | `size` | `'default' \| 'small' \| 'large'` | `'default'` | `el-table` 的 `size` |
 | `fill` | `boolean` | `true` | 是否在可用高度内撑满 |
 
-未向 `el-table` 透传其它属性（无 `row-key`、无 `span-method` 等）。需要这些时用默认插槽解决不了，请直接用 `el-table`（见下方逃生舱）。
+未透传 `el-table` 的其余属性（无 `row-key`、`span-method` 等）。需要这些 API 时使用 `el-table`（见下方）。
 
-固定行为：`highlight-current-row` 始终开启；分页 `layout` 固定为 `total, sizes, prev, pager, next`，带 `background`。
+固定行为：`highlight-current-row` 始终开启；分页 `layout` 为 `total, sizes, prev, pager, next`，带 `background`。
 
 ### Events
 
-| 事件 | 载荷 | 何时 |
+| 事件 | 载荷 | 时机 |
 |---|---|---|
 | `load` | 无 | `el-pagination` 的 `@current-change` 或 `@size-change` |
 
-翻页/改页大小时组件只 `emit('load')`，由父组件重新请求。
+翻页或改页大小时 `emit('load')`，由父组件请求数据。
 
 ### Slots
 
 | 插槽 | 用途 |
 |---|---|
-| 默认 | `el-table` 内部，放 `el-table-column` |
-| `toolbar` | 表格上方，常见放 `ga-search-bar` |
-| `footer` | 分页下方，常见放编辑弹窗 |
+| 默认 | `el-table` 内部，放置 `el-table-column` |
+| `toolbar` | 表格上方 |
+| `footer` | 分页下方 |
 
 ---
 
-## 最小示例
+## 示例
 
-对照管理员列表 [`web/src/views/system/auth/admin/index.vue`](../../../web/src/views/system/auth/admin/index.vue) + [`web/src/apis/system/auth/admin.ts`](../../../web/src/apis/system/auth/admin.ts) + [`web/src/composables/usePaginatedList.ts`](../../../web/src/composables/usePaginatedList.ts)。`usePaginatedList` 不是 `ga-table` 的一部分，可以不用。
+列表实现参考：[web/src/views/system/auth/admin/index.vue](../../../web/src/views/system/auth/admin/index.vue)、[web/src/apis/system/auth/admin.ts](../../../web/src/apis/system/auth/admin.ts)。[`usePaginatedList`](../../../web/src/composables/usePaginatedList.ts) 不是 `ga-table` 的一部分。
 
 ```vue
 <script setup lang="ts">
@@ -125,24 +125,24 @@ onMounted(load)
 </template>
 ```
 
-后端：[`app/admin/controller/system/auth/Admin.php`](../../../app/admin/controller/system/auth/Admin.php) `list()` 返回 `$this->paginate($items, $total, $page, $limit)`。
+后端：[app/admin/controller/system/auth/Admin.php](../../../app/admin/controller/system/auth/Admin.php) 的 `list()` 返回 `$this->paginate($items, $total, $page, $limit)`。
 
-`fill` 依赖父级给高度。整页列表通常包在 `ga-page` 里并设 `minHeight`（见 [`ga-page.md`](ga-page.md)）；弹窗内设 `:fill="false"`。
-
----
-
-## 何时直接用 Element Plus
-
-- 不要分页、不要工具栏槽，只是展示几行（仪表盘 [`web/src/views/dashboard/usage.vue`](../../../web/src/views/dashboard/usage.vue) 已是裸 `el-table`）。
-- 需要 `el-table` 未透传的 API（多选、树形、自定义 `height`/`max-height`、合并单元格等）。
-- 分页布局要改成 `ga-table` 写死的 `layout` 之外的样子。
-- 数据不是 `{list,total}` 这种列表。
+`fill` 需要父级高度。整页列表通常包在 `ga-page` 并设置 `minHeight`（[ga-page.md](ga-page.md)）；弹窗内 `:fill="false"`。
 
 ---
 
-## 逃生舱：`el-table` + `request`
+## 改用 Element Plus 的场景
 
-系统配置页已不用 `ga-table`：[`web/src/views/system/config/index.vue`](../../../web/src/views/system/config/index.vue)。带分页的等价写法：
+- 无分页、无工具栏，仅展示若干行。[web/src/views/dashboard/usage.vue](../../../web/src/views/dashboard/usage.vue) 使用裸 `el-table`。
+- 需要未透传的 `el-table` API（多选、树形、自定义 `height`/`max-height`、合并单元格）。
+- 分页 `layout` 与组件内写死的值不同。
+- 数据形状不是 `{list,total}`。
+
+---
+
+## 改用 el-table 与 get
+
+[web/src/views/system/config/index.vue](../../../web/src/views/system/config/index.vue) 未使用 `ga-table`。带分页的等价写法：
 
 ```vue
 <script setup lang="ts">
@@ -193,4 +193,4 @@ onMounted(load)
 </template>
 ```
 
-也可以不用 `get`，改原生 `fetch`，见 [`docs/frontend/request.md`](../request.md) 与 [`docs/escape-hatches.md`](../../escape-hatches.md)。
+`fetch` 替代 `get`：[request.md](../request.md)、[escape-hatches.md](../../escape-hatches.md)。

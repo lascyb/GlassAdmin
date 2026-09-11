@@ -1,21 +1,52 @@
-# 文档索引
+# 文档
 
-本目录是透明度计划的第一刀：原则可核对、样例组件/请求有文档和逃生舱。不是完整手册。
+框架文档索引。仓库目录树与路径说明见根 [README.md](../README.md#目录)。
 
-## 原则与逃生舱
+## 文档文件
 
-- [三条硬规则](principles.md) — 薄封装、文档随组件走、逃生舱优先
-- [如何绕过框架](escape-hatches.md) — 前端 `el-*` / `fetch`，后端普通 ThinkPHP 控制器
+```
+docs/
+├── README.md                          # 本索引
+├── principles.md                      # 薄封装、文档随组件、可选封装
+├── escape-hatches.md                  # 不使用 ga-* / AdminController / axios 封装
+└── frontend/
+    ├── request.md                     # web/src/apis/request.ts
+    └── components/
+        ├── ga-table.md
+        └── ga-page.md
+```
 
-## 前端（已覆盖）
+| 路径 | 作用 |
+|---|---|
+| [principles.md](principles.md) | 三条约定 |
+| [escape-hatches.md](escape-hatches.md) | 前端 `el-*` / `fetch`；后端普通 ThinkPHP 控制器 |
+| [frontend/request.md](frontend/request.md) | axios 实例、信封、`skipUnwrap`、`fetch` |
+| [frontend/components/ga-table.md](frontend/components/ga-table.md) | props/slots/`load`；`el-table` 等价写法 |
+| [frontend/components/ga-page.md](frontend/components/ga-page.md) | props/slots；`el-card` 等价写法 |
 
-- [请求层 request.ts](frontend/request.md)
-- [ga-table](frontend/components/ga-table.md)
-- [ga-page](frontend/components/ga-page.md)
+## 与源码对应的目录（摘录）
 
-## 尚未按标准写文档的 `ga-*`
+```
+app/admin/controller/                  # 管理端 API
+app/common/ApiResponse.php             # {code,msg,data}
+app/common/controller/AdminController.php
+web/src/apis/request.ts                # → docs/frontend/request.md
+web/src/apis/envelope.ts
+web/src/components/ga-table/           # → docs/frontend/components/ga-table.md
+web/src/components/ga-page/            # → docs/frontend/components/ga-page.md
+web/src/components/                    # 其余 ga-* 仅源码
+web/src/views/system/config/           # el-card + el-table，未用 ga-*
+web/src/pinia/admin/token.ts           # 续期用 fetch
+web/vite.config.ts                     # ga-* 不自动注册
+```
 
-源码仍在 [`web/src/components/`](../web/src/components/)：
+完整树：[README.md](../README.md#目录)。
+
+## `ga-*` 文档
+
+已写：`ga-table`、`ga-page`。请求层：`request.ts`。
+
+未写（[web/src/components/](../web/src/components/)）：
 
 - `ga-delete-confirm`
 - `ga-icon`（含 picker）
@@ -25,5 +56,3 @@
 - `ga-select-remote`
 - `ga-status-tag`
 - `ga-upload`（`image.vue` / `import.vue`）
-
-缺文档不等于不能用：打开对应 `index.vue` 即可；需要 Element Plus 能力时直接用 `el-*`。
