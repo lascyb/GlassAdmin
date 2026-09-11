@@ -11,7 +11,7 @@
 
 ## 2. 文档随组件走（Docs co-shipped）
 
-`ga-*` 文档包含：作用、推荐使用场景、props/events/插槽、最小示例、已使用场景、逃生舱。路径与 `web/src/components/` 对齐。清单见 [structure.md](structure.md#模块)。
+`ga-*` 文档包含：作用、推荐使用场景、props/events/插槽、最小示例、已使用场景、逃生舱。路径与 `web/src/components/` 对齐。清单见 [README.md](README.md#源码目录)。
 
 ## 3. 可选封装（Escape-hatch first）
 
