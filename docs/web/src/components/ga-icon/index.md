@@ -44,9 +44,4 @@ import GaIcon from '@/components/ga-icon/index.vue'
 
 ## 逃生舱
 
-```vue
-<el-icon><User /></el-icon>
-<img src="..." width="18" height="18" alt="" />
-```
-
-见 [escape-hatches.md](../../../../escape-hatches.md)。
+`el-icon` / `<img>`。见 [escape-hatches.md](../../../../escape-hatches.md)。

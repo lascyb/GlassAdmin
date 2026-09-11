@@ -58,7 +58,7 @@ const open = ref(false)
 </template>
 ```
 
-## 已使用场景
+## 已使用场景（暂无引用）
 
 本仓库无引用（业务页、CRUD 模板均未 import）。
 

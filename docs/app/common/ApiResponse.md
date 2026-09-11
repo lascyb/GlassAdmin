@@ -35,8 +35,4 @@ return $this->paginate($items, $total, $page, $limit);
 
 ## 逃生舱
 
-```php
-return json(['code' => 0, 'msg' => 'ok', 'data' => $payload]);
-```
-
-[app/index/controller/Index.php](../../../app/index/controller/Index.php) 未继承 `BaseController`。见 [escape-hatches.md](../../escape-hatches.md)。
+`return json(['code' => 0, 'msg' => 'ok', 'data' => $payload])`。[Index.php](../../../app/index/controller/Index.php) 未继承 `BaseController`。见 [escape-hatches.md](../../escape-hatches.md)。

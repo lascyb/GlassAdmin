@@ -15,12 +15,17 @@
 
 ## 快速入门
 
-- PHP ≥ 8.3，扩展 `openssl`、`pdo_mysql`（[composer.json](composer.json)）。`composer install`。
-- 后端 `.env`：模板 [.example.env](.example.env)（`DB_*` 等）。安装向导也会写入。
-- 库表：[database/install/schema.sql](database/install/schema.sql)、[data.sql](database/install/data.sql)。未安装时入口重定向 `/install`，向导执行上述 SQL。
-- HTTP 入口：[public/index.php](public/index.php)；站点根目录指向 `public/`。
-- 前端 `web/`，pnpm（[web/pnpm-lock.yaml](web/pnpm-lock.yaml)）：`pnpm install`，`pnpm dev`，`pnpm build`（[web/package.json](web/package.json)）。
-- `VITE_API_BASE_URL` 为站点入口，**不含** `/admin`。[web/README.md](web/README.md)。
+PHP ≥ 8.3（`openssl`、`pdo_mysql`，见 [composer.json](composer.json)）。前端在 `web/`，包管理器为 pnpm（[web/pnpm-lock.yaml](web/pnpm-lock.yaml)）。HTTP 入口 [public/index.php](public/index.php)，站点根目录指向 `public/`。`VITE_API_BASE_URL` 为站点入口，**不含** `/admin`（[web/README.md](web/README.md)）。
+
+```bash
+composer install
+cp .example.env .env          # 填写 DB_* 等；安装向导也会写入
+# 库表：database/install/schema.sql 与 data.sql
+# 未安装时访问入口会进入 /install 向导（执行上述 SQL）
+cd web && pnpm install && pnpm dev
+```
+
+生产构建：`cd web && pnpm build`（[web/package.json](web/package.json)）。
 
 ## 文档
 

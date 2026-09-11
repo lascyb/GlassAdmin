@@ -46,7 +46,7 @@ const code = ref('{\n  "a": 1\n}')
 </template>
 ```
 
-## 已使用场景
+## 已使用场景（暂无引用）
 
 本仓库无启用引用。[web/src/layouts/components/error/404.vue](../../../../../web/src/layouts/components/error/404.vue) 中 import 与模板均为注释。
 

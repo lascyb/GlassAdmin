@@ -46,11 +46,4 @@
 
 ## 逃生舱
 
-| 场景 | 写法 | 对照 |
-|---|---|---|
-| 公开接口 | 继承 `BaseController` | [Security.php](../../admin/controller/system/Security.md) |
-| 登录/刷新 | `BaseLogin` | [BaseLogin.md](../../admin/controller/system/account/login/BaseLogin.md) |
-| 需登录、跳过 RBAC | `$loginOnlyActions` | Profile.php |
-| 不用基类 | 普通类 + `json()` | [app/index/controller/Index.php](../../../../app/index/controller/Index.php) |
-
-不继承本类即不经过上述门闩。`system_auth_rule` 仍约束侧栏与已登记接口。
+公开接口用 `BaseController`，登录用 `BaseLogin`，跳过 RBAC 用 `$loginOnlyActions`。表见 [escape-hatches.md](../../../escape-hatches.md)。不继承本类即不经过门闩；`system_auth_rule` 仍约束已登记接口。

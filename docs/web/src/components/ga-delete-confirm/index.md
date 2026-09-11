@@ -45,17 +45,10 @@ const reload = () => { /* load list */ }
 </template>
 ```
 
-## 已使用场景
+## 已使用场景（暂无引用）
 
 本仓库无引用（业务页、CRUD 模板均未 import）。列表删除见 [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) 的 `useConfirmAction`。
 
 ## 逃生舱
 
-管理员列表用 `useConfirmAction` + `el-button`，见 [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)。
-
-```ts
-await ElMessageBox.confirm('确定删除？', '确认', { type: 'warning' })
-await del('admin/system.auth.Admin/delete', { params: { id } })
-```
-
-或 `el-popconfirm` / `el-popover`。见 [escape-hatches.md](../../../../escape-hatches.md)。
+`ElMessageBox.confirm` 或 `el-popconfirm`。对照 [admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) 的 `useConfirmAction`。见 [escape-hatches.md](../../../../escape-hatches.md)。

@@ -38,4 +38,4 @@ const data = unwrap(json)
 
 ## 逃生舱
 
-自行判断 `code === 0`，或不使用本模块。
+自行判断 `code === 0`。见 [escape-hatches.md](../../../escape-hatches.md)。

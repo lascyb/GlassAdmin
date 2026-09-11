@@ -40,10 +40,4 @@ import GaStatusTag from '@/components/ga-status-tag/index.vue'
 
 ## 逃生舱
 
-```vue
-<el-tag :type="row.status === 1 ? 'success' : 'info'">
-  {{ row.status === 1 ? '正常' : '禁用' }}
-</el-tag>
-```
-
-见 [escape-hatches.md](../../../../escape-hatches.md)。
+`el-tag` 自行映射 label/type。见 [escape-hatches.md](../../../../escape-hatches.md)。

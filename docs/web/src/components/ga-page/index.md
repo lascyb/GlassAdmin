@@ -61,14 +61,4 @@ import GaPage from '@/components/ga-page/index.vue'
 
 ## 逃生舱
 
-[web/src/views/system/config/index.vue](../../../../../web/src/views/system/config/index.vue) 未使用本组件。管理员列表嵌入弹窗时换成 `div`（[admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) 的 `shellIs`）。
-
-```vue
-<div class="p-3">
-  <el-card shadow="never" style="min-height: max(calc(100vh - 100px), 400px)">
-    <div class="text-base font-medium">页面标题</div>
-  </el-card>
-</div>
-```
-
-见 [escape-hatches.md](../../../../escape-hatches.md)。
+`div` + `el-card`，或弹窗内不用本组件（[admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) `shellIs`）。对照 [config/index.vue](../../../../../web/src/views/system/config/index.vue)。见 [escape-hatches.md](../../../../escape-hatches.md)。

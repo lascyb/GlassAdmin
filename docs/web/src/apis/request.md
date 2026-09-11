@@ -78,14 +78,4 @@ await del('admin/system.auth.Admin/delete', { params: { id: 2 } })
 
 ## 逃生舱
 
-```ts
-import { http } from '@/apis/request'
-const { data } = await http.get('admin/system.auth.Admin/list', {
-  params: { page: 1, limit: 20 },
-  skipUnwrap: true,
-})
-```
-
-原生 `fetch`：[web/src/pinia/admin/token.ts](../../../../web/src/pinia/admin/token.ts)。`fetch` 无 401 刷新、无 `encryptFields`、无空参数过滤。
-
-见 [escape-hatches.md](../../../escape-hatches.md)。
+`http` + `skipUnwrap` 拿完整信封；续期对照 [token.ts](../../../../web/src/pinia/admin/token.ts) 的 `fetch`。见 [escape-hatches.md](../../../escape-hatches.md)。

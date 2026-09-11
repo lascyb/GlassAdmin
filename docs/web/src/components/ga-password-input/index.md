@@ -54,8 +54,4 @@ const password = ref('')
 
 ## 逃生舱
 
-```vue
-<el-input v-model="password" type="password" show-password autocomplete="new-password" />
-```
-
-RSA 交给 `post(url, { password }, { encryptFields: ['password'] })`。见 [escape-hatches.md](../../../../escape-hatches.md)。
+`<el-input type="password">`；RSA 用 `encryptFields`。见 [escape-hatches.md](../../../../escape-hatches.md)。

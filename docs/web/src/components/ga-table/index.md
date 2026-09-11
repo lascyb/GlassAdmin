@@ -101,22 +101,5 @@ onMounted(load)
 
 ## 逃生舱
 
-[web/src/views/system/config/index.vue](../../../../../web/src/views/system/config/index.vue)、[web/src/views/dashboard/usage.vue](../../../../../web/src/views/dashboard/usage.vue) 使用裸 `el-table`。
-
-```vue
-<el-table v-loading="loading" :data="list" border stripe>
-  <el-table-column prop="username" label="用户名" />
-</el-table>
-<el-pagination
-  v-model:current-page="page"
-  v-model:page-size="limit"
-  :total="total"
-  layout="total, sizes, prev, pager, next"
-  background
-  @current-change="load"
-  @size-change="load"
-/>
-```
-
-见 [escape-hatches.md](../../../../escape-hatches.md)。
+裸 `el-table`（可再加 `el-pagination`）：[config/index.vue](../../../../../web/src/views/system/config/index.vue)、[usage.vue](../../../../../web/src/views/dashboard/usage.vue)。见 [escape-hatches.md](../../../../escape-hatches.md)。
 
