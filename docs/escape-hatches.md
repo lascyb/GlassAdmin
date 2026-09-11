@@ -7,15 +7,15 @@
 | 页面不用 `ga-page` / `ga-table` | `el-card` / `el-table`；不 import `ga-*` | [web/src/views/system/config/index.vue](../web/src/views/system/config/index.vue) |
 | 只要表、不要 `ga-table` 分页壳 | `el-table` | [web/src/views/dashboard/usage.vue](../web/src/views/dashboard/usage.vue) |
 | 嵌入弹窗不用 `ga-page` | 外壳用 `div` | [web/src/views/system/auth/admin/index.vue](../web/src/views/system/auth/admin/index.vue)（`shellIs`） |
-| 列表请求 | `get` / `post`（axios 同签名，默认解包） | [web/src/apis/request.ts](../web/src/apis/request.ts)、[request.md](frontend/request.md) |
-| 不解包信封 | `http` + `skipUnwrap: true` | [request.md](frontend/request.md) |
+| 列表请求 | `get` / `post`（axios 同签名，默认解包） | [request.md](web/src/apis/request.md) |
+| 不解包信封 | `http` + `skipUnwrap: true` | [request.md](web/src/apis/request.md) |
 | 不用 axios 封装 | 原生 `fetch` | [web/src/pinia/admin/token.ts](../web/src/pinia/admin/token.ts) |
-| 公开接口、无登录/RBAC | 继承 `BaseController` | [app/admin/controller/system/Security.php](../app/admin/controller/system/Security.php)、[auth.md](backend/auth.md) |
-| 登录/刷新 | 继承 `BaseLogin`（`BaseController`） | [app/admin/controller/system/account/login/BaseLogin.php](../app/admin/controller/system/account/login/BaseLogin.php) |
-| 需登录、跳过 RBAC | `$loginOnlyActions` | [app/admin/controller/system/account/Profile.php](../app/admin/controller/system/account/Profile.php) |
-| 不用 `ok()` / `fail()` | `return json([...])` | [app/index/controller/Index.php](../app/index/controller/Index.php)、[api-response.md](backend/api-response.md) |
+| 公开接口、无登录/RBAC | 继承 `BaseController` | [Security.md](app/admin/controller/system/Security.md) |
+| 登录/刷新 | 继承 `BaseLogin`（`BaseController`） | [BaseLogin.md](app/admin/controller/system/account/login/BaseLogin.md) |
+| 需登录、跳过 RBAC | `$loginOnlyActions` | [AdminController.md](app/common/controller/AdminController.md) |
+| 不用 `ok()` / `fail()` | `return json([...])` | [ApiResponse.md](app/common/ApiResponse.md) |
 
-`ga-*` 须显式 import（[web/vite.config.ts](../web/vite.config.ts) `dirs: []`）。`el-*` 仍按需注册。
+`ga-*` 须显式 import（[web/vite.config.ts](../web/vite.config.ts) `dirs: []`）。`el-*` 仍按需注册。组件文档见 [README.md](README.md)。
 
 ## 前端请求
 
@@ -45,7 +45,7 @@ await fetch(`${base}/admin/system.account.login.Refresh/token`, {
 
 ## 后端控制器
 
-`AdminController` 门闩见 [auth.md](backend/auth.md)。公开接口示例（[Security.php](../app/admin/controller/system/Security.php)）：
+`AdminController` 门闩见 [AdminController.md](app/common/controller/AdminController.md)。公开接口示例（[Security.php](../app/admin/controller/system/Security.php)）：
 
 ```php
 class Security extends BaseController

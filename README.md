@@ -9,7 +9,7 @@
 ## 理念
 
 - **技术栈原生体验**：ThinkPHP 8、Vue 3、Element Plus、TypeScript。封装不另设语法，行为以官方文档为准。[约定](docs/principles.md)
-- **渐进式学习**：先学原生，再碰框架约定。样例文档见 [文档索引](docs/README.md)（并非所有 `ga-*` 都已成文）。
+- **渐进式学习**：先学原生，再碰框架约定。`ga-*` 文档见 [文档索引](docs/README.md)（与 `web/src/components/` 同路径）。
 - **逃生舱**：随时可以绕过框架，直接用 `el-*`、原生 `fetch` 或普通 ThinkPHP 控制器。[可选封装](docs/escape-hatches.md)
 - **没有黑魔法，只有好代码。** 源码与文档可对照：[源码目录](docs/structure.md)
 
@@ -28,8 +28,8 @@
 - [源码目录](docs/structure.md)
 - [约定](docs/principles.md)
 - [可选封装](docs/escape-hatches.md)
-- 前端：[request.ts](docs/frontend/request.md)、[ga-table](docs/frontend/components/ga-table.md)、[ga-page](docs/frontend/components/ga-page.md)
-- 后端：[JSON 信封](docs/backend/api-response.md)、[登录 / RBAC](docs/backend/auth.md)
+- 前端：[request.ts](docs/web/src/apis/request.md)、[ga-table](docs/web/src/components/ga-table/index.md)、[ga-page](docs/web/src/components/ga-page/index.md)（其余 `ga-*` 见 [文档索引](docs/README.md)）
+- 后端：[ApiResponse](docs/app/common/ApiResponse.md)、[AdminController](docs/app/common/controller/AdminController.md)、[登录](docs/app/admin/controller/system/account/login/BaseLogin.md)
 
 ## 许可证
 

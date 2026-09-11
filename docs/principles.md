@@ -11,7 +11,7 @@
 
 ## 2. 文档随组件走（Docs co-shipped）
 
-`ga-*` 文档包含：最小示例、props/events、改用 Element Plus 的写法。缺任一则该组件文档未完成。清单见 [structure.md](structure.md#模块)。
+`ga-*` 文档包含：作用、props/events/插槽、最小示例、逃生舱。路径与 `web/src/components/` 对齐。清单见 [structure.md](structure.md#模块)。
 
 ## 3. 可选封装（Escape-hatch first）
 
