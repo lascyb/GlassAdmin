@@ -1,12 +1,17 @@
-# GlassAdmin
+# GlassAdmin - 透明可视的后台框架
 
-Vue 3 + ThinkPHP 8 + Element Plus + TypeScript 后台框架。封装为可选约定，不另设一套语法。
+> 如果你厌倦了魔法般的封装，想要看清每一行代码的执行，GlassAdmin 是你的不二之选。
+>
+> 学习 GlassAdmin，你真正学会的是 Vue 3 和 ThinkPHP 8，而不是某个框架的特定语法。
+>
+> GlassAdmin 是一个基于 Vue 3 + ThinkPHP 8 + Element Plus + TypeScript 的现代化后台框架，专为追求代码透明度与控制权的开发者设计。
 
 ## 理念
 
-- 薄封装：`ga-*` 与控制器只组合约定，行为以 Vue / ThinkPHP / Element Plus 官方文档为准。[约定](docs/principles.md)
-- 可绕过：页面可用 `el-*` / `fetch`；接口可不继承 `AdminController`。[可选封装](docs/escape-hatches.md)
-- 可核对：文档链到本仓库源码；组件文档清单见 [源码目录](docs/structure.md#模块)
+- **技术栈原生体验**：ThinkPHP 8、Vue 3、Element Plus、TypeScript。封装不另设语法，行为以官方文档为准。[约定](docs/principles.md)
+- **渐进式学习**：先学原生，再碰框架约定。样例文档见 [文档索引](docs/README.md)（并非所有 `ga-*` 都已成文）。
+- **逃生舱**：随时可以绕过框架，直接用 `el-*`、原生 `fetch` 或普通 ThinkPHP 控制器。[可选封装](docs/escape-hatches.md)
+- **没有黑魔法，只有好代码。** 源码与文档可对照：[源码目录](docs/structure.md)
 
 ## 快速入门
 
