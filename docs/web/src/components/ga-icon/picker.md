@@ -10,7 +10,10 @@
 import GaIconPicker from '@/components/ga-icon/picker.vue'
 ```
 
-用法：[web/src/views/system/auth/rule/edit.vue](../../../../../web/src/views/system/auth/rule/edit.vue)、[web/src/views/dev/curd/components/GlobalConfigPanel.vue](../../../../../web/src/views/dev/curd/components/GlobalConfigPanel.vue)。
+## 推荐使用场景
+
+- 表单要写入 `el:` / `local:` / `url:` 存储串（与 [ga-icon](index.md) 同一套格式）。
+- 只需从 Element Plus 图标名里选一个：`el-select` 即可。
 
 ## Props / 事件 / 插槽
 
@@ -35,6 +38,11 @@ const icon = ref<string | null>('el:User')
   <ga-icon-picker v-model="icon" />
 </template>
 ```
+
+## 已使用场景
+
+- [web/src/views/system/auth/rule/edit.vue](../../../../../web/src/views/system/auth/rule/edit.vue)
+- [web/src/views/dev/curd/components/GlobalConfigPanel.vue](../../../../../web/src/views/dev/curd/components/GlobalConfigPanel.vue)
 
 ## 逃生舱
 

@@ -6,13 +6,15 @@
 
 `el-input type="password"` 薄封装。暴露 `getEncryptedPayload()`：用 [useSecurityRsa](../../../../../web/src/pinia/security/rsa.ts) 加密当前明文，返回 `{ password, headers: { 'X-RSA-Serial' } }`（空串返回 `{}`）。另暴露 `focus()`。
 
-列表保存更常见的是把明文交给 `post(..., { encryptFields: ['password'] })`，由 [request.ts](../../apis/request.md) 拦截器加密。本组件用于表单内密码框。
-
 ```ts
 import GaPasswordInput from '@/components/ga-password-input/index.vue'
 ```
 
-用法：[web/src/views/system/auth/admin/edit.vue](../../../../../web/src/views/system/auth/admin/edit.vue)、[profile.vue](../../../../../web/src/views/system/account/profile.vue)。
+## 推荐使用场景
+
+- 表单里的密码框，且可能调用 `getEncryptedPayload()` 在提交前加密。
+- 多数保存接口仍走 `post(..., { encryptFields: ['password'] })`（见 [request.md](../../apis/request.md)）；本组件只负责输入，不必强行用 `getEncryptedPayload`。
+- 不需要封装：`<el-input type="password">`。
 
 ## Props / 事件 / 插槽
 
@@ -42,6 +44,13 @@ const password = ref('')
   <ga-password-input v-model="password" placeholder="至少 6 位" />
 </template>
 ```
+
+## 已使用场景
+
+- [web/src/views/system/auth/admin/edit.vue](../../../../../web/src/views/system/auth/admin/edit.vue)
+- [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)
+
+登录页未使用本组件（[login.vue](../../../../../web/src/views/login.vue) 自行 `el-input` + `encryptFields`）。
 
 ## 逃生舱
 

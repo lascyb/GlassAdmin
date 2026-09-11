@@ -4,13 +4,19 @@
 
 ## 作用
 
-导入对话框：`el-dialog` + 拖拽 `el-upload`（`auto-upload=false`，`limit=1`）。提交用 `httpRequest` 或 `post(url, FormData)`（`silent: true`，带上传进度）。仓库业务页暂无引用。
+导入对话框：`el-dialog` + 拖拽 `el-upload`（`auto-upload=false`，`limit=1`）。提交用 `httpRequest` 或 `post(url, FormData)`（`silent: true`，带上传进度）。
 
 ```ts
 import GaUploadImport from '@/components/ga-upload/import.vue'
 ```
 
 图片上传见 [image.md](image.md)。
+
+## 推荐使用场景
+
+- 需要「选文件 → 确认导入」对话框，且接口吃 `FormData` 的 `file` 字段。
+- 本仓库没有业务页引用；没有导入流程时不要引入。
+- 只要点选即上传：裸 `el-upload`。
 
 ## Props / 事件 / 插槽
 
@@ -51,6 +57,10 @@ const open = ref(false)
   <ga-upload-import v-model="open" url="admin/example.Item/import" @success="load" />
 </template>
 ```
+
+## 已使用场景
+
+本仓库无引用（业务页、CRUD 模板均未 import）。
 
 ## 逃生舱
 

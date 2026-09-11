@@ -20,6 +20,12 @@ axios 封装。`get` / `post` / `put` / `patch` / `del` 参数与 axios 同名�
 
 后端信封：[ApiResponse.php](../../../app/common/ApiResponse.md)。
 
+## 推荐使用场景
+
+- 管理端 JSON API：需要 Bearer、解包 `{code,msg,data}`、401 刷新、`encryptFields`。
+- 只要原始信封或 blob：`http` + `skipUnwrap`。
+- 续期等不想走 axios 拦截器：原生 `fetch`（见 [token.ts](../../../../web/src/pinia/admin/token.ts)）。
+
 ## 约定
 
 成功 `code === 0`，`get<T>()` 返回 `data`。失败抛 `ApiError`。请求层已提示时 `shown = true`，页面 `catch` 调用 `showError(e)`。分页 `data` 一般为 `{ list, total, page, limit }`。非信封（如 `blob`）不经 `unwrap`。
@@ -59,6 +65,16 @@ await del('admin/system.auth.Admin/delete', { params: { id: 2 } })
 ```
 
 登录页直接 `post`：[web/src/views/login.vue](../../../../web/src/views/login.vue) → `admin/system.account.login.Password/login`。
+
+## 已使用场景
+
+- 业务 API 模块：`web/src/apis/system/**`（如 [auth/admin.ts](../../../../web/src/apis/system/auth/admin.ts)）、[dashboard.ts](../../../../web/src/apis/dashboard.ts)、[dev/curd.ts](../../../../web/src/apis/dev/curd.ts)
+- 页面直接 `post`：[web/src/views/login.vue](../../../../web/src/views/login.vue)
+- 公钥：[web/src/pinia/security/rsa.ts](../../../../web/src/pinia/security/rsa.ts)
+- `showError`：布局（[layouts/index.vue](../../../../web/src/layouts/index.vue) 等）、多数 `web/src/views/**`、[useConfirmAction.ts](../../../../web/src/composables/useConfirmAction.ts)
+- 组件内部：`ga-upload`、`ga-select-remote`、`ga-delete-confirm`
+
+不解包、用 `fetch` 的对照：[web/src/pinia/admin/token.ts](../../../../web/src/pinia/admin/token.ts)（只从 `envelope` 取 `unwrap`）。
 
 ## 逃生舱
 

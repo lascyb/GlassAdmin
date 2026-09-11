@@ -12,6 +12,12 @@ import GaPage from '@/components/ga-page/index.vue'
 
 `minHeight` 非空时加 `ga-page--stretch`，供内部 [ga-table](../ga-table/index.md) 的 `fill` 分配高度。未透传 `el-card` 的 `header-class` 等。
 
+## 推荐使用场景
+
+- 整页需要统一内边距 + `el-card` 外壳。
+- 内部放 `ga-table` 且要 `fill` 撑满时，设 `minHeight`。
+- 弹窗/抽屉里的内容、或页面已有自己的 `el-card` 布局：用 `div` / 裸 `el-card`。
+
 ## Props / 事件 / 插槽
 
 | 属性 | 类型 | 默认 | 说明 |
@@ -42,6 +48,16 @@ import GaPage from '@/components/ga-page/index.vue'
   </ga-page>
 </template>
 ```
+
+## 已使用场景
+
+- [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)（整页；`embedded` 时换成 `div`）
+- [web/src/views/system/attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)
+- [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（操作日志卡片）
+- [web/src/views/dashboard/server.vue](../../../../../web/src/views/dashboard/server.vue)、[usage.vue](../../../../../web/src/views/dashboard/usage.vue)
+- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)
+
+对照未使用：[web/src/views/system/config/index.vue](../../../../../web/src/views/system/config/index.vue)。
 
 ## 逃生舱
 

@@ -14,6 +14,12 @@ import GaTable from '@/components/ga-table/index.vue'
 
 `fill` 为 true 时 flex 撑满高度，滚动由 `el-table` 的 `height="100%"` 处理。弹窗内 `:fill="false"`。固定：`highlight-current-row`；分页 `layout` 为 `total, sizes, prev, pager, next`，带 `background`。未透传 `row-key`、`span-method` 等。
 
+## 推荐使用场景
+
+- 管理端标准列表：工具栏 + 表 + 分页，列仍手写 `el-table-column`。
+- 需要 `fill` 与 [ga-page](../ga-page/index.md) 一起撑满视口时。
+- 只要表、不要分页壳，或要用未透传的 `row-key` / `span-method`：直接 `el-table`。
+
 ## Props / 事件 / 插槽
 
 | 绑定 | 类型 | 默认 | 说明 |
@@ -84,6 +90,15 @@ onMounted(load)
 </template>
 ```
 
+## 已使用场景
+
+- [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)
+- [web/src/views/system/attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)
+- [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（操作日志）
+- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)
+
+对照未使用：配置页与用量页用裸 `el-table`（见下）。
+
 ## 逃生舱
 
 [web/src/views/system/config/index.vue](../../../../../web/src/views/system/config/index.vue)、[web/src/views/dashboard/usage.vue](../../../../../web/src/views/dashboard/usage.vue) 使用裸 `el-table`。
@@ -104,3 +119,4 @@ onMounted(load)
 ```
 
 见 [escape-hatches.md](../../../../escape-hatches.md)。
+

@@ -4,11 +4,17 @@
 
 ## 作用
 
-点击危险按钮弹出 `el-popover`，确认后执行 `action`（如删除接口），成功则 `ElMessage.success` 并可选 `afterSuccess`。失败走 `showError`。列表页更多使用 [useConfirmAction](../../../../../web/src/composables/useConfirmAction.ts)（`ElMessageBox.confirm`），本组件仓库内暂无引用。
+点击危险按钮弹出 `el-popover`，确认后执行 `action`（如删除接口），成功则 `ElMessage.success` 并可选 `afterSuccess`。失败走 `showError`。
 
 ```ts
 import GaDeleteConfirm from '@/components/ga-delete-confirm/index.vue'
 ```
+
+## 推荐使用场景
+
+- 行内固定样式的删除按钮（`plain` `danger` `small` + Delete 图标）+ popover 确认。
+- 触发器不能换、文案/按钮布局要自定义：不要用本组件，改 `el-popconfirm` / `ElMessageBox`。
+- 本仓库列表删除走 [useConfirmAction](../../../../../web/src/composables/useConfirmAction.ts)，优先对照那个写法。
 
 ## Props / 事件 / 插槽
 
@@ -38,6 +44,10 @@ const reload = () => { /* load list */ }
   />
 </template>
 ```
+
+## 已使用场景
+
+本仓库无引用（业务页、CRUD 模板均未 import）。列表删除见 [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) 的 `useConfirmAction`。
 
 ## 逃生舱
 

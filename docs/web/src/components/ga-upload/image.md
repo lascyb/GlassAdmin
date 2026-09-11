@@ -10,9 +10,13 @@
 import GaUploadImage from '@/components/ga-upload/image.vue'
 ```
 
-用法：[web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（头像，自定义 `#trigger`）。
-
 导入对话框见 [import.md](import.md)。
+
+## 推荐使用场景
+
+- 单图（头像等）：`v-model` 存相对 path，父组件提供 `httpRequest`。
+- 多文件、拖拽导入 Excel：用 [import.md](import.md) 或裸 `el-upload`。
+- 上传逻辑要完全自定义（裁剪、多图列表）：直接 `el-upload`。
 
 ## Props / 事件 / 插槽
 
@@ -61,6 +65,10 @@ const httpRequest = async (file: File, onProgress?: (p: number) => void) => {
   <ga-upload-image v-model="path" :http-request="httpRequest" tip="最大 2MB" />
 </template>
 ```
+
+## 已使用场景
+
+- [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（头像，自定义 `#trigger`）
 
 ## 逃生舱
 

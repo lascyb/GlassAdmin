@@ -10,7 +10,11 @@
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
 ```
 
-用法：[web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)、[attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)。
+## 推荐使用场景
+
+- 列表顶栏：关键词 + 查询/刷新，以及可选的高级条件（`advanced` 插槽）。
+- 不发请求，只 `emit`；适合与 [ga-table](../ga-table/index.md) 搭配。
+- 布局与按钮集和本组件不一致：自行排 `el-input` / `el-form inline`。
 
 ## Props / 事件 / 插槽
 
@@ -57,6 +61,13 @@ import GaSearchBar from '@/components/ga-search-bar/index.vue'
   </template>
 </ga-search-bar>
 ```
+
+## 已使用场景
+
+- [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)
+- [web/src/views/system/auth/role/index.vue](../../../../../web/src/views/system/auth/role/index.vue)
+- [web/src/views/system/attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)
+- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)
 
 ## 逃生舱
 

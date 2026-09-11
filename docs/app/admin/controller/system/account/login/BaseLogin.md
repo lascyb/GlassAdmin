@@ -22,6 +22,11 @@ TTL：`.env` 的 `ACCESS_TOKEN_TTL`、`REFRESH_TOKEN_TTL_SESSION`、`REFRESH_TOK
 
 前端：[web/src/views/login.vue](../../../../../../../web/src/views/login.vue)、[web/src/pinia/admin/token.ts](../../../../../../../web/src/pinia/admin/token.ts)（续期用 `fetch`）。
 
+## 推荐使用场景
+
+- 签发/刷新令牌的接口：必须能在未登录时调用，因此不要继承 `AdminController`。
+- 其它公开只读接口（如公钥）用 [Security](../../Security.md) 那种 `BaseController` + 限流即可，不必经 `BaseLogin`。
+
 ## 最小示例
 
 ```ts
@@ -29,6 +34,16 @@ await post('admin/system.account.login.Password/login', {
   username, password, remember,
 }, { encryptFields: ['username', 'password'] })
 ```
+
+## 已使用场景
+
+`extends BaseLogin`：
+
+- [Password.php](../../../../../../../app/admin/controller/system/account/login/Password.php)
+- [Refresh.php](../../../../../../../app/admin/controller/system/account/login/Refresh.php)
+- [oauth2/Feishu.php](../../../../../../../app/admin/controller/system/account/login/oauth2/Feishu.php)
+
+前端调用：[web/src/views/login.vue](../../../../../../../web/src/views/login.vue)、[web/src/pinia/admin/token.ts](../../../../../../../web/src/pinia/admin/token.ts)。
 
 ## 逃生舱
 

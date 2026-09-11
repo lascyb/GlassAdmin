@@ -11,7 +11,10 @@
 import GaStatusTag from '@/components/ga-status-tag/index.vue'
 ```
 
-用法：[web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) + [constants.ts](../../../../../web/src/views/system/auth/admin/constants.ts)。
+## 推荐使用场景
+
+- 列表列按 `map` 或 `options` 显示状态（`label` + `el-tag` 的 `type`）。
+- 只有一两处三元判断：直接 `el-tag`。
 
 ## Props / 事件 / 插槽
 
@@ -29,6 +32,11 @@ import GaStatusTag from '@/components/ga-status-tag/index.vue'
 ```vue
 <ga-status-tag :value="row.status" :map="{ 1: { label: '正常', type: 'success' }, 0: { label: '禁用', type: 'info' } }" />
 ```
+
+## 已使用场景
+
+- [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue) + [constants.ts](../../../../../web/src/views/system/auth/admin/constants.ts) 的 `ADMIN_STATUS_MAP`
+- CRUD 生成模板：[extend/crud/templates/index/col/enum_tag.vue.tpl](../../../../../extend/crud/templates/index/col/enum_tag.vue.tpl)（[IndexFile.php](../../../../../extend/crud/generator/IndexFile.php) 按需 import）
 
 ## 逃生舱
 

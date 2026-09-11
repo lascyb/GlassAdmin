@@ -11,7 +11,10 @@
 import GaIcon from '@/components/ga-icon/index.vue'
 ```
 
-用法：[web/src/layouts/components/header/module.vue](../../../../../web/src/layouts/components/header/module.vue) 等。
+## 推荐使用场景
+
+- 数据里存的是 `el:` / `local:` / `url:` 存储串（菜单、规则、快捷方式），需要同一套渲染。
+- 图标固定为某个 Element Plus 组件：直接 `<el-icon>`，不必经本组件。
 
 ## Props / 事件 / 插槽
 
@@ -30,6 +33,14 @@ import GaIcon from '@/components/ga-icon/index.vue'
 <ga-icon icon="local:add_child" :url-size="18" />
 <ga-icon icon="url:https://example.com/a.png" :fallback="false" />
 ```
+
+## 已使用场景
+
+- 布局：[web/src/layouts/components/header/module.vue](../../../../../web/src/layouts/components/header/module.vue)、[menus/MenuTree.vue](../../../../../web/src/layouts/components/menus/MenuTree.vue)、[aside/double.vue](../../../../../web/src/layouts/components/aside/double.vue)、[error/no-permission.vue](../../../../../web/src/layouts/components/error/no-permission.vue)
+- 登录：[web/src/views/login.vue](../../../../../web/src/views/login.vue)
+- 工作台：[ShortcutPanel.vue](../../../../../web/src/views/system/workbench/ShortcutPanel.vue)、[ShortcutCustomizeDrawer.vue](../../../../../web/src/views/system/workbench/ShortcutCustomizeDrawer.vue)、[RecentPanel.vue](../../../../../web/src/views/system/workbench/RecentPanel.vue)
+- 权限：[rule/frontend.vue](../../../../../web/src/views/system/auth/rule/frontend.vue)、[AssignFrontendsDialog.vue](../../../../../web/src/views/system/auth/rule/AssignFrontendsDialog.vue)、[role/edit.vue](../../../../../web/src/views/system/auth/role/edit.vue)
+- 选择器内部：[picker.vue](../../../../../web/src/components/ga-icon/picker.vue)
 
 ## 逃生舱
 

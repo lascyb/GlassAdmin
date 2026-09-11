@@ -4,13 +4,19 @@
 
 ## 作用
 
-远程 `el-select`：`filterable` + `remote`，默认 `get`/`post` 拉选项。响应适配数组或 `{list,total}` / `{data,total}`。可分页（`total > limit` 时 footer `el-pagination`）。`inheritAttrs: false`，其余属性 `v-bind="$attrs"` 传给 `el-select`。仓库业务页暂无引用（供 CRUD 生成等）。
+远程 `el-select`：`filterable` + `remote`，默认 `get`/`post` 拉选项。响应适配数组或 `{list,total}` / `{data,total}`。可分页（`total > limit` 时 footer `el-pagination`）。`inheritAttrs: false`，其余属性 `v-bind="$attrs"` 传给 `el-select`。
 
 ```ts
 import GaSelectRemote from '@/components/ga-select-remote/index.vue'
 ```
 
 暴露 `refreshOptions`、`cleanQuery`。
+
+## 推荐使用场景
+
+- 选项来自远程列表，需要关键词搜索、分页或编辑回显（`initOptions` / `init_values`）。
+- 选项是本地常量或一次拉全量：`el-select` + `el-option`。
+- CRUD 生成器在远程下拉字段会写入本组件；手写页无此需求则不必引入。
 
 ## Props / 事件 / 插槽
 
@@ -49,6 +55,13 @@ const id = ref<number>()
   />
 </template>
 ```
+
+## 已使用场景
+
+本仓库业务页无引用。CRUD 生成会写入：
+
+- [extend/crud/generator/IndexFile.php](../../../../../extend/crud/generator/IndexFile.php)、[EditFile.php](../../../../../extend/crud/generator/EditFile.php)
+- 模板：[extend/crud/templates/index/search/remote_select.vue.tpl](../../../../../extend/crud/templates/index/search/remote_select.vue.tpl)、[remote_multi_select.vue.tpl](../../../../../extend/crud/templates/index/search/remote_multi_select.vue.tpl)、[edit/field/remote_select.vue.tpl](../../../../../extend/crud/templates/edit/field/remote_select.vue.tpl)、[remote_multi_select.vue.tpl](../../../../../extend/crud/templates/edit/field/remote_multi_select.vue.tpl)
 
 ## 逃生舱
 

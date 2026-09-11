@@ -14,6 +14,12 @@
 
 后端：[ApiResponse.php](../../../app/common/ApiResponse.md)。
 
+## 推荐使用场景
+
+- 自写 `fetch` / 非 axios 响应后，要把 `{code,msg,data}` 解成 `data`。
+- 业务页走 `get`/`post` 时不必直接 import：拦截器已 `unwrap`。
+- 只要判断 `code === 0`：自行分支，不必用本模块。
+
 ## 最小示例
 
 ```ts
@@ -24,6 +30,11 @@ const data = unwrap(json)
 ```
 
 `get`/`post` 默认已调用 `unwrap`，业务页一般不必再调。
+
+## 已使用场景
+
+- [web/src/apis/request.ts](../../../../web/src/apis/request.ts)（import 并 re-export）
+- [web/src/pinia/admin/token.ts](../../../../web/src/pinia/admin/token.ts)（`fetch` 续期后 `unwrap`）
 
 ## 逃生舱
 
