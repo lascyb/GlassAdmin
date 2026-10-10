@@ -111,9 +111,11 @@ final class Installer
             $envValues,
         );
         if ($publicOrigin !== '') {
+            // 与 APP_URL 相同：request->domain()（协议://主机[:端口]）。
+            // 接口路径自带 admin/，这里不拼应用名。domain() 不含 /backend 这类路径，前缀由部署方写在前端 env。
             $writer->writeViteDevelopment(
                 $root . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . '.env.development',
-                $publicOrigin . '/admin',
+                $publicOrigin,
             );
         }
         InstallState::applyDatabaseEnv($db);
