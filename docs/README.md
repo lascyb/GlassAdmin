@@ -74,6 +74,7 @@ node tools/check-docs.mjs
     - `README.md` — 本页
     - `principles.md`：[描述文档](principles.md)
     - `escape-hatches.md`：[描述文档](escape-hatches.md)
+    - `deploy/nginx.md`：[描述文档](deploy/nginx.md)
   - `web/` — Vue 3 管理端
     - `package.json`
     - `vite.config.ts`
