@@ -29,9 +29,9 @@ php think run                 # 浏览器打开 http://127.0.0.1:8000
 cd web && pnpm install && pnpm dev
 ```
 
-未安装且 `app/install` 仍在时，打开源站根路径会进向导：默认应用是 `index`，[Index::index](app/index/controller/Index.php) 执行 `redirect('/install')`。向导跑 [schema.sql](database/install/schema.sql) 与 [data.sql](database/install/data.sql)，并写根 `.env`（`DB_*` 与 `APP_URL`）。同时写 `web/.env.development`（[EnvWriter.php](app/install/service/EnvWriter.php)）。其中 `VITE_API_BASE_URL` 被设成「当前请求域名 + `/admin`」（[Installer.php](app/install/service/Installer.php)），与上面的约定不一致，装完后改成源站本身，例如 `http://127.0.0.1:8000`。没跑向导就自己建这个文件。
+未安装且 `app/install` 仍在时，打开源站根路径会进向导：默认应用是 `index`，[Index::index](app/index/controller/Index.php) 执行 `redirect('/install')`。向导跑 [schema.sql](database/install/schema.sql) 与 [data.sql](database/install/data.sql)，并写根 `.env`（`DB_*` 与 `APP_URL`）。同时写 `web/.env.development`（[EnvWriter.php](app/install/service/EnvWriter.php)）：`VITE_API_BASE_URL` 与 `APP_URL` 相同，都是当前请求的 `domain()`（协议 + 主机 + 端口），不含 `/admin`。`domain()` 不含 URL 路径，反代前缀（如 `/backend`）写在 `web/.env.production`。没跑向导就自己建 `web/.env.development`。
 
-生产构建：`cd web && pnpm build`（[web/package.json](web/package.json)）。
+生产构建：`cd web && pnpm build`（输出 `web/dist/`，nginx 见 [docs/deploy/nginx.md](docs/deploy/nginx.md)）。
 
 ## 文档
 

@@ -115,6 +115,7 @@ class Index extends BaseController
                 (string) ($body['admin_nickname'] ?? ''),
                 (string) ($body['site_title'] ?? 'GlassAdmin'),
                 (string) ($body['site_description'] ?? '透明可视的后台框架'),
+                // domain() 为 scheme://host[:port]，不含 URL 路径，也不含应用名 /admin
                 rtrim((string) $this->request->domain(), '/'),
             );
         } catch (\InvalidArgumentException $e) {

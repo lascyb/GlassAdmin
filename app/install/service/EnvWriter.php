@@ -31,7 +31,10 @@ final class EnvWriter
     }
 
     /**
-     * writeViteDevelopment 按当前站点地址生成 web/.env.development
+     * writeViteDevelopment 生成 web/.env.development
+     *
+     * $apiBaseUrl 原样写入 VITE_API_BASE_URL（站点源：协议+主机+端口，或反代前缀如 /backend）。
+     * 不含 ThinkPHP 应用名 /admin；调用方不要拼接。
      */
     public function writeViteDevelopment(string $path, string $apiBaseUrl): void
     {

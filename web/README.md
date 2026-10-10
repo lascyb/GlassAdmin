@@ -14,4 +14,6 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 VITE_API_BASE_URL=/backend
 ```
 
-安装向导在有请求域名时会生成 `web/.env.development`，并把 `VITE_API_BASE_URL` 写成「域名 + `/admin`」。请改成源站本身，去掉末尾的 `/admin`。说明见根 [README.md](../README.md)。
+与该前缀对应的 nginx、以及 `web/dist/` 如何放进 `public/`，见 [docs/deploy/nginx.md](../docs/deploy/nginx.md)。
+
+安装向导在有请求域名时会生成 `web/.env.development`，`VITE_API_BASE_URL` 等于该域名（与根 `.env` 的 `APP_URL` 相同），不含 `/admin`。向导不改 `.env.production`；路径前缀仍由部署方填写，例如上面的 `/backend`。说明见根 [README.md](../README.md)。
