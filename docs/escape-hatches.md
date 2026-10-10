@@ -22,4 +22,4 @@
 | 需登录、跳过 RBAC | `$loginOnlyActions` | [AdminController.md](app/common/controller/AdminController.md)、[Config.md](app/admin/controller/system/Config.md) |
 | 不用 `ok()` / `fail()` | `return json([...])` | [ApiResponse.md](app/common/ApiResponse.md) |
 
-路径 `/admin/{点分控制器}/{action}`（[config/app.php](../config/app.php) `with_route=false`）。不使用封装不等于绕过 `system_auth_rule` 已配置的权限。
+路径 `/admin/{点分控制器}/{action}`（[config/app.php](../config/app.php) `with_route=false`）。RBAC 只在 [AdminController::initialize()](app/common/controller/AdminController.md) 里执行。不继承 `AdminController` 的控制器不做 RBAC 检查。用 `fetch` 或裸 `el-*` 调用已经继承 `AdminController` 的接口，仍然经过这道检查。

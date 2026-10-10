@@ -4,9 +4,9 @@
 
 ## 1. 薄封装（Thin wrap）
 
-自定义层不隐藏 Element Plus / ThinkPHP 行为。源码对应官方文档。
+自定义层不另设语法。能对齐官方文档的行为保持官方语义；有的封装会固定或省掉一部分 props。
 
-- `ga-*` 是 `el-*` 的布局与默认值。`ga-table` 排列 `el-table` 与 `el-pagination`，列仍为 `el-table-column`。[Element Plus Table](https://element-plus.org/zh-CN/component/table.html)。
+- 多数 `ga-*` 是 `el-*` 的布局与默认值，不是每一个。`ga-table` 排列 `el-table` 与 `el-pagination`，列仍为 `el-table-column`，同时固定 `highlight-current-row` 和分页 `layout`，未透传 `row-key`、`span-method`。[Element Plus Table](https://element-plus.org/zh-CN/component/table.html)。`ga-monaco-editor` 包的是 `monaco-editor`，不是 `el-*`。
 - 管理端控制器位于 `app/admin/controller/`。JSON 外壳：[app/common/ApiResponse.php](../app/common/ApiResponse.php)。鉴权：[app/common/controller/AdminController.php](../app/common/controller/AdminController.php)。[ThinkPHP 8](https://doc.thinkphp.cn/v8_0/index.html)。
 
 ## 2. 文档随组件走（Docs co-shipped）

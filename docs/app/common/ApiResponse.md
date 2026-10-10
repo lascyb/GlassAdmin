@@ -19,11 +19,11 @@
 | `unauthorized` | 401 / HTTP 401 |
 | `forbidden` | 403 / HTTP 403 |
 | `notFound` | 404 / HTTP 404 |
-| `badRequest` | 400 |
-| `methodNotAllowed` | 405 |
+| `badRequest` | 业务码 400；HTTP 200 |
+| `methodNotAllowed` | 业务码 405；HTTP 200 |
 | `tooManyRequests` | 429 / HTTP 429 |
-| `serverError` | 500 |
-| `rsaKeyInvalid` | 40001（前端重放加密请求） |
+| `serverError` | 业务码 500；HTTP 200 |
+| `rsaKeyInvalid` | 业务码 40001；HTTP 200（前端重放加密请求） |
 
 ```php
 return $this->ok($data);

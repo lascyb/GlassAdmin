@@ -10,6 +10,8 @@
 2. action 不在 `$loginOnlyActions`，且非超级管理员（`role_id=1`）：`AdminRbacService::isApiAllowed`；失败 HTTP 403。
 3. `ApiThrottle::enforce`。
 
+RBAC 只在本方法里执行。不继承本类的控制器不做 RBAC 检查。
+
 `ok` / `paginate` 在成功响应上写操作日志。信封见 [ApiResponse](../ApiResponse.md)。
 
 相关：[AdminTokenService.php](../../../../app/admin/service/AdminTokenService.php)（opaque token，Cache，非 JWT）、[AdminRbacService.php](../../../../app/admin/service/AdminRbacService.php)（path + method 是否在角色允许的 backend api 内）、[AdminAuthPayload.php](../../../../app/admin/service/auth/AdminAuthPayload.php)。
@@ -46,4 +48,4 @@
 
 ## 逃生舱
 
-公开接口用 `BaseController`，登录用 `BaseLogin`，跳过 RBAC 用 `$loginOnlyActions`。表见 [escape-hatches.md](../../../escape-hatches.md)。不继承本类即不经过门闩；`system_auth_rule` 仍约束已登记接口。
+公开接口用 `BaseController`，登录用 `BaseLogin`，跳过 RBAC 用 `$loginOnlyActions`。表见 [escape-hatches.md](../../../escape-hatches.md)。不继承本类即不做 RBAC 检查。

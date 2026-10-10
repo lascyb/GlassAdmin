@@ -10,6 +10,8 @@ node tools/check-docs.mjs
 # 或 cd web && pnpm docs:check
 ```
 
+推送到 `main`，或向 `main` 提 PR 时，[.github/workflows/docs-check.yml](../.github/workflows/docs-check.yml) 跑同一条命令。
+
 ## 源码目录
 
 不含 `vendor/`、`web/node_modules/`、`runtime/`、`dist/`。有独立 `.md` 的节点加后缀「描述文档」。业务页未使用的 `ga-*` 标 **暂无引用** / **脚手架/预留**，并集中在组件列表末尾。
@@ -106,6 +108,8 @@ node tools/check-docs.mjs
         - `security/rsa.ts`：[描述文档](web/src/pinia/security/rsa.md)
       - `router/`
       - `composables/`
+        - `usePaginatedList.ts`：[描述文档](web/src/composables/usePaginatedList.md)
+        - `useTreeCrud.ts`：[描述文档](web/src/composables/useTreeCrud.md)
       - `directives/`
         - `auth.ts`：[描述文档](web/src/directives/auth.md)
       - `theme/`

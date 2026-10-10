@@ -15,7 +15,7 @@ import GaPage from '@/components/ga-page/index.vue'
 ## 推荐使用场景
 
 - 整页需要统一内边距 + `el-card` 外壳。
-- 内部放 `ga-table` 且要 `fill` 撑满时，设 `minHeight`。
+- 内部放 `ga-table` 且要 `fill` 撑满时，设 `minHeight`。分页数据用 [usePaginatedList](../../composables/usePaginatedList.md)。
 - 弹窗/抽屉里的内容、或页面已有自己的 `el-card` 布局：用 `div` / 裸 `el-card`。
 
 ## Props / 事件 / 插槽
@@ -55,7 +55,7 @@ import GaPage from '@/components/ga-page/index.vue'
 - [web/src/views/system/attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)
 - [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（操作日志卡片）
 - [web/src/views/dashboard/server.vue](../../../../../web/src/views/dashboard/server.vue)、[usage.vue](../../../../../web/src/views/dashboard/usage.vue)
-- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)
+- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)（[IndexFile.php](../../../../../extend/crud/generator/IndexFile.php) 写入 `GaPage` 与 `usePaginatedList`）
 
 对照未使用：[web/src/views/system/config/index.vue](../../../../../web/src/views/system/config/index.vue)。
 

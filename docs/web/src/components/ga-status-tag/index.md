@@ -20,7 +20,7 @@ import GaStatusTag from '@/components/ga-status-tag/index.vue'
 
 | 属性 | 类型 | 说明 |
 |---|---|---|
-| `value` | `string \| number \| null \| undefined` | 状态值 |
+| `value` | `string \| number \| null \| undefined` | **必填**。状态值（`null` / `undefined` 表示空） |
 | `map` | `StatusMap` | `{ [value]: { label, type? } }`（手写页） |
 | `options` | `EnumOption[]` | `{ value, label, type? }[]`（生成页 constants） |
 | `fallback` | `string` | 未命中时的文案 |

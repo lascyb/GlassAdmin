@@ -16,9 +16,10 @@ import GaTable from '@/components/ga-table/index.vue'
 
 ## 推荐使用场景
 
-- 管理端标准列表：工具栏 + 表 + 分页，列仍手写 `el-table-column`。
+- 管理端标准列表：工具栏 + 表 + 分页，列仍手写 `el-table-column`。分页状态用 [usePaginatedList](../../composables/usePaginatedList.md)。
 - 需要 `fill` 与 [ga-page](../ga-page/index.md) 一起撑满视口时。
 - 只要表、不要分页壳，或要用未透传的 `row-key` / `span-method`：直接 `el-table`。
+- 一次拉整棵树（角色、规则）：[useTreeCrud](../../composables/useTreeCrud.md)，不用本组件。
 
 ## Props / 事件 / 插槽
 
@@ -95,7 +96,7 @@ onMounted(load)
 - [web/src/views/system/auth/admin/index.vue](../../../../../web/src/views/system/auth/admin/index.vue)
 - [web/src/views/system/attachment/index.vue](../../../../../web/src/views/system/attachment/index.vue)
 - [web/src/views/system/account/profile.vue](../../../../../web/src/views/system/account/profile.vue)（操作日志）
-- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)
+- CRUD 生成模板：[extend/crud/templates/index/index.vue.tpl](../../../../../extend/crud/templates/index/index.vue.tpl)（[IndexFile.php](../../../../../extend/crud/generator/IndexFile.php) 写入 `GaTable` 与 `usePaginatedList`）
 
 对照未使用：配置页与用量页用裸 `el-table`（见下）。
 

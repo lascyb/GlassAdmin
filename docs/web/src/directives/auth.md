@@ -7,6 +7,8 @@
 
 按**当前页菜单的 type=btn 子节点**隐藏 DOM（`display:none`，节点仍在，便于调试）。权限数据来自 [useLayoutMenus](../pinia/layout/index.md)，不是后端二次校验。
 
+`__gaView` 由 [web/vite-plugin-ga-view.ts](../../../../web/vite-plugin-ga-view.ts) 注入到 `src/views/**/*.vue`（[vite.config.ts](../../../../web/vite.config.ts) 的 `gaViewPlugin()`）。无权限时按这个 key 反查菜单。
+
 `hasPermission(btn, scope?, instance?)` 可在脚本里同样判断。
 
 ## 推荐使用场景
