@@ -6,6 +6,9 @@ namespace app\admin\controller\system\account\login\oauth2;
 use app\admin\controller\system\account\login\BaseLogin;
 use app\admin\model\system\auth\Admin;
 use app\admin\model\system\auth\oauth2\Feishu as Oauth2Feishu;
+use app\admin\service\auth\AdminLoginGuardService;
+use app\admin\service\auth\LoginGuardException;
+use app\common\ApiResponse;
 use feishu\Client as FeishuClient;
 use feishu\FeishuException;
 use feishu\OAuth2;
@@ -59,6 +62,17 @@ class Feishu extends BaseLogin
             return $this->fail(405, '仅支持 POST');
         }
 
+        $ip = $this->request->ip();
+
+        try {
+            AdminLoginGuardService::assertIpAllowed($ip);
+        } catch (LoginGuardException $e) {
+            return ApiResponse::tooManyRequests($e->getMessage(), [
+                'reason'         => $e->reason,
+                'remain_seconds' => $e->remainSeconds,
+            ]);
+        }
+
         $code = trim((string) $this->request->post('code', ''));
         $remember = (bool) $this->request->post('remember', false);
         if ($code === '') {
@@ -69,12 +83,16 @@ class Feishu extends BaseLogin
             $oauth = $this->makeOAuth2();
             $token = $oauth->getAccessToken($code);
         } catch (FeishuException $e) {
+            AdminLoginGuardService::recordIpFailure($ip, 'oauth_fail');
+
             return $this->fail(401, '飞书授权失败：' . $e->getMessage());
         } catch (\InvalidArgumentException $e) {
             return $this->fail(500, $e->getMessage());
         }
 
         if ((int) ($token['code'] ?? -1) !== 0 || empty($token['access_token'])) {
+            AdminLoginGuardService::recordIpFailure($ip, 'oauth_fail');
+
             return $this->fail(401, '用户授权失效，请重试');
         }
 
@@ -88,10 +106,14 @@ class Feishu extends BaseLogin
             );
             $userInfo = $userResponse->data();
         } catch (FeishuException $e) {
+            AdminLoginGuardService::recordIpFailure($ip, 'oauth_fail');
+
             return $this->fail(401, '获取飞书用户信息失败：' . $e->getMessage());
         }
 
         if (!is_array($userInfo) || empty($userInfo['union_id'])) {
+            AdminLoginGuardService::recordIpFailure($ip, 'oauth_fail');
+
             return $this->fail(401, '飞书用户信息无效');
         }
 
@@ -104,8 +126,22 @@ class Feishu extends BaseLogin
         /** @var Admin|null $user */
         $user = Admin::find((int) $bind->getAttr('admin_id'));
         if (!$user || (int) $user->getAttr('status') !== 1) {
+            $reason = !$user ? 'no_user' : 'disabled';
+            AdminLoginGuardService::recordIpFailure(
+                $ip,
+                $reason,
+                $user ? (int) $user->getAttr('id') : null,
+                $user ? (string) $user->getAttr('username') : '',
+            );
+
             return $this->fail(403, '账号不存在或已禁用');
         }
+
+        AdminLoginGuardService::recordIpSuccess(
+            $ip,
+            (int) $user->getAttr('id'),
+            (string) $user->getAttr('username'),
+        );
 
         return $this->issueLoginOk(
             $user,

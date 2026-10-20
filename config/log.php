@@ -39,7 +39,20 @@ return [
             // 是否实时写入
             'realtime_write' => false,
         ],
-        // 其它日志通道配置
+        // 登录审计（一行一条 JSON，见 AdminLoginGuardService::writeLog）
+        'login' => [
+            'type'           => 'File',
+            'path'           => runtime_path() . 'log' . DIRECTORY_SEPARATOR . 'login' . DIRECTORY_SEPARATOR,
+            'single'         => false,
+            'apart_level'    => [],
+            'max_files'      => 180,
+            'json'           => false,
+            'processor'      => null,
+            'close'          => false,
+            // 仅输出消息体，便于每行纯 JSON
+            'format'         => '%3$s',
+            'realtime_write' => true,
+        ],
     ],
 
 ];

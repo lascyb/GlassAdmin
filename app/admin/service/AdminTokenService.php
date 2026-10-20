@@ -9,6 +9,7 @@ use app\admin\model\system\auth\AdminRole;
 use app\admin\service\auth\AdminAuthPayload;
 use Random\RandomException;
 use think\facade\Cache;
+use think\facade\Config;
 
 /**
  * AdminTokenService 管理端 opaque access_token + refresh_token（均存 Cache，非 JWT）
@@ -30,10 +31,10 @@ class AdminTokenService
      */
     public static function issuePair(int $adminId, array $roleIds, bool $remember): array
     {
-        $accessTtl = max(60, (int) env('ACCESS_TOKEN_TTL', 7200));
+        $accessTtl = max(60, (int) Config::get('admin_login.access_token_ttl', 3600));
         $refreshTtl = $remember
-            ? max(300, (int) env('REFRESH_TOKEN_TTL_REMEMBER', 604800))
-            : max(300, (int) env('REFRESH_TOKEN_TTL_SESSION', 86400));
+            ? max(300, (int) Config::get('admin_login.refresh_token_ttl_remember', 2592000))
+            : max(300, (int) Config::get('admin_login.refresh_token_ttl_session', 604800));
 
         $accessRaw = bin2hex(random_bytes(32));
         $refreshRaw = bin2hex(random_bytes(32));
@@ -142,7 +143,7 @@ class AdminTokenService
             return false;
         }
         $payload['role_ids'] = $roleIds;
-        $ttl = max(60, (int) env('ACCESS_TOKEN_TTL', 7200));
+        $ttl = max(60, (int) Config::get('admin_login.access_token_ttl', 3600));
         Cache::set($key, $payload, $ttl);
 
         return true;

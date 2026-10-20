@@ -91,6 +91,29 @@ location /backend/storage/ {
 }
 ```
 
+## 真实客户端 IP
+
+**浏览器 → 本机 nginx → php-fpm（本示例）**：PHP 的 `REMOTE_ADDR` 已是客户端地址，登录限流与日志用 `$request->ip()` 即可，一般不必改 nginx，也不必配 `.env` 的 `PROXY_SERVER_IP`。
+
+**前面还有 LB / CDN**：须让应用信任代理并读转发头，否则限流会把整站当成同一内网 IP。
+
+1. 在LB 与 nginx 之间传递真实 IP（按厂商改），例如在 nginx：
+
+```nginx
+# 仅示例：信任内网 LB，用其传来的 X-Forwarded-For
+set_real_ip_from 10.0.0.0/8;
+real_ip_header X-Forwarded-For;
+real_ip_recursive on;
+
+# 若再反代到上游应用，可显式带上：
+# proxy_set_header X-Real-IP $remote_addr;
+# proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+本仓库示例是 fastcgi 直连 php-fpm，`REMOTE_ADDR` 即 TCP 对端；有 `real_ip` 时对端会被改成真实客户端。
+
+2. 在仓库根 `.env` 配置可信代理（见 [.example.env](../../.example.env) 的 `PROXY_SERVER_IP`）。[app/Request.php](../../app/Request.php) 仅当 `REMOTE_ADDR` 属于该列表时，才采用 `X-Real-IP` / `X-Forwarded-For`，防止客户端伪造。
+
 ## 可选加固
 
 下面不是这份配置能跑起来的必要条件。

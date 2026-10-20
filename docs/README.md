@@ -26,10 +26,12 @@ node tools/check-docs.mjs
   - `.example.env` — 后端环境变量模板
   - `config/` — ThinkPHP 全局配置
     - `app.php`
+    - `admin_login.php`：[描述文档](config/admin_login.md)
     - `database.php`
     - `middleware.php`
   - `app/` — PHP 多应用
     - `BaseController.php`：[描述文档](app/BaseController.md)
+    - `Request.php`：[描述文档](app/Request.md)
     - `middleware.php`
     - `admin/` — 管理端（URL 前缀 `/admin`）
       - `controller/`
@@ -45,6 +47,9 @@ node tools/check-docs.mjs
             - `Rule.php`：[描述文档](app/admin/controller/system/auth/Rule.md)
       - `model/`
       - `service/`
+        - `auth/`
+          - `AdminLoginGuardService.php`：[描述文档](app/admin/service/auth/AdminLoginGuardService.md)
+          - `LoginGuardException.php`：[描述文档](app/admin/service/auth/LoginGuardException.md)
       - `validate/`
       - `command/`
     - `common/` — 跨应用公共代码
