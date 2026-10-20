@@ -2,11 +2,11 @@
 import SwitchRolesDialog from '@/layouts/components/header/components/SwitchRolesDialog.vue'
 import { useAdmin } from '@/pinia/admin'
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
-import { resolveKeepAliveBaseKey } from '@/utils/pageKey'
 import {
     normalizeColorMode,
     useLayoutSetting,
 } from '@/pinia/layout/setting.ts'
+import { resolveKeepAliveBaseKey } from '@/utils/pageKey'
 import { resolveStorageUrl } from '@/utils/storageUrl'
 import {
     ArrowDown,
@@ -67,6 +67,10 @@ const colorModeLabel = computed(() => {
 })
 
 const themeTooltip = computed(() => `当前：${colorModeLabel.value}，点击切换`)
+
+const goWorkbench = () => {
+    void router.push({ name: 'root-default' })
+}
 
 const refreshPage = () => {
     refreshSpinning.value = true
@@ -130,7 +134,18 @@ const logout = async () => {
 <template>
     <div class="header-right">
         <div class="header-tools">
- 
+            <el-tooltip content="工作台" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    aria-label="工作台"
+                    @click="goWorkbench"
+                >
+                    <el-icon :size="18">
+                        <HomeFilled />
+                    </el-icon>
+                </button>
+            </el-tooltip>
             <el-tooltip content="刷新当前页" placement="bottom">
                 <button
                     type="button"
