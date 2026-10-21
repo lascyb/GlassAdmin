@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MenuSearchDialog from '@/layouts/components/aside/MenuSearchDialog.vue'
 import SwitchRolesDialog from '@/layouts/components/header/components/SwitchRolesDialog.vue'
 import { useAdmin } from '@/pinia/admin'
 import { useMainViewRefresh } from '@/pinia/layout/mainViewRefresh'
@@ -14,6 +15,7 @@ import {
     Monitor,
     Moon,
     Refresh,
+    Search,
     Sunny,
     Switch,
     SwitchButton,
@@ -30,6 +32,7 @@ const route = useRoute()
 const router = useRouter()
 const mainRefresh = useMainViewRefresh()
 const rolesDialogVisible = ref(false)
+const menuSearchOpen = ref(false)
 const refreshSpinning = ref(false)
 const accountMenuOpen = ref(false)
 
@@ -134,6 +137,18 @@ const logout = async () => {
 <template>
     <div class="header-right">
         <div class="header-tools">
+            <el-tooltip content="菜单搜索" placement="bottom">
+                <button
+                    type="button"
+                    class="header-tool-btn"
+                    aria-label="菜单搜索"
+                    @click="menuSearchOpen = true"
+                >
+                    <el-icon :size="18">
+                        <Search />
+                    </el-icon>
+                </button>
+            </el-tooltip>
             <el-tooltip content="工作台" placement="bottom">
                 <button
                     type="button"
@@ -243,6 +258,7 @@ const logout = async () => {
         </el-dropdown>
     </div>
     <switch-roles-dialog v-model="rolesDialogVisible" />
+    <menu-search-dialog v-model="menuSearchOpen" />
 </template>
 
 <style scoped>

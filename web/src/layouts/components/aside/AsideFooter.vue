@@ -1,42 +1,21 @@
 <script setup lang="ts">
 import { useLayoutMenus } from '@/pinia/layout/menus'
-import { Expand, Fold, Search } from '@element-plus/icons-vue'
-import { ref } from 'vue'
-import MenuSearchDialog from './MenuSearchDialog.vue'
+import { Expand, Fold } from '@element-plus/icons-vue'
 
 const layoutMenus = useLayoutMenus()
-const searchOpen = ref(false)
 
 const toggleCollapse = () => {
     layoutMenus.collapse = !layoutMenus.collapse
-}
-
-const openSearch = () => {
-    searchOpen.value = true
 }
 </script>
 
 <template>
     <div class="ga-aside-footer" :class="{ 'is-collapsed': layoutMenus.collapse }">
         <el-button
-            v-if="!layoutMenus.collapse"
             plain
             text
             type="primary"
             class="ga-aside-footer__btn"
-            title="菜单搜索"
-            aria-label="菜单搜索"
-            @click="openSearch"
-        >
-            <el-icon size="18">
-                <Search />
-            </el-icon>
-        </el-button>
-        <el-button
-            plain
-            text
-            type="primary"
-            class="ga-aside-footer__btn ga-aside-footer__btn--fold"
             :title="layoutMenus.collapse ? '展开侧栏' : '收起侧栏'"
             @click="toggleCollapse"
         >
@@ -45,7 +24,6 @@ const openSearch = () => {
                 <Fold v-else />
             </el-icon>
         </el-button>
-        <menu-search-dialog v-model="searchOpen" />
     </div>
 </template>
 
@@ -54,7 +32,7 @@ const openSearch = () => {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     box-sizing: border-box;
     height: 44px;
     padding: 0 4px;
@@ -71,7 +49,7 @@ const openSearch = () => {
     margin: 0;
 }
 
-.ga-aside-footer.is-collapsed .ga-aside-footer__btn--fold {
+.ga-aside-footer.is-collapsed .ga-aside-footer__btn {
     width: 100%;
     height: 100%;
 }

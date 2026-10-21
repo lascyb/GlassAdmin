@@ -9,7 +9,7 @@ import {
     normalizeThemeColor,
 } from '@/theme'
 
-export type LayoutContainer = 'Default' | 'Double' | 'Module'
+export type LayoutContainer = 'Default' | 'Double' | 'Module' | 'Top'
 
 /** ColorMode 外观：浅色 / 深色 / 跟随系统 */
 export type ColorMode = 'light' | 'dark' | 'system'
@@ -33,7 +33,7 @@ type Layout = {
     seededFromSystem: boolean
 }
 
-const CONTAINERS: LayoutContainer[] = ['Default', 'Double', 'Module']
+const CONTAINERS: LayoutContainer[] = ['Default', 'Double', 'Module', 'Top']
 
 /** 侧栏宽度允许范围 */
 export const ASIDE_WIDTH_MIN = 160

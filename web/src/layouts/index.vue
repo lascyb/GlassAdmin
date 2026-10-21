@@ -14,6 +14,7 @@ defineOptions({
     Default: defineAsyncComponent(() => import("./container/default.vue")),
     Double: defineAsyncComponent(() => import("./container/double.vue")),
     Module: defineAsyncComponent(() => import("./container/module.vue")),
+    Top: defineAsyncComponent(() => import("./container/top.vue")),
   }
 })
 const setting = useLayoutSetting()

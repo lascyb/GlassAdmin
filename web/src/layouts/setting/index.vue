@@ -87,7 +87,7 @@ const onContainerChange = (value: LayoutContainer) => {
                 />
             </section>
 
-            <section class="pref-block">
+            <section v-if="setting.layout.container !== 'Top'" class="pref-block">
                 <div class="pref-label">左侧菜单宽度</div>
                 <div class="aside-width-row">
                     <el-slider
@@ -108,7 +108,7 @@ const onContainerChange = (value: LayoutContainer) => {
                 </p>
             </section>
 
-            <section class="pref-block">
+            <section v-if="setting.layout.container !== 'Top'" class="pref-block">
                 <div class="pref-switch-row">
                     <div class="pref-switch-copy">
                         <div class="pref-label">左侧菜单手风琴</div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type LayoutContainer = 'Default' | 'Double' | 'Module'
+type LayoutContainer = 'Default' | 'Double' | 'Module' | 'Top'
 
 const model = defineModel<LayoutContainer>({ required: true })
 
@@ -7,6 +7,7 @@ const layoutOptions: { value: LayoutContainer; label: string }[] = [
     { value: 'Default', label: '左侧单层' },
     { value: 'Double', label: '左侧双层' },
     { value: 'Module', label: '顶侧双栏' },
+    { value: 'Top', label: '顶栏菜单' },
 ]
 
 const selectLayout = (value: LayoutContainer) => {
@@ -27,10 +28,14 @@ const selectLayout = (value: LayoutContainer) => {
             @click="selectLayout(item.value)"
         >
             <div class="layout-preview" :class="`layout-preview--${item.value.toLowerCase()}`">
-                <div class="layout-preview__header" :class="{
-                    'layout-preview__header--module': item.value === 'Module',
-                }">
-                    <template v-if="item.value === 'Module'">
+                <div
+                    class="layout-preview__header"
+                    :class="{
+                        'layout-preview__header--module': item.value === 'Module',
+                        'layout-preview__header--top': item.value === 'Top',
+                    }"
+                >
+                    <template v-if="item.value === 'Module' || item.value === 'Top'">
                         <span />
                         <span />
                         <span />
@@ -48,8 +53,11 @@ const selectLayout = (value: LayoutContainer) => {
                         </div>
                         <div class="layout-preview__main" />
                     </template>
-                    <template v-else>
+                    <template v-else-if="item.value === 'Module'">
                         <div class="layout-preview__aside" />
+                        <div class="layout-preview__main" />
+                    </template>
+                    <template v-else>
                         <div class="layout-preview__main" />
                     </template>
                 </div>
@@ -62,13 +70,14 @@ const selectLayout = (value: LayoutContainer) => {
 <style scoped>
 .layout-picker {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--ga-space-3);
     width: 100%;
 }
 
 .layout-picker__item {
     display: flex;
-    flex: 1;
+    flex: 1 1 calc(50% - var(--ga-space-3) / 2);
     min-width: 0;
     flex-direction: column;
     align-items: center;
@@ -121,21 +130,24 @@ const selectLayout = (value: LayoutContainer) => {
     border-bottom: 1px solid var(--ga-color-border-lighter);
 }
 
-.layout-preview__header--module {
+.layout-preview__header--module,
+.layout-preview__header--top {
     display: flex;
     align-items: center;
     gap: 2px;
     padding: 0 3px;
 }
 
-.layout-preview__header--module span {
+.layout-preview__header--module span,
+.layout-preview__header--top span {
     flex: 1;
     height: 4px;
     border-radius: 1px;
     background: var(--el-color-primary-light-5);
 }
 
-.layout-preview__header--module span:first-child {
+.layout-preview__header--module span:first-child,
+.layout-preview__header--top span:first-child {
     background: var(--el-color-primary);
 }
 
