@@ -37,6 +37,35 @@ export function menusForDisplay(menus: Menu[] | undefined | null): Menu[] {
     return out
 }
 
+/** NAVIGABLE_TYPES 侧栏可点进的叶子类型 */
+const NAVIGABLE_TYPES = new Set(['view', 'route', 'link', 'iframe'])
+
+export type FlatMenuHit = {
+    menu: Menu
+    /** 祖先目录名（不含自身） */
+    trail: string[]
+}
+
+/**
+ * flattenNavigableMenus 将展示树压平为可跳转叶子（与侧栏渲染同源：先 menusForDisplay）
+ */
+export function flattenNavigableMenus(menus: Menu[] | undefined | null): FlatMenuHit[] {
+    const walk = (nodes: Menu[], trail: string[]): FlatMenuHit[] => {
+        const out: FlatMenuHit[] = []
+        for (const node of nodes) {
+            if (node.type === 'menu' && node.children?.length) {
+                out.push(...walk(node.children, [...trail, node.name]))
+                continue
+            }
+            if (NAVIGABLE_TYPES.has(node.type) && node.path_full) {
+                out.push({ menu: node, trail })
+            }
+        }
+        return out
+    }
+    return walk(menusForDisplay(menus), [])
+}
+
 /**
  * menusForModules 双栏 Module 列：有子级的目录 + 末尾虚拟「未分组」；空目录丢弃
  */

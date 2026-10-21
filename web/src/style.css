@@ -305,11 +305,17 @@ html.dark {
     background-color: var(--ga-color-fill-light);
     background-image: var(--ga-shell-wash);
     /* 左侧双层：模块栏固定宽（与 setting.ASIDE_MODULE_RAIL_WIDTH 一致） */
-    --ga-aside-module-rail-width: 72px;
+    --ga-aside-module-rail-width: 75px;
     /* 收起态：el-menu--collapse 固有宽 + 本壳 1px border-right（aside 为 border-box） */
     --ga-aside-collapse-width: calc(
         var(--el-menu-icon-width) + var(--el-menu-base-level-padding) * 2 + 1px
     );
+}
+
+/* 顶栏通宽 + 下方 aside/main：中间层吃满剩余高度，避免主区撑破 */
+.ga-shell > .el-container {
+    min-height: 0;
+    flex: 1;
 }
 
 .ga-shell .el-header,

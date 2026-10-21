@@ -27,34 +27,32 @@ const selectLayout = (value: LayoutContainer) => {
             @click="selectLayout(item.value)"
         >
             <div class="layout-preview" :class="`layout-preview--${item.value.toLowerCase()}`">
-                <template v-if="item.value === 'Default'">
-                    <div class="layout-preview__aside" />
-                    <div class="layout-preview__right">
-                        <div class="layout-preview__header" />
+                <div class="layout-preview__header" :class="{
+                    'layout-preview__header--module': item.value === 'Module',
+                }">
+                    <template v-if="item.value === 'Module'">
+                        <span />
+                        <span />
+                        <span />
+                    </template>
+                </div>
+                <div class="layout-preview__body">
+                    <template v-if="item.value === 'Default'">
+                        <div class="layout-preview__aside" />
                         <div class="layout-preview__main" />
-                    </div>
-                </template>
-                <template v-else-if="item.value === 'Double'">
-                    <div class="layout-preview__aside layout-preview__aside--double">
-                        <div class="layout-preview__module-col" />
-                        <div class="layout-preview__sub-col" />
-                    </div>
-                    <div class="layout-preview__right">
-                        <div class="layout-preview__header" />
-                        <div class="layout-preview__main" />
-                    </div>
-                </template>
-                <template v-else>
-                    <div class="layout-preview__aside" />
-                    <div class="layout-preview__right">
-                        <div class="layout-preview__module-header">
-                            <span />
-                            <span />
-                            <span />
+                    </template>
+                    <template v-else-if="item.value === 'Double'">
+                        <div class="layout-preview__aside layout-preview__aside--double">
+                            <div class="layout-preview__module-col" />
+                            <div class="layout-preview__sub-col" />
                         </div>
                         <div class="layout-preview__main" />
-                    </div>
-                </template>
+                    </template>
+                    <template v-else>
+                        <div class="layout-preview__aside" />
+                        <div class="layout-preview__main" />
+                    </template>
+                </div>
             </div>
             <span class="layout-picker__caption">{{ item.label }}</span>
         </button>
@@ -108,12 +106,43 @@ const selectLayout = (value: LayoutContainer) => {
 
 .layout-preview {
     display: flex;
+    flex-direction: column;
     width: 100%;
     aspect-ratio: 3 / 2;
     overflow: hidden;
     border-radius: var(--ga-radius-sm);
     border: 1px solid var(--ga-color-border-lighter);
     background: var(--ga-color-fill-blank);
+}
+
+.layout-preview__header {
+    flex: 0 0 10px;
+    background: var(--ga-color-fill);
+    border-bottom: 1px solid var(--ga-color-border-lighter);
+}
+
+.layout-preview__header--module {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 3px;
+}
+
+.layout-preview__header--module span {
+    flex: 1;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--el-color-primary-light-5);
+}
+
+.layout-preview__header--module span:first-child {
+    background: var(--el-color-primary);
+}
+
+.layout-preview__body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
 }
 
 .layout-preview__aside {
@@ -138,42 +167,9 @@ const selectLayout = (value: LayoutContainer) => {
     background: var(--el-color-primary-light-7);
 }
 
-.layout-preview__right {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.layout-preview__header {
-    flex: 0 0 10px;
-    background: var(--ga-color-fill);
-    border-bottom: 1px solid var(--ga-color-border-lighter);
-}
-
-.layout-preview__module-header {
-    display: flex;
-    flex: 0 0 10px;
-    align-items: center;
-    gap: 2px;
-    padding: 0 3px;
-    background: var(--ga-color-fill);
-    border-bottom: 1px solid var(--ga-color-border-lighter);
-}
-
-.layout-preview__module-header span {
-    flex: 1;
-    height: 4px;
-    border-radius: 1px;
-    background: var(--el-color-primary-light-5);
-}
-
-.layout-preview__module-header span:first-child {
-    background: var(--el-color-primary);
-}
-
 .layout-preview__main {
     flex: 1;
+    min-width: 0;
     background: var(--ga-color-fill-light);
 }
 </style>

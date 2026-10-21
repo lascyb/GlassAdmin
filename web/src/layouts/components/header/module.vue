@@ -3,6 +3,7 @@ import { useLayoutMenus } from '@/pinia/layout/menus.ts'
 import GaIcon from '@components/ga-icon/index.vue'
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
+import GaLogo from '../logo.vue'
 import HeaderRight from './components/HeaderRight.vue'
 
 const layoutMenus = useLayoutMenus()
@@ -23,6 +24,7 @@ watch(
 
 <template>
     <el-header class="module-header flex items-stretch p-0">
+        <ga-logo />
         <div class="module-bar flex min-w-0 flex-1 items-stretch overflow-x-auto px-3">
             <el-segmented
                 v-model="layoutMenus.module"
@@ -34,7 +36,7 @@ watch(
             >
                 <template #default="scope">
                     <div class="module-segment">
-                        <GaIcon :icon="scope.item?.icon" />
+                        <GaIcon :icon="scope.item?.icon" :url-size="18" class="module-segment__icon" />
                         <span>{{ scope.item.name }}</span>
                     </div>
                 </template>
@@ -76,5 +78,10 @@ watch(
     height: 100%;
     padding: 0 8px;
     white-space: nowrap;
+}
+
+.module-segment__icon,
+.module-segment :deep(.el-icon) {
+    font-size: 18px;
 }
 </style>
