@@ -63,7 +63,7 @@ watch(visible, (open) => {
     <el-dialog
         v-model="visible"
         title="切换角色"
-        width="420px"
+        width="520px"
         append-to-body
         destroy-on-close
         :close-on-click-modal="false"
@@ -78,7 +78,10 @@ watch(visible, (open) => {
             </div>
             <template v-else>
                 <p class="mb-3 text-xs text-ga-text-secondary">仅启用的角色参与菜单与权限；应用后将刷新页面。</p>
-                <el-checkbox-group v-model="selectedRoleIds" class="flex flex-col gap-2">
+                <el-checkbox-group
+                    v-model="selectedRoleIds"
+                    class="flex flex-wrap gap-x-4 gap-y-2 max-h-[min(50vh,360px)] overflow-y-auto"
+                >
                     <el-checkbox
                         v-for="role in roleOptions"
                         :key="role.id"
