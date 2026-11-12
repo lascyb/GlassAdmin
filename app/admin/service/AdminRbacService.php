@@ -59,13 +59,13 @@ class AdminRbacService
         if ($path === '') {
             return false;
         }
-        $ruleId = self::resolveBackendApiRuleId($path, $method);
-        if ($ruleId === null) {
+        $ruleIds = self::resolveBackendApiRuleIds($path, $method);
+        if ($ruleIds === []) {
             return false;
         }
         $allowed = self::allowedBackendApiIdsForRoles($roleIds);
 
-        return in_array($ruleId, $allowed, true);
+        return array_intersect($ruleIds, $allowed) !== [];
     }
 
     /**
@@ -77,22 +77,23 @@ class AdminRbacService
     }
 
     /**
-     * resolveBackendApiRuleId 按 path + method 解析启用的后端 api 规则 id
+     * resolveBackendApiRuleIds 按 path + method 解析全部启用的后端 api 规则 id
+     *
+     * 同一 path+method 可能存在多条重复节点（历史误建、重复导入等），只取一条会因
+     * 命中顺序不同而不稳定授权；这里返回全部，由调用方与角色允许集合求交集。
+     *
+     * @return list<int>
      */
-    private static function resolveBackendApiRuleId(string $path, string $method): ?int
+    private static function resolveBackendApiRuleIds(string $path, string $method): array
     {
-        $row = Rule::where('scope', 'backend')
+        $ids = Rule::where('scope', 'backend')
             ->where('type', 'api')
             ->where('status', 1)
             ->where('path', $path)
             ->whereRaw('(method = ? OR method = ?)', [$method, '*'])
-            ->field('id')
-            ->find();
-        if ($row === null) {
-            return null;
-        }
+            ->column('id');
 
-        return (int) $row->getAttr('id');
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 
     /**
