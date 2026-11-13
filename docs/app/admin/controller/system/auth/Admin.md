@@ -20,10 +20,12 @@
 |---|---|---|
 | `list` | GET | 分页；`keyword`/`username`/`nickname`/`status`/`oauth_provider`/`role_id`/`exclude_role_id`；含 `login_methods` / `login_methods_effective` |
 | `read` | GET | 详情 + 角色 + 登录方式 |
-| `save` / `update` | POST / PUT | `login_methods`：`null`=跟随默认；数组=自定义（≥1）；生效含 `password` 时新建须设密码 |
+| `save` / `update` | POST / PUT | `login_methods`：`null`=跟随默认；数组=自定义（可 `[]`）；新建时生效含 `password` 须设密码，否则随机占位哈希 |
 | `delete` | DELETE | |
 
 编辑自己且角色含超管（`role_id=1`）时，生效登录方式必须保留 `password`。
+
+后台**新建**：生效含 `password` 时须设密码；否则生成随机哈希占位（不可密登）。新建表单不提供勾选飞书（飞书用户多由授权 JIT 创建），编辑时才可开关飞书。
 
 `exclude_role_id` 用 `NOT IN` 子查询排除已拥有该角色的管理员，供角色页「绑定用户」弹窗只列出未绑定的人；可与 `keyword` 等条件叠加，不能与 `role_id` 同时用于相反筛选。
 

@@ -50,14 +50,24 @@ const defaultLoginMethods = computed(() =>
     systemConfig.getStringArray('admin_default_login_methods', ['password', 'feishu']),
 )
 
-/** effectiveLoginMethods 即将生效的集合（跟随默认或自定义） */
+/** isEdit 编辑已有账号（可开关飞书）；新建无法绑定飞书用户 */
+const isEdit = computed(() => !!form.id)
+
+/** methodOptions 新建仅密码；编辑可选密码/飞书 */
+const methodOptions = computed(() =>
+    isEdit.value
+        ? LOGIN_METHOD_OPTIONS
+        : LOGIN_METHOD_OPTIONS.filter((item) => item.value === 'password'),
+)
+
+/** effectiveLoginMethods 即将生效的集合 */
 const effectiveLoginMethods = computed(() =>
     form.follow_default ? defaultLoginMethods.value : form.login_methods,
 )
 
-/** passwordRequired 新建时是否必须设密码 */
+/** passwordRequired 仅当生效含密码登录时，新建须填密码；否则随机占位 */
 const passwordRequired = computed(
-    () => !form.id && effectiveLoginMethods.value.includes('password'),
+    () => !isEdit.value && effectiveLoginMethods.value.includes('password'),
 )
 
 const defaultMethodsHint = computed(() => {
@@ -102,7 +112,8 @@ const loadDetail = async () => {
             role_ids: [],
             status: 1,
             follow_default: true,
-            login_methods: [...defaultLoginMethods.value],
+            // 自定义预填：默认含密码则勾选，否则空（占位）
+            login_methods: defaultLoginMethods.value.includes('password') ? ['password'] : [],
         })
     }
 }
@@ -112,6 +123,8 @@ watch(
     (follow) => {
         if (follow) {
             form.login_methods = [...defaultLoginMethods.value]
+        } else if (!form.id) {
+            form.login_methods = defaultLoginMethods.value.includes('password') ? ['password'] : []
         }
     },
 )
@@ -126,7 +139,8 @@ const submit = async () => {
         ElMessage.warning('请输入用户名')
         return
     }
-    if (!form.follow_default && form.login_methods.length === 0) {
+    // 编辑自定义须至少一种；新建允许不勾选密码（占位账号）
+    if (isEdit.value && !form.follow_default && form.login_methods.length === 0) {
         ElMessage.warning('请至少选择一种登录方式')
         return
     }
@@ -138,9 +152,13 @@ const submit = async () => {
         ElMessage.warning('请至少选择一个角色')
         return
     }
+    // 新建无飞书绑定；自定义去掉 feishu
+    let login_methods: string[] | null = form.follow_default ? null : [...form.login_methods]
+    if (!form.id && login_methods) {
+        login_methods = login_methods.filter((m) => m !== 'feishu')
+    }
     saving.value = true
     try {
-        const login_methods = form.follow_default ? null : form.login_methods
         if (form.id) {
             const body: {
                 nickname: string
@@ -206,24 +224,30 @@ const submit = async () => {
                         </div>
                         <el-checkbox-group v-else v-model="form.login_methods" class="mt-2 block">
                             <el-checkbox
-                                v-for="item in LOGIN_METHOD_OPTIONS"
+                                v-for="item in methodOptions"
                                 :key="item.value"
                                 :value="item.value"
                             >
                                 {{ item.label }}
                             </el-checkbox>
                         </el-checkbox-group>
+                        <div
+                            v-if="!isEdit"
+                            class="mt-2 text-sm text-ga-text-placeholder"
+                        >
+                            飞书用户可由授权登录自动创建；未开通密码登录时将生成随机密码（占位账号）。
+                        </div>
                     </div>
                 </el-form-item>
-                <el-form-item :label="form.id ? '新密码' : '密码'" :required="passwordRequired">
+                <el-form-item :label="isEdit ? '新密码' : '密码'" :required="passwordRequired">
                     <ga-password-input
                         v-model="form.password"
                         :placeholder="
-                            form.id
+                            isEdit
                                 ? '留空表示不修改'
                                 : passwordRequired
                                   ? '至少 6 位'
-                                  : '可选；未填则随机'
+                                  : '未开通密码登录，将自动生成占位密码'
                         "
                     />
                 </el-form-item>

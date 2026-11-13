@@ -14,6 +14,9 @@ use think\Response;
 
 /**
  * Admin 后台管理员账号 CRUD（密码经 RSA 解密后 bcrypt 存储）
+ *
+ * 登录方式字段见 {@see AdminModel}：list/read 附带 `login_methods` 与 `login_methods_effective`；
+ * 新建时生效含 password 则密码必填，否则随机哈希占位。
  */
 class Admin extends AdminController
 {
@@ -98,7 +101,9 @@ class Admin extends AdminController
             $roles = $data['roles'] ?? [];
             $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
             $data['oauth_providers'] = [];
-            $data = array_merge($data, $row->loginMethodsPayload());
+            $stored = $row->getAttr('login_methods');
+            $data['login_methods'] = $stored === null ? null : AdminModel::normalizeLoginMethods($stored);
+            $data['login_methods_effective'] = $row->effectiveLoginMethods();
 
             return $data;
         }, $paginator->items());
@@ -137,7 +142,9 @@ class Admin extends AdminController
         unset($data['password']);
         $data['role_ids'] = array_column($data['roles'] ?? [], 'id');
         $data['oauth_providers'] = [];
-        $data = array_merge($data, $row->loginMethodsPayload());
+        $stored = $row->getAttr('login_methods');
+        $data['login_methods'] = $stored === null ? null : AdminModel::normalizeLoginMethods($stored);
+        $data['login_methods_effective'] = $row->effectiveLoginMethods();
         $data = $this->attachOauthProviders([$data])[0];
 
         return $this->ok($data);
@@ -171,12 +178,10 @@ class Admin extends AdminController
             return $this->fail(400, 'status 无效');
         }
 
-        try {
-            $loginMethods = $this->parseLoginMethodsInput($request->post('login_methods'), true);
-        } catch (\InvalidArgumentException $e) {
-            return $this->fail(400, $e->getMessage());
-        }
-        $effective = AdminModel::resolveEffectiveLoginMethods($loginMethods);
+        $loginMethods = $this->parseLoginMethods($request->post('login_methods'));
+        $effective = $loginMethods === null
+            ? AdminModel::defaultLoginMethods()
+            : AdminModel::normalizeLoginMethods($loginMethods);
         $needsPassword = in_array(AdminModel::METHOD_PASSWORD, $effective, true);
 
         $plain = null;
@@ -200,6 +205,7 @@ class Admin extends AdminController
             return $this->fail(400, '用户名已存在');
         }
 
+        // 未开通密码登录时无明文：随机哈希占位（无法用密码登录，仅占位账号）
         $passwordHash = $plain !== null
             ? password_hash($plain, PASSWORD_BCRYPT)
             : password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
@@ -258,11 +264,7 @@ class Admin extends AdminController
             $putAll = [];
         }
         if (array_key_exists('login_methods', $putAll)) {
-            try {
-                $loginMethods = $this->parseLoginMethodsInput($putAll['login_methods'], true);
-            } catch (\InvalidArgumentException $e) {
-                return $this->fail(400, $e->getMessage());
-            }
+            $loginMethods = $this->parseLoginMethods($putAll['login_methods']);
         }
 
         $superErr = $this->assertSelfSuperKeepsPassword($id, $roleIds, $loginMethods);
@@ -417,42 +419,36 @@ class Admin extends AdminController
     }
 
     /**
-     * parseLoginMethodsInput 解析 login_methods：null=跟随默认；数组=显式集合
+     * parseLoginMethods 解析请求中的 login_methods
+     *
+     * null / 空串 → null（跟随系统默认）；否则 normalize（显式 [] 表示占位、不开通任何方式）。
      *
      * @return list<string>|null
-     * @throws \InvalidArgumentException
      */
-    private function parseLoginMethodsInput(mixed $raw, bool $allowNull): ?array
+    private function parseLoginMethods(mixed $raw): ?array
     {
-        if ($raw === null || $raw === '' || $raw === []) {
-            if ($allowNull && ($raw === null || $raw === '')) {
-                return null;
-            }
-            if ($raw === []) {
-                throw new \InvalidArgumentException('登录方式不能为空');
-            }
-
+        if ($raw === null || $raw === '') {
             return null;
         }
 
-        return AdminModel::encodeLoginMethodsForDb($raw);
+        return AdminModel::normalizeLoginMethods(is_array($raw) ? $raw : []);
     }
 
     /**
-     * assertSelfSuperKeepsPassword 编辑自己且角色含超管时，生效集合须含 password
+     * assertSelfSuperKeepsPassword 编辑自己且绑定超管角色（id=1）时，生效集合须含 password
      *
-     * @param list<int>            $roleIds
-     * @param list<string>|null    $loginMethods
+     * @param list<int>         $roleIds      即将保存的角色 id
+     * @param list<string>|null $loginMethods 即将保存的登录方式（null=跟随默认）
+     * @return string|null 错误文案；通过则 null
      */
     private function assertSelfSuperKeepsPassword(int $id, array $roleIds, ?array $loginMethods): ?string
     {
-        if ($id !== $this->auth->adminId) {
+        if ($id !== $this->auth->adminId || !in_array(1, $roleIds, true)) {
             return null;
         }
-        if (!in_array(1, $roleIds, true)) {
-            return null;
-        }
-        $effective = AdminModel::resolveEffectiveLoginMethods($loginMethods);
+        $effective = $loginMethods === null
+            ? AdminModel::defaultLoginMethods()
+            : AdminModel::normalizeLoginMethods($loginMethods);
         if (!in_array(AdminModel::METHOD_PASSWORD, $effective, true)) {
             return '超级管理员账号必须保留密码登录';
         }

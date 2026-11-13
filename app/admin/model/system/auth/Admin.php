@@ -12,27 +12,35 @@ use think\model\relation\BelongsToMany;
 /**
  * Admin 后台管理员
  *
+ * 登录方式：`login_methods` 为 NULL 时跟随系统配置 `admin_default_login_methods`；
+ * 非 NULL 为账号覆盖（可为 []，表示显式不开通任何方式）。登录校验一律看生效集合，
+ * 空或不含对应方式则拒绝（配置异常不回退双开）。飞书用户多由 OAuth JIT 创建并显式写入 ["feishu"]。
+ *
  * @property int               $id
  * @property string            $username
  * @property string            $password
  * @property string|null       $nickname
  * @property string|null       $avatar 读取时为完整 URL；库内为相对 public/storage 路径，如 avatar/xxx.jpg
  * @property int               $status  {1:正常,0:禁用}
- * @property list<string>|null $login_methods NULL=跟随系统默认；否则为允许的登录方式
+ * @property list<string>|null $login_methods NULL=跟随系统默认；数组=账号覆盖（可 []）
  * @property int|null          $last_login_time 上次登录时间（Unix 秒）
  */
 class Admin extends Model
 {
-    /** 密码登录 */
+    /** 密码登录方式标识 */
     public const string METHOD_PASSWORD = 'password';
 
-    /** 飞书登录 */
+    /** 飞书登录方式标识 */
     public const string METHOD_FEISHU = 'feishu';
 
-    /** 系统配置：账号未单独配置时的默认登录方式 */
+    /** 系统配置 key：账号未单独配置时的默认登录方式（multi_select） */
     public const string CONFIG_KEY_DEFAULT_LOGIN_METHODS = 'admin_default_login_methods';
 
-    /** @var list<string> 已知登录方式 */
+    /**
+     * 已知登录方式（normalize 时只保留这些值）
+     *
+     * @var list<string>
+     */
     public const array KNOWN_LOGIN_METHODS = [
         self::METHOD_PASSWORD,
         self::METHOD_FEISHU,
@@ -81,35 +89,25 @@ class Admin extends Model
     }
 
     /**
-     * normalizeLoginMethods 规范化登录方式集合（只保留已知项、去重；允许空数组）
+     * normalizeLoginMethods 规范化登录方式集合
      *
+     * 非数组 → []；只保留 {@see KNOWN_LOGIN_METHODS}、去重保序；允许返回空数组（不偷偷补默认）。
+     *
+     * @param mixed $raw 请求体数组或库内 json 解码结果
      * @return list<string>
      */
     public static function normalizeLoginMethods(mixed $raw): array
     {
-        if ($raw === null || $raw === '') {
-            return [];
-        }
-        if (is_string($raw)) {
-            $trimmed = trim($raw);
-            if ($trimmed === '') {
-                return [];
-            }
-            if (str_starts_with($trimmed, '[')) {
-                $decoded = json_decode($trimmed, true);
-                $raw = is_array($decoded) ? $decoded : [];
-            } else {
-                $raw = preg_split('/[;；,]/', $trimmed) ?: [];
-            }
-        }
         if (!is_array($raw)) {
             return [];
         }
-
         $known = array_fill_keys(self::KNOWN_LOGIN_METHODS, true);
         $out = [];
         foreach ($raw as $item) {
-            $method = is_string($item) ? trim($item) : '';
+            if (!is_string($item)) {
+                continue;
+            }
+            $method = trim($item);
             if ($method === '' || !isset($known[$method]) || isset($out[$method])) {
                 continue;
             }
@@ -120,45 +118,29 @@ class Admin extends Model
     }
 
     /**
-     * defaultLoginMethods 系统默认登录方式（配置非法/空 → []，不回退）
+     * defaultLoginMethods 读取系统默认登录方式
+     *
+     * 来源：{@see CONFIG_KEY_DEFAULT_LOGIN_METHODS}；缺 key / 非法 / 过滤后为空 → []（登录侧将全部拒绝）。
      *
      * @return list<string>
      */
     public static function defaultLoginMethods(): array
     {
-        $raw = SystemConfigService::getConfig(self::CONFIG_KEY_DEFAULT_LOGIN_METHODS, null);
-
-        return self::normalizeLoginMethods($raw);
+        return self::normalizeLoginMethods(
+            SystemConfigService::getConfig(self::CONFIG_KEY_DEFAULT_LOGIN_METHODS, null),
+        );
     }
 
     /**
-     * encodeLoginMethodsForDb 写入库值：null 表示跟随默认；非 null 须规范化后非空
+     * effectiveLoginMethods 当前账号生效的登录方式
      *
-     * @param mixed $raw 请求原值；null 表示跟随默认
-     * @return list<string>|null
-     * @throws InvalidArgumentException
-     */
-    public static function encodeLoginMethodsForDb(mixed $raw): ?array
-    {
-        if ($raw === null) {
-            return null;
-        }
-        $methods = self::normalizeLoginMethods($raw);
-        if ($methods === []) {
-            throw new InvalidArgumentException('登录方式不能为空');
-        }
-
-        return $methods;
-    }
-
-    /**
-     * resolveEffectiveLoginMethods 解析生效集合（账号非 null 用账号，否则用系统默认）
+     * `login_methods === null` → {@see defaultLoginMethods()}；否则 normalize 账号值（含 []）。
      *
-     * @param mixed $stored 库内 login_methods（null/array/string）
      * @return list<string>
      */
-    public static function resolveEffectiveLoginMethods(mixed $stored): array
+    public function effectiveLoginMethods(): array
     {
+        $stored = $this->getAttr('login_methods');
         if ($stored === null) {
             return self::defaultLoginMethods();
         }
@@ -167,31 +149,16 @@ class Admin extends Model
     }
 
     /**
-     * effectiveLoginMethods 当前账号生效的登录方式
+     * assertAllowsLoginMethod 断言生效集合含指定方式
      *
-     * @return list<string>
-     */
-    public function effectiveLoginMethods(): array
-    {
-        return self::resolveEffectiveLoginMethods($this->getAttr('login_methods'));
-    }
-
-    /**
-     * allowsLoginMethod 是否允许指定登录方式
-     */
-    public function allowsLoginMethod(string $method): bool
-    {
-        return in_array($method, $this->effectiveLoginMethods(), true);
-    }
-
-    /**
-     * assertAllowsLoginMethod 断言允许指定登录方式；失败抛 InvalidArgumentException
+     * 供密码 / 飞书登录、个人中心改密等调用；失败抛业务异常，由控制器转 403。
      *
-     * @throws InvalidArgumentException
+     * @param string $method {@see METHOD_PASSWORD} / {@see METHOD_FEISHU}
+     * @throws InvalidArgumentException 未开通或生效集合为空
      */
     public function assertAllowsLoginMethod(string $method): void
     {
-        if ($this->allowsLoginMethod($method)) {
+        if (in_array($method, $this->effectiveLoginMethods(), true)) {
             return;
         }
         $label = match ($method) {
@@ -201,21 +168,5 @@ class Admin extends Model
         };
 
         throw new InvalidArgumentException('未开通' . $label);
-    }
-
-    /**
-     * loginMethodsPayload 接口附加字段：库值 + 生效集合
-     *
-     * @return array{login_methods: list<string>|null, login_methods_effective: list<string>}
-     */
-    public function loginMethodsPayload(): array
-    {
-        $stored = $this->getAttr('login_methods');
-        $normalizedStored = $stored === null ? null : self::normalizeLoginMethods($stored);
-
-        return [
-            'login_methods'            => $normalizedStored,
-            'login_methods_effective'  => self::resolveEffectiveLoginMethods($stored),
-        ];
     }
 }

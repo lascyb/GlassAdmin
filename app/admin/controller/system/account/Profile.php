@@ -25,7 +25,9 @@ use think\Response;
 class Profile extends AdminController
 {
     /**
-     * @var list<string> 仅需登录的 action；改密由生效登录方式控制，不走按钮 RBAC
+     * @var list<string> 仅需登录的 action
+     *
+     * changePassword 不走按钮 RBAC：只要生效登录方式含 password 即可改密（见 Admin::assertAllowsLoginMethod）
      */
     protected array $loginOnlyActions = [
         'read',
@@ -60,7 +62,9 @@ class Profile extends AdminController
             return $this->fail(404, '用户不存在');
         }
         $data = $row->toArray();
-        $data = array_merge($data, $row->loginMethodsPayload());
+        $stored = $row->getAttr('login_methods');
+        $data['login_methods'] = $stored === null ? null : AdminModel::normalizeLoginMethods($stored);
+        $data['login_methods_effective'] = $row->effectiveLoginMethods();
         $data["oauth2"] = [];
         $feishu = Feishu::where("admin_id", $id)->field("name,avatar")->find();
         if ($feishu) {

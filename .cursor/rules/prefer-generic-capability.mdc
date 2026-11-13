@@ -13,6 +13,7 @@ alwaysApply: true
 - 类型驱动行为（如 `multi_select` 的 cast），而不是按配置 key 分支
 - 注册表 / 回调 / 约定目录分发
 - 调用方（控制器、业务 model）自己组合能力
+- **够用即可**：能在调用方两行写清的，不要再包一层 `encodeXxx` / `payload` / 单行 `allowsXxx`
 
 ## 禁止
 
