@@ -16,10 +16,12 @@
 
 | 方法 | HTTP | 说明 |
 |---|---|---|
-| `list` | GET | 分页；`keyword`/`username`/`nickname`/`status`/`oauth_provider`/`role_id` |
+| `list` | GET | 分页；`keyword`/`username`/`nickname`/`status`/`oauth_provider`/`role_id`/`exclude_role_id` |
 | `read` | GET | 详情 + 角色 |
 | `save` / `update` | POST / PUT | 明文最短 6；`encryptFields` 由前端加密 |
 | `delete` | DELETE | |
+
+`exclude_role_id` 用 `NOT IN` 子查询排除已拥有该角色的管理员，供角色页「绑定用户」弹窗只列出未绑定的人；可与 `keyword` 等条件叠加，不能与 `role_id` 同时用于相反筛选。
 
 ## 已使用场景
 

@@ -58,6 +58,16 @@ class Admin extends AdminController
                 ->where('ar.role_id', $roleId);
         }
 
+        // exclude_role_id 排除已拥有该角色的管理员（批量绑定时只列出未绑定的）
+        $excludeRoleId = (int) $request->get('exclude_role_id', 0);
+        if ($excludeRoleId > 0) {
+            $q->whereNotIn('a.id', function ($query) use ($excludeRoleId): void {
+                $query->name('system_auth_admin_role')
+                    ->where('role_id', $excludeRoleId)
+                    ->field('admin_id');
+            });
+        }
+
         $q->order('a.id', 'desc')
             ->field('a.id,a.username,a.nickname,a.avatar,a.status,a.last_login_time,a.create_time,a.update_time');
 

@@ -45,6 +45,8 @@ export const fetchList = async (params: {
     oauth_provider?: string
     /** 按角色 id 筛选（system_auth_admin_role join） */
     role_id?: number
+    /** 排除已拥有该角色的管理员（批量绑定时用） */
+    exclude_role_id?: number
 }) => {
     return get<AdminListRes>('admin/system.auth.Admin/list', { params })
 }

@@ -2,12 +2,15 @@
 import type { RoleRow } from '@/apis/system/auth/role'
 import * as roleApi from '@/apis/system/auth/role'
 import AddChildSvg from '@/assets/icons/add_child.svg'
+import BindAdminsSvg from '@/assets/icons/user-plus-fill.svg'
 import GaSearchBar from '@/components/ga-search-bar/index.vue'
 import { useTreeCrud } from '@/composables/useTreeCrud'
 import AdminIndex from '@/views/system/auth/admin/index.vue'
+import BindAdminsDialog from '@/views/system/auth/role/BindAdminsDialog.vue'
 import EditView from '@/views/system/auth/role/edit.vue'
 import { Delete, Edit, Plus, User } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
+
 
 const { treeData, loading, editController, load, remove, openEdit, openAdd, openAddChild, onSaved } =
     useTreeCrud<RoleRow>(
@@ -128,6 +131,17 @@ const openUsers = (row: RoleRow) => {
     usersDialog.roleName = row.name
     usersDialog.show = true
 }
+
+/** bindDialogRef 批量绑定用户弹窗 */
+const bindDialogRef = ref<InstanceType<typeof BindAdminsDialog>>()
+
+/** openBindAdmins 打开批量绑定弹窗；超管角色等同全量授权，禁止批量绑定 */
+const openBindAdmins = (row: RoleRow) => {
+    if (row.id === 1 || row.status === 0) {
+        return
+    }
+    void bindDialogRef.value?.open(row)
+}
 </script>
 
 <template>
@@ -183,7 +197,7 @@ const openUsers = (row: RoleRow) => {
                 <el-table-column label="识别码" prop="code" />
                 <el-table-column label="名称" prop="name" />
                 <el-table-column label="描述" prop="desc" show-overflow-tooltip />
-                <el-table-column label="用户" width="110" align="center">
+                <el-table-column label="人员管理" width="150" align="center">
                     <template #default="{ row }">
                         <el-button
                             plain
@@ -192,9 +206,18 @@ const openUsers = (row: RoleRow) => {
                             title="查看用户"
                             @click="openUsers(row)"
                         >{{ row.admin_count ?? 0 }}</el-button>
+                        <el-button
+                            v-auth="'assignAdmins'"
+                            title="批量绑定用户"
+                            plain
+                            type="success"
+                            :icon="BindAdminsSvg"
+                            :disabled="row.id === 1 || row.status === 0"
+                            @click="openBindAdmins(row)"
+                        />
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" fixed="right">
+                <el-table-column label="操作" width="190" fixed="right">
                     <template #default="{ row }">
                         <el-button
                             v-auth="'edit'"
@@ -230,6 +253,7 @@ const openUsers = (row: RoleRow) => {
                 :pid="editController.pid"
                 @saved="onSaved"
             />
+            <bind-admins-dialog ref="bindDialogRef" @saved="load" />
             <el-dialog
                 v-model="usersDialog.show"
                 :title="`角色「${usersDialog.roleName}」的用户`"

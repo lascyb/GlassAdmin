@@ -3,12 +3,14 @@ declare (strict_types=1);
 
 namespace app\admin\controller\system\auth;
 
+use app\admin\model\system\auth\Admin as AdminModel;
 use app\admin\model\system\auth\AdminRole;
 use app\admin\model\system\auth\Role as RoleModel;
 use app\admin\model\system\auth\RoleRule;
 use app\admin\model\system\auth\Rule as RuleModel;
 use app\admin\service\AdminRbacService;
 use app\common\controller\AdminController;
+use think\facade\Db;
 use think\Request;
 use think\Response;
 
@@ -17,6 +19,12 @@ use think\Response;
  */
 class Role extends AdminController
 {
+    /** 超级管理员角色 id；批量绑管理员会直接提权，须拦截 */
+    private const int SUPER_ROLE_ID = 1;
+
+    /** 单次批量绑定管理员上限 */
+    private const int ASSIGN_ADMINS_MAX = 1000;
+
     /**
      * tree 角色树（含 children）
      *
@@ -189,6 +197,70 @@ class Role extends AdminController
         AdminRbacService::forgetRoleRbacCache($id);
 
         return $this->ok();
+    }
+
+    /**
+     * assignAdmins 批量追加绑定角色到管理员（只新增关联，不改动已有角色）
+     *
+     * 与 Admin/update 的「全量覆盖」语义不同：这里只补缺失的 (admin_id, role_id) 行，
+     * 已拥有该角色的管理员跳过，不会解除其任何已有角色。
+     *
+     * 超级管理员角色（id=1）等同全量授权，必须走 Admin/update 的显式单条流程，禁止批量绑定。
+     *
+     * @return Response
+     */
+    public function assignAdmins(Request $request): Response
+    {
+        if (!$request->isPut()) {
+            return $this->fail(405, '仅支持 PUT');
+        }
+        $id = (int)$request->get('id', 0);
+        if ($id <= 0) {
+            return $this->fail(400, 'id 无效');
+        }
+        if (!RoleModel::find($id)) {
+            return $this->fail(404, '角色不存在');
+        }
+        if ($id === self::SUPER_ROLE_ID) {
+            return $this->fail(400, '超级管理员角色不支持批量绑定');
+        }
+        $adminIds = $request->put('admin_ids/a', []);
+        $adminIds = is_array($adminIds) ? array_map('intval', $adminIds) : [];
+        $adminIds = array_values(array_unique(array_filter($adminIds, static fn(int $aid): bool => $aid > 0)));
+        if ($adminIds === []) {
+            return $this->fail(400, '请选择管理员');
+        }
+        if (count($adminIds) > self::ASSIGN_ADMINS_MAX) {
+            return $this->fail(400, '单次最多绑定 ' . self::ASSIGN_ADMINS_MAX . ' 个管理员');
+        }
+        // 只保留真实存在的管理员，避免脏 id 写入关联表
+        $adminIds = array_map('intval', AdminModel::whereIn('id', $adminIds)->column('id'));
+        if ($adminIds === []) {
+            return $this->fail(400, '管理员不存在');
+        }
+        $existing = array_map(
+            'intval',
+            AdminRole::where('role_id', $id)->whereIn('admin_id', $adminIds)->column('admin_id')
+        );
+        $missing = array_values(array_diff($adminIds, $existing));
+        if ($missing !== []) {
+            $rows = [];
+            foreach ($missing as $adminId) {
+                $rows[] = ['admin_id' => $adminId, 'role_id' => $id, 'enabled' => 1];
+            }
+            try {
+                Db::transaction(static function () use ($rows): void {
+                    AdminRole::insertAll($rows);
+                });
+            } catch (\Exception $e) {
+                return $this->fail(400, $e->getMessage());
+            }
+        }
+
+        return $this->ok([
+            'added'   => count($missing),
+            'skipped' => count($existing),
+        ]);
     }
 
     /**

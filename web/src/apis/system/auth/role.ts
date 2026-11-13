@@ -64,3 +64,16 @@ export const deleteRole = async (id: number) => {
 export const assignRules = async (id: number, rule_ids: number[]) => {
     return put<null>('admin/system.auth.Role/assignRules?id=' + id, { rule_ids })
 }
+
+/** AssignAdminsResult 批量绑定的统计（skipped 为原本已拥有该角色、被跳过的数量） */
+export type AssignAdminsResult = {
+    added: number
+    skipped: number
+}
+
+/**
+ * assignAdmins 批量追加绑定管理员到角色（只新增关联，不解除已有角色）
+ */
+export const assignAdmins = async (id: number, admin_ids: number[]) => {
+    return put<AssignAdminsResult>('admin/system.auth.Role/assignAdmins?id=' + id, { admin_ids })
+}
