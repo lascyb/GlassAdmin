@@ -211,7 +211,12 @@ const submit = async () => {
                         <el-option v-for="opt in optionList" :key="opt" :label="opt" :value="opt" />
                     </el-select>
                     <el-select v-else-if="form.type === 'multi_select'" v-model="form.value" multiple collapse-tags collapse-tags-tooltip placeholder="请选择">
-                        <el-option v-for="opt in optionList" :key="opt" :label="opt" :value="opt" />
+                        <el-option
+                            v-for="opt in optionList"
+                            :key="opt"
+                            :label="opt === 'password' ? '密码登录' : opt === 'feishu' ? '飞书登录' : opt"
+                            :value="opt"
+                        />
                     </el-select>
                     <el-input v-else v-model="form.value" placeholder="请输入" clearable />
                 </el-form-item>

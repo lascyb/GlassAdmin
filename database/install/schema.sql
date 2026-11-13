@@ -28,6 +28,7 @@ CREATE TABLE `system_auth_admin`  (
   `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '昵称',
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '头像相对路径（public/storage 下，如 avatar/xxx.jpg）',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '{1:正常,0:禁用}',
+  `login_methods` json NULL COMMENT 'NULL=跟随系统默认；否则为允许的登录方式 JSON 数组',
   `last_login_time` bigint NULL DEFAULT NULL COMMENT '上次登录时间（Unix 秒）',
   `create_time` bigint NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` bigint NULL DEFAULT NULL COMMENT '更新时间',

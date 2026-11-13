@@ -20,6 +20,7 @@ const saving = ref(false)
 const pwdDialogVisible = ref(false)
 const pwdSaving = ref(false)
 const avatarPath = ref<string | null>(null)
+const canChangePassword = ref(false)
 const form = reactive<{
     username: string
     nickname: string
@@ -56,6 +57,7 @@ const load = async () => {
         form.username = d.username
         form.nickname = d.nickname ?? ''
         avatarPath.value = d.avatar ?? null
+        canChangePassword.value = (d.login_methods_effective ?? []).includes('password')
     } finally {
         loading.value = false
     }
@@ -194,7 +196,7 @@ const submitPassword = async () => {
                         </el-form-item>
                         <el-form-item>
                             <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
-                            <el-button v-auth="'changePassword'" @click="openPwdDialog">修改密码</el-button>
+                            <el-button v-if="canChangePassword" @click="openPwdDialog">修改密码</el-button>
                         </el-form-item>
                     </el-form>
                 </el-card>

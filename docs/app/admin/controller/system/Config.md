@@ -19,7 +19,9 @@
 | 方法 | 门闩 | 说明 |
 |---|---|---|
 | `public` | `$noLoginActions` | `site_title`、`site_description`；HTTP 缓存 1h |
-| `runtime` | `$loginOnlyActions` | 含 `layout_*`、`site_title`；缓存 60s |
+| `runtime` | `$loginOnlyActions` | 含 `layout_*`、`site_title`、`admin_default_login_methods`；缓存 60s |
+
+内置项 `admin_default_login_methods`（`multi_select`，`status=2`）：账号未单独配置登录方式时的默认集合。
 | `list` / `read` / `groups` / `save` / `update` / `delete` / `batchSave` | 登录 + RBAC | 管理页 |
 
 ## 已使用场景

@@ -43,6 +43,8 @@ node tools/check-docs.mjs
             - `BaseLogin.php`：[描述文档](app/admin/controller/system/account/login/BaseLogin.md)（Password / Refresh / Feishu）
           - `auth/`
             - `Admin.php`：[描述文档](app/admin/controller/system/auth/Admin.md)
+        - `model/system/auth/`
+          - `Admin.php`：[描述文档](app/admin/model/system/auth/Admin.md)（登录方式）
             - `Role.php`：[描述文档](app/admin/controller/system/auth/Role.md)
             - `Rule.php`：[描述文档](app/admin/controller/system/auth/Rule.md)
       - `model/`

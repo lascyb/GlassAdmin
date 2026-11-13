@@ -137,6 +137,19 @@ class Feishu extends BaseLogin
             return $this->fail(403, '账号不存在或已禁用');
         }
 
+        try {
+            $user->assertAllowsLoginMethod(Admin::METHOD_FEISHU);
+        } catch (\InvalidArgumentException $e) {
+            AdminLoginGuardService::recordIpFailure(
+                $ip,
+                'method_disabled',
+                (int) $user->getAttr('id'),
+                (string) $user->getAttr('username'),
+            );
+
+            return $this->fail(403, $e->getMessage());
+        }
+
         AdminLoginGuardService::recordIpSuccess(
             $ip,
             (int) $user->getAttr('id'),

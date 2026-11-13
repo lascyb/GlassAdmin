@@ -1,0 +1,36 @@
+---
+description: 优先做成通用能力，避免按 key/业务名写特异分支
+alwaysApply: true
+---
+
+# 尽量以功能形式实现，而不是特异性处理
+
+通用模块（配置服务、CRUD、上传、鉴权壳等）只提供**可复用机制**；不要为某一个 key、某一种业务、某一个产品名加 `if`。
+
+## 优先
+
+- 领域对象 / model 上的通用方法（如规范化、生效集合、断言）
+- 类型驱动行为（如 `multi_select` 的 cast），而不是按配置 key 分支
+- 注册表 / 回调 / 约定目录分发
+- 调用方（控制器、业务 model）自己组合能力
+
+## 禁止
+
+```php
+// ❌ 通用服务里按配置 key 特判
+if ($key === 'admin_default_login_methods') { ... }
+
+// ❌ 壳层 / 通用工具里写死产品或业务名
+if ($method === 'xxx-product-or-business') { ... }
+
+// ✅ 通用层只做类型或协议；具体规则放在对应领域
+Admin::normalizeLoginMethods($raw);
+Admin::assertAllowsLoginMethod('password');
+```
+
+## 自检
+
+动手前问：这段逻辑换一个同类对象还成不成立？
+
+- 成立 → 做成通用能力（方法、类型、扩展点）
+- 只对这一处成立 → 留在调用方 / 领域 model，不要塞进通用服务

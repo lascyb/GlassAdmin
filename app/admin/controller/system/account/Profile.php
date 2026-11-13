@@ -25,7 +25,7 @@ use think\Response;
 class Profile extends AdminController
 {
     /**
-     * @var list<string> 仅需登录的 action；changePassword 需角色鉴权，不在此列
+     * @var list<string> 仅需登录的 action；改密由生效登录方式控制，不走按钮 RBAC
      */
     protected array $loginOnlyActions = [
         'read',
@@ -34,6 +34,7 @@ class Profile extends AdminController
         'uploadAvatar',
         'switchRoles',
         'operationLogs',
+        'changePassword',
     ];
 
     /** password 明文最小长度（与 system.auth.Admin 一致） */
@@ -54,11 +55,12 @@ class Profile extends AdminController
             return $this->fail(405, '仅支持 GET');
         }
         $id = $this->auth->adminId;
-        $row = AdminModel::field('id,username,nickname,avatar,status,create_time,update_time')->find($id);
+        $row = AdminModel::field('id,username,nickname,avatar,status,login_methods,create_time,update_time')->find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
         }
         $data = $row->toArray();
+        $data = array_merge($data, $row->loginMethodsPayload());
         $data["oauth2"] = [];
         $feishu = Feishu::where("admin_id", $id)->field("name,avatar")->find();
         if ($feishu) {
@@ -142,7 +144,7 @@ class Profile extends AdminController
     }
 
     /**
-     * changePassword 修改当前用户密码（RSA 密文；需角色鉴权）
+     * changePassword 修改当前用户密码（RSA 密文；需生效登录方式含 password）
      */
     public function changePassword(Request $request): Response
     {
@@ -153,6 +155,11 @@ class Profile extends AdminController
         $row = AdminModel::find($id);
         if (!$row) {
             return $this->fail(404, '用户不存在');
+        }
+        try {
+            $row->assertAllowsLoginMethod(AdminModel::METHOD_PASSWORD);
+        } catch (InvalidArgumentException $e) {
+            return $this->fail(403, $e->getMessage());
         }
         $encPwd = (string) $request->put('password', '');
         if ($encPwd === '') {

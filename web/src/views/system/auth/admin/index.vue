@@ -10,7 +10,7 @@ import GaTable from '@/components/ga-table/index.vue'
 import { useConfirmAction } from '@/composables/useConfirmAction'
 import { usePaginatedList } from '@/composables/usePaginatedList'
 import { formatUnixTime } from '@/utils/formatUnixTime'
-import { ADMIN_STATUS_MAP, OAUTH_PROVIDER_OPTIONS } from '@/views/system/auth/admin/constants'
+import { ADMIN_STATUS_MAP, OAUTH_PROVIDER_OPTIONS, loginMethodLabel } from '@/views/system/auth/admin/constants'
 import EditView from '@/views/system/auth/admin/edit.vue'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref, type Component } from 'vue'
@@ -228,6 +228,25 @@ const shellProps = computed(() =>
         </el-table-column>
         <el-table-column label="创建时间" width="170">
             <template #default="{ row }">{{ formatUnixTime(row.create_time) }}</template>
+        </el-table-column>
+        <el-table-column label="登录方式" min-width="160">
+            <template #default="{ row }">
+                <template v-if="row.login_methods_effective?.length">
+                    <el-tag
+                        v-for="m in row.login_methods_effective"
+                        :key="m"
+                        size="small"
+                        round
+                        class="mr-1 mb-1"
+                        :type="row.login_methods == null ? 'info' : undefined"
+                    >{{ loginMethodLabel(m) }}</el-tag>
+                    <span
+                        v-if="row.login_methods == null"
+                        class="text-xs text-ga-text-placeholder"
+                    >默认</span>
+                </template>
+                <span v-else class="text-ga-text-placeholder">—</span>
+            </template>
         </el-table-column>
         <el-table-column label="三方登录" width="120">
             <template #default="{ row }">

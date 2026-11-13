@@ -13,6 +13,10 @@ export type AdminRow = {
     nickname?: string | null
     avatar?: string | null
     status: number
+    /** null=跟随系统默认 */
+    login_methods?: string[] | null
+    /** 解析后的生效登录方式 */
+    login_methods_effective?: string[]
     role_ids?: number[]
     /** 预加载角色，与 with roles 字段 id,name 一致 */
     roles?: AdminRoleBrief[]
@@ -59,15 +63,22 @@ export const fetchRead = async (id: number) => {
 }
 
 /**
- * saveAdmin 新建（明文 password，经 encryptFields 自动 RSA）
+ * saveAdmin 新建（明文 password 可选，有则经 encryptFields 自动 RSA）
  */
 export const saveAdmin = async (
-    payload: { username: string; nickname?: string; role_ids: number[]; status: number; password: string },
+    payload: {
+        username: string
+        nickname?: string
+        role_ids: number[]
+        status: number
+        login_methods?: string[] | null
+        password?: string
+    },
     options?: AxiosRequestConfig,
 ) => {
     return post<{ id: number }>('admin/system.auth.Admin/save', payload, {
         ...options,
-        encryptFields: options?.encryptFields ?? ['password'],
+        encryptFields: options?.encryptFields ?? (payload.password ? ['password'] : undefined),
     })
 }
 
@@ -76,7 +87,13 @@ export const saveAdmin = async (
  */
 export const updateAdmin = async (
     id: number,
-    payload: { nickname?: string; role_ids: number[]; status: number; password?: string },
+    payload: {
+        nickname?: string
+        role_ids: number[]
+        status: number
+        login_methods?: string[] | null
+        password?: string
+    },
     options?: AxiosRequestConfig,
 ) => {
     const encryptFields =

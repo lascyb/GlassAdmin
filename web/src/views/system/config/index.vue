@@ -114,7 +114,11 @@ const displayValue = (row: SystemConfigRow): string => {
     if (row.type === 'switch') return v === true ? '开启' : '关闭'
     if (row.type === 'multi_select') {
         if (Array.isArray(v)) {
-            const text = v.map(String).join('、')
+            const labels: Record<string, string> = {
+                password: '密码登录',
+                feishu: '飞书登录',
+            }
+            const text = v.map((item) => labels[String(item)] ?? String(item)).join('、')
             return text || '—'
         }
         return '—'

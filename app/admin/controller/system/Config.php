@@ -53,6 +53,7 @@ class Config extends AdminController
             'layout_show_all_menus',
             'layout_aside_width',
             'layout_theme_color',
+            'admin_default_login_methods',
         ]))->cacheControl('public, max-age=60');
     }
 

@@ -29,7 +29,7 @@ RBAC 只在本方法里执行。不继承本类的控制器不做 RBAC 检查。
 | `$noLoginActions` | 所列 action 不登录 |
 | `$loginOnlyActions` | 仅登录、跳过 RBAC；`'*'` 表示全部 action |
 
-[Profile.php](../../../../app/admin/controller/system/account/Profile.php) 将 `read`、`update` 等列入 `$loginOnlyActions`。RBAC：角色经前端规则绑定 backend api（`system_auth_role_rule`、`system_auth_rule_api`）。
+[Profile.php](../../../../app/admin/controller/system/account/Profile.php) 将 `read`、`update`、`changePassword` 等列入 `$loginOnlyActions`。改密不再依赖按钮规则 `changePassword`（规则 67 仍可保留），而由生效登录方式是否含 `password` 控制。RBAC：角色经前端规则绑定 backend api（`system_auth_role_rule`、`system_auth_rule_api`）。
 
 登录签发见 [BaseLogin](../../admin/controller/system/account/login/BaseLogin.md)，不经过本类。
 

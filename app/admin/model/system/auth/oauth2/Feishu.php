@@ -85,13 +85,14 @@ class Feishu extends Model
         Db::startTrans();
         try {
             $admin = Admin::create([
-                'username' => $username,
-                'password' => password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT),
-                'nickname' => (string) ($userInfo['name'] ?? $username),
-                'avatar'   => ($tokenPayload['avatar'] !== '' && strlen($tokenPayload['avatar']) <= 255)
+                'username'      => $username,
+                'password'      => password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT),
+                'nickname'      => (string) ($userInfo['name'] ?? $username),
+                'avatar'        => ($tokenPayload['avatar'] !== '' && strlen($tokenPayload['avatar']) <= 255)
                     ? $tokenPayload['avatar']
                     : null,
-                'status'   => 1,
+                'status'        => 1,
+                'login_methods' => [Admin::METHOD_FEISHU],
             ]);
             $adminId = (int) $admin->getAttr('id');
 

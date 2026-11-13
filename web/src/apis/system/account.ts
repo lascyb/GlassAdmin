@@ -17,6 +17,10 @@ export type ProfileRow = {
     avatar?: string | null
     role_ids?: number[]
     status: number
+    /** null=跟随系统默认 */
+    login_methods?: string[] | null
+    /** 解析后的生效登录方式 */
+    login_methods_effective?: string[]
     roles?: AdminRoleBrief[]
     create_time?: number | null
     update_time?: number | null
@@ -73,7 +77,7 @@ export const updateProfile = async (payload: { nickname?: string }) => {
 }
 
 /**
- * changePassword 修改当前用户密码（明文 password，经 encryptFields 自动 RSA；需角色鉴权）
+ * changePassword 修改当前用户密码（明文 password，经 encryptFields 自动 RSA；需开通密码登录）
  */
 export const changePassword = async (
     payload: { password: string },

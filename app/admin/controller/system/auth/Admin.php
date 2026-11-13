@@ -69,7 +69,7 @@ class Admin extends AdminController
         }
 
         $q->order('a.id', 'desc')
-            ->field('a.id,a.username,a.nickname,a.avatar,a.status,a.last_login_time,a.create_time,a.update_time');
+            ->field('a.id,a.username,a.nickname,a.avatar,a.status,a.login_methods,a.last_login_time,a.create_time,a.update_time');
 
         if ($keyword !== '') {
             $kw = addcslashes($keyword, '%_\\');
@@ -98,6 +98,7 @@ class Admin extends AdminController
             $roles = $data['roles'] ?? [];
             $data['role_ids'] = array_map(static fn (array $r): int => (int) $r['id'], $roles);
             $data['oauth_providers'] = [];
+            $data = array_merge($data, $row->loginMethodsPayload());
 
             return $data;
         }, $paginator->items());
@@ -136,6 +137,7 @@ class Admin extends AdminController
         unset($data['password']);
         $data['role_ids'] = array_column($data['roles'] ?? [], 'id');
         $data['oauth_providers'] = [];
+        $data = array_merge($data, $row->loginMethodsPayload());
         $data = $this->attachOauthProviders([$data])[0];
 
         return $this->ok($data);
@@ -155,8 +157,8 @@ class Admin extends AdminController
         $status   = (int) $request->post('status', 1);
         $serial   = trim((string) $request->header('X-RSA-Serial', ''));
         $encPwd   = (string) $request->post('password', '');
-        if ($username === '' || $encPwd === '' || $serial === '') {
-            return $this->fail(400, '用户名、密码或密钥参数缺失');
+        if ($username === '') {
+            return $this->fail(400, '用户名缺失');
         }
         if (!preg_match('/^[a-zA-Z0-9_]{3,64}$/', $username)) {
             return $this->fail(400, '用户名须为 3～64 位字母、数字或下划线');
@@ -168,23 +170,47 @@ class Admin extends AdminController
         if (!in_array($status, [0, 1], true)) {
             return $this->fail(400, 'status 无效');
         }
-        $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
-        if ($plain === null || $plain === '') {
-            return $this->rsaKeyInvalid();
+
+        try {
+            $loginMethods = $this->parseLoginMethodsInput($request->post('login_methods'), true);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail(400, $e->getMessage());
         }
-        $err = $this->validatePlainPassword($plain);
-        if ($err !== null) {
-            return $this->fail(400, $err);
+        $effective = AdminModel::resolveEffectiveLoginMethods($loginMethods);
+        $needsPassword = in_array(AdminModel::METHOD_PASSWORD, $effective, true);
+
+        $plain = null;
+        if ($encPwd !== '') {
+            if ($serial === '') {
+                return $this->fail(400, '密钥参数缺失');
+            }
+            $plain = RsaKeyService::decryptBySerial($serial, $encPwd);
+            if ($plain === null || $plain === '') {
+                return $this->rsaKeyInvalid();
+            }
+            $err = $this->validatePlainPassword($plain);
+            if ($err !== null) {
+                return $this->fail(400, $err);
+            }
+        } elseif ($needsPassword) {
+            return $this->fail(400, '用户名、密码或密钥参数缺失');
         }
+
         if (AdminModel::where('username', $username)->count() > 0) {
             return $this->fail(400, '用户名已存在');
         }
+
+        $passwordHash = $plain !== null
+            ? password_hash($plain, PASSWORD_BCRYPT)
+            : password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+
         $m = new AdminModel();
         $m->save([
-            'username' => $username,
-            'password' => password_hash($plain, PASSWORD_BCRYPT),
-            'nickname' => $nickname !== '' ? $nickname : null,
-            'status'   => $status,
+            'username'      => $username,
+            'password'      => $passwordHash,
+            'nickname'      => $nickname !== '' ? $nickname : null,
+            'status'        => $status,
+            'login_methods' => $loginMethods,
         ]);
         AdminRole::syncRoles((int) $m->getAttr('id'), $roleIds);
 
@@ -210,7 +236,7 @@ class Admin extends AdminController
         $nickname = trim((string) $request->put('nickname', ''));
         $roleIds  = $this->parseRoleIds($request->put('role_ids'));
         if ($roleIds === []) {
-            $roleIds = AdminRole::activeRoleIds($id);
+            $roleIds = AdminRole::allRoleIds($id);
         }
         $status   = (int) $request->put('status', (int) $row->getAttr('status'));
         $encPwd   = (string) $request->put('password', '');
@@ -225,9 +251,29 @@ class Admin extends AdminController
         if ($id === $currentId && $status !== 1) {
             return $this->fail(400, '不能禁用当前登录账号');
         }
+
+        $loginMethods = $row->getAttr('login_methods');
+        $putAll = $request->put();
+        if (!is_array($putAll)) {
+            $putAll = [];
+        }
+        if (array_key_exists('login_methods', $putAll)) {
+            try {
+                $loginMethods = $this->parseLoginMethodsInput($putAll['login_methods'], true);
+            } catch (\InvalidArgumentException $e) {
+                return $this->fail(400, $e->getMessage());
+            }
+        }
+
+        $superErr = $this->assertSelfSuperKeepsPassword($id, $roleIds, $loginMethods);
+        if ($superErr !== null) {
+            return $this->fail(400, $superErr);
+        }
+
         $data = [
-            'nickname' => $nickname !== '' ? $nickname : null,
-            'status'   => $status,
+            'nickname'      => $nickname !== '' ? $nickname : null,
+            'status'        => $status,
+            'login_methods' => $loginMethods,
         ];
         if ($encPwd !== '') {
             $serial = trim((string) $request->header('X-RSA-Serial', ''));
@@ -365,6 +411,50 @@ class Admin extends AdminController
     {
         if (strlen($plain) < self::PASSWORD_MIN_LEN) {
             return '密码长度至少 ' . self::PASSWORD_MIN_LEN . ' 位';
+        }
+
+        return null;
+    }
+
+    /**
+     * parseLoginMethodsInput 解析 login_methods：null=跟随默认；数组=显式集合
+     *
+     * @return list<string>|null
+     * @throws \InvalidArgumentException
+     */
+    private function parseLoginMethodsInput(mixed $raw, bool $allowNull): ?array
+    {
+        if ($raw === null || $raw === '' || $raw === []) {
+            if ($allowNull && ($raw === null || $raw === '')) {
+                return null;
+            }
+            if ($raw === []) {
+                throw new \InvalidArgumentException('登录方式不能为空');
+            }
+
+            return null;
+        }
+
+        return AdminModel::encodeLoginMethodsForDb($raw);
+    }
+
+    /**
+     * assertSelfSuperKeepsPassword 编辑自己且角色含超管时，生效集合须含 password
+     *
+     * @param list<int>            $roleIds
+     * @param list<string>|null    $loginMethods
+     */
+    private function assertSelfSuperKeepsPassword(int $id, array $roleIds, ?array $loginMethods): ?string
+    {
+        if ($id !== $this->auth->adminId) {
+            return null;
+        }
+        if (!in_array(1, $roleIds, true)) {
+            return null;
+        }
+        $effective = AdminModel::resolveEffectiveLoginMethods($loginMethods);
+        if (!in_array(AdminModel::METHOD_PASSWORD, $effective, true)) {
+            return '超级管理员账号必须保留密码登录';
         }
 
         return null;

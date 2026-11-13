@@ -36,6 +36,12 @@ export const useSystemConfig = defineStore('system_config', () => {
         return typeof v === 'number' && Number.isFinite(v) ? v : fallback
     }
 
+    /** getStringArray 取 string[] 配置（如 multi_select） */
+    const getStringArray = (key: string, fallback: string[] = []): string[] => {
+        const v = values.value[key]
+        return Array.isArray(v) ? v.map((item) => String(item)) : fallback
+    }
+
     /** get 兼容旧调用，等同 getString */
     const get = (key: string, fallback = ''): string => getString(key, fallback)
 
@@ -79,6 +85,7 @@ export const useSystemConfig = defineStore('system_config', () => {
         getString,
         getBool,
         getNumber,
+        getStringArray,
         load,
         clear,
     }

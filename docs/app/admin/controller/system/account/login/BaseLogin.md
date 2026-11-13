@@ -13,6 +13,8 @@
 
 `BaseLogin` 继承 [BaseController](../../../../../BaseController.md)，**不**走 [AdminController](../../../../../common/controller/AdminController.md)。中间件仍有通用 `ApiThrottle`。`issueLoginOk` 签发双令牌并写操作日志 `auth.login.*`。
 
+密码 / 飞书登录在校验账号启用后，还会按 `Admin::assertAllowsLoginMethod` 检查生效登录方式（账号 `login_methods` 或系统默认 `admin_default_login_methods`）；未开通返回 403。生效集合为空则任意方式均拒绝。飞书 JIT 建号显式写入 `["feishu"]`。
+
 另有登录防暴破与文件审计（见下）。
 
 令牌 TTL：[`config/admin_login.php`](../../../../../../config/admin_login.php) 的 `access_token_ttl` / `refresh_token_ttl_session` / `refresh_token_ttl_remember`。

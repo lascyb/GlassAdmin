@@ -71,6 +71,14 @@ class Password extends BaseLogin
             return $this->fail(401, '用户名或密码错误');
         }
 
+        try {
+            $user->assertAllowsLoginMethod(Admin::METHOD_PASSWORD);
+        } catch (\InvalidArgumentException $e) {
+            AdminLoginGuardService::recordFailure($username, $ip, 'method_disabled', $adminId);
+
+            return $this->fail(403, $e->getMessage());
+        }
+
         $passwordHash = (string) ($user['password'] ?? '');
         if ($passwordHash === '' || !password_verify($password, $passwordHash)) {
             AdminLoginGuardService::recordFailure($username, $ip, 'wrong_password', $adminId);
