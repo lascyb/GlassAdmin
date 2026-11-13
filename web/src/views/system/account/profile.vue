@@ -20,7 +20,10 @@ const saving = ref(false)
 const pwdDialogVisible = ref(false)
 const pwdSaving = ref(false)
 const avatarPath = ref<string | null>(null)
-const form = reactive({
+const form = reactive<{
+    username: string
+    nickname: string
+}>({
     username: '',
     nickname: '',
 })

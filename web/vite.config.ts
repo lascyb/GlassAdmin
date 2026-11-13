@@ -6,7 +6,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import svgLoader from 'vite-svg-loader'
-import { gaViewPlugin } from './vite-plugin-ga-view'
+import { gaViewPlugin } from './vite-plugin-ga-view.ts'
 
 export default defineConfig({
     plugins: [
@@ -25,8 +25,8 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, 'src'),
-            '@components': path.resolve(__dirname, 'src/components')
+            '@': path.resolve(import.meta.dirname, 'src'),
+            '@components': path.resolve(import.meta.dirname, 'src/components')
         }
     }
 })
