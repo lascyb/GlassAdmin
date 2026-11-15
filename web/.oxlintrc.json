@@ -1,0 +1,22 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "unicorn", "oxc"],
+    "categories": {
+        "correctness": "error"
+    },
+    "rules": {
+        "no-unused-vars": "warn",
+        "no-console": ["warn", { "allow": ["warn", "error"] }]
+    },
+    "ignorePatterns": [
+        "node_modules",
+        "dist",
+        "auto-imports.d.ts",
+        "components.d.ts",
+        "src/theme/color.test.ts"
+    ],
+    "env": {
+        "browser": true,
+        "es2024": true
+    }
+}
