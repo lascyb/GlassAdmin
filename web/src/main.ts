@@ -1,3 +1,4 @@
+import { persistStorageKeyPrefix } from '@/config/persistStorage'
 import { vAuth } from '@/directives/auth'
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -11,7 +12,7 @@ import './style.css'
 const pinia = createPinia()
 pinia.use(
     createPersistedState({
-        key: (id) => `${import.meta.env.VITE_PERSIST_STORAGE_PREFIX}${id}`,
+        key: (id) => `${persistStorageKeyPrefix}${id}`,
     }),
 )
 const app = createApp(App)
