@@ -176,7 +176,8 @@ class Role extends AdminController
         if ($id <= 0) {
             return $this->fail(400, 'id 无效');
         }
-        if (!RoleModel::find($id)) {
+        // 新建后立刻分配规则是另一次请求；读写分离时从库可能尚未同步该行
+        if (!RoleModel::master()->find($id)) {
             return $this->fail(404, '角色不存在');
         }
         $ruleIds = $request->put('rule_ids/a', []);
@@ -218,7 +219,8 @@ class Role extends AdminController
         if ($id <= 0) {
             return $this->fail(400, 'id 无效');
         }
-        if (!RoleModel::find($id)) {
+        // 与 assignRules 相同：存在性检查读主库，避免主从延迟误判角色不存在
+        if (!RoleModel::master()->find($id)) {
             return $this->fail(404, '角色不存在');
         }
         if ($id === self::SUPER_ROLE_ID) {
