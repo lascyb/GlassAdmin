@@ -5,16 +5,16 @@ import type { RoleRow } from '@/apis/system/auth/role'
 import * as roleApi from '@/apis/system/auth/role'
 import GaPasswordInput from '@/components/ga-password-input/index.vue'
 import { useSystemConfig } from '@/pinia/system/config'
-import { LOGIN_METHOD_OPTIONS, loginMethodLabel } from '@/views/system/auth/admin/constants'
+import { LOGIN_METHOD_OPTIONS, loginMethodLabel, type AdminEditSaved } from '@/views/system/auth/admin/constants'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 
 const props = defineProps<{
     id?: number
 }>()
 
 const show = defineModel<boolean>('modelValue', { required: true })
-const emit = defineEmits<{ saved: [] }>()
+const emit = defineEmits<{ saved: [payload: AdminEditSaved] }>()
 
 const systemConfig = useSystemConfig()
 
@@ -41,6 +41,25 @@ const form = reactive<{
 const loading = ref(false)
 const saving = ref(false)
 const title = ref('添加管理员')
+
+/** baseline 打开弹窗时的账号快照，保存时原样回传 */
+const baseline = ref<AdminEditSaved['before']>({
+    nickname: '',
+    status: 1,
+    role_ids: [],
+    follow_default: true,
+    login_methods: [],
+})
+
+const snapshotBaseline = () => {
+    baseline.value = {
+        nickname: form.nickname.trim(),
+        status: form.status,
+        role_ids: [...form.role_ids],
+        follow_default: form.follow_default,
+        login_methods: [...form.login_methods],
+    }
+}
 
 /** roleTree 角色树（供 el-tree-select） */
 const roleTree = ref<RoleRow[]>([])
@@ -116,6 +135,8 @@ const loadDetail = async () => {
             login_methods: defaultLoginMethods.value.includes('password') ? ['password'] : [],
         })
     }
+    await nextTick()
+    snapshotBaseline()
 }
 
 watch(
@@ -159,6 +180,7 @@ const submit = async () => {
     }
     saving.value = true
     try {
+        let savedId = form.id ?? 0
         if (form.id) {
             const body: {
                 nickname: string
@@ -177,7 +199,7 @@ const submit = async () => {
             }
             await adminApi.updateAdmin(form.id, body)
         } else {
-            await adminApi.saveAdmin({
+            const created = await adminApi.saveAdmin({
                 username: form.username.trim(),
                 nickname: form.nickname.trim(),
                 role_ids: form.role_ids,
@@ -185,9 +207,20 @@ const submit = async () => {
                 login_methods,
                 password: form.password || undefined,
             })
+            savedId = created.id
         }
         ElMessage.success('已保存')
-        emit('saved')
+        emit('saved', {
+            id: savedId,
+            passwordChanged: !!form.password,
+            before: {
+                nickname: baseline.value.nickname,
+                status: baseline.value.status,
+                role_ids: [...baseline.value.role_ids],
+                follow_default: baseline.value.follow_default,
+                login_methods: [...baseline.value.login_methods],
+            },
+        })
         show.value = false
     } catch (e: unknown) {
         showError(e, '保存失败')
@@ -279,6 +312,7 @@ const submit = async () => {
                         <el-radio :value="0">禁用</el-radio>
                     </el-radio-group>
                 </el-form-item>
+                <slot name="extra" />
             </el-form>
         </el-skeleton>
         <template #footer>

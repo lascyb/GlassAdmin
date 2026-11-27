@@ -23,3 +23,23 @@ export const loginMethodLabel = (code: string): string => {
     const hit = LOGIN_METHOD_OPTIONS.find((item) => item.value === code)
     return hit?.label ?? code
 }
+
+/**
+ * AdminEditSaved 管理员编辑保存后回传。
+ * 调用方用 before 对照变更（例如飞书通知），这里不含密码明文。
+ */
+export type AdminEditSaved = {
+    id: number
+    /** 本次提交是否填写了新密码 */
+    passwordChanged: boolean
+    /** 打开弹窗时的账号快照 */
+    before: {
+        nickname: string
+        status: number
+        role_ids: number[]
+        /** true=跟随系统默认登录方式 */
+        follow_default: boolean
+        /** 打开时表单上的登录方式；跟随默认时已展开为当时的系统默认 */
+        login_methods: string[]
+    }
+}
